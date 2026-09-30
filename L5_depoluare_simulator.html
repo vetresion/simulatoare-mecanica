@@ -1,0 +1,751 @@
+<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lucrarea 5 – Sisteme de depoluare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDF0F2; --panel:#FFFFFF; --panel2:#F6F8F9; --ink:#16324A; --ink2:#4E6072; --muted:#7B8A97;
+  --fuel:#D9961A; --fuel-soft:#F6E3B8; --fuel-deep:#A8680A; --steel:#8A99A6; --steel-d:#5E6E7B; --line:#CBD3DA;
+  --alert:#B3362B; --ok:#2E7D4F; --blue:#2F6CA8; --violet:#6B4FA0; --teal:#1F8A8A;
+  --canvas-bg:#FBFCFC; --grid:#E1E6EA; --shadow:0 1px 2px rgba(22,50,74,.08);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}}
+:root[data-theme="dark"]{
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow","Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5}
+.num,.ro{font-family:"Barlow Condensed","Arial Narrow","Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 10px;border-bottom:3px solid var(--ink)}
+header.top .lab{font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink2);letter-spacing:.02em}
+header.top h1{margin:0;font-size:26px;line-height:1.15;font-weight:700}
+header.top .inst{margin-left:auto;text-align:right;font-size:13px;color:var(--ink2)}
+.fuelbar{height:6px;background:linear-gradient(90deg,var(--fuel) 0 38%,transparent 38%)}
+nav.tabs{display:flex;gap:2px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+nav.tabs button{font:inherit;font-weight:600;border:0;background:none;color:var(--ink2);padding:12px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fuel)}
+nav.tabs .sp{flex:1}
+nav.tabs .tool{font-weight:500;font-size:13px}
+main{padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+section.tab{display:none} section.tab.on{display:block}
+.grid3{display:grid;grid-template-columns:300px minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:1150px){.grid3{grid-template-columns:280px minmax(0,1fr)} .grid3>.readouts{grid-column:1/-1}}
+@media (max-width:760px){.grid3{grid-template-columns:1fr} main{padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow)}
+.card>h3{margin:0;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card>.bd{padding:12px 14px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink2)}
+.ctrl label b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:600}
+.ctrl input[type=range]{width:100%;accent-color:var(--fuel)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text],.field{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink)}
+fieldset{border:0;border-top:1px solid var(--line);margin:12px 0 6px;padding:10px 0 0}
+fieldset legend{font-weight:700;font-size:13.5px;padding-right:8px;color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:4px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.fuel{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative}
+canvas{display:block;width:100%;background:var(--canvas-bg);border-radius:4px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px}
+.ro-table td{padding:4px 2px;border-bottom:1px dashed var(--line)}
+.ro-table td:first-child{width:56%}
+.ro-table td:last-child{text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:600}
+.ro-table tr.hl td:last-child{color:var(--fuel-deep)}
+.ro-table .sym{color:var(--muted);font-style:italic;font-family:"Times New Roman",serif}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--fuel-soft);color:var(--ink)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent)} .tag.bad{background:color-mix(in srgb,var(--alert) 22%,transparent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table.data{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+table.data th{background:var(--ink);color:var(--panel);font-weight:600;padding:6px 8px;text-align:center;white-space:nowrap}
+table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:15px;white-space:nowrap}
+table.data td.l{text-align:left;font-family:inherit;font-size:13.5px}
+table.data tr:nth-child(even) td{background:var(--panel2)}
+table.data tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.copybar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.copybar .t{font-weight:700;margin-right:auto}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.charts{grid-template-columns:1fr}}
+.prose{max-width:860px}
+.prose h2{font-size:21px;margin:26px 0 8px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.prose h3{font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{line-height:1.62}
+.eq{font-family:"Cambria Math","Times New Roman",serif;font-size:17px;background:var(--panel);border-left:4px solid var(--fuel);padding:8px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-size:14px;font-family:"Barlow",sans-serif}
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);padding:8px 12px;border-radius:4px;margin:10px 0}
+.warn{border-left-color:var(--alert)}
+ol.steps{counter-reset:s;list-style:none;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;margin:0 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700}
+ol.steps>li b.h{display:block;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);max-width:760px;width:100%;border-radius:8px;padding:16px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;height:260px;font-family:Consolas,monospace;font-size:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
+.toast.on{opacity:1}
+.legend-inline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend-inline i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.small{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{nav.tabs,.copybar,.btn{display:none!important} section.tab{display:block!important} body{background:#fff}}
+.info-h{margin:0 0 6px;font-size:18px;color:var(--ink)}
+.info-s{margin-top:10px;font-size:14px;line-height:1.45}
+.info-t{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fuel-deep);margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:3px 10px;cursor:pointer}
+.chips button.on{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-top:8px}
+.mcq{border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;background:var(--panel)}
+.mcq p{margin:0 0 6px}.mcq label{display:block;padding:2px 0;cursor:pointer;font-size:14.5px}
+.mcq.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.mcq.badq{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 7%,var(--panel))}
+.mcq .expl{font-size:13.5px;color:var(--ink2);margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:5px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:600;font-size:13.5px;border:0;background:transparent;color:var(--ink);padding:6px 11px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--panel)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.kpi div{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:6px 10px}
+.kpi small{display:block;color:var(--ink2);font-size:12px}.kpi b{font-family:"Barlow Condensed",sans-serif;font-size:19px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0}
+@media(max-width:1050px){.grid2{grid-template-columns:1fr}}
+.ctlbar{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end}
+.ctlbar .ctrl{margin:0;min-width:200px}
+.wraptbl td{white-space:normal!important;text-align:left!important;font-family:"Barlow",sans-serif!important;font-size:14px!important}
+.infobox{max-height:560px;overflow:auto}
+</style></head><body><header class="top">
+  <div>
+    <div class="lab">Laborator Sisteme de injecție și depoluare — Lucrarea nr. 5</div>
+    <h1>Cunoașterea sistemelor de depoluare ale motoarelor - autor: S.L dr. ing Vetreș Ion</h1>
+  </div>
+  <div class="inst">Universitatea Politehnica Timișoara<br>Facultatea de Mecanică, Departamentul MMUT</div>
+</header>
+<div class="fuelbar"></div>
+<nav class="tabs" aria-label="Secțiuni">
+  <button data-tab="t-teorie">1. Teorie</button>
+  <button data-tab="t-sch">2. Schema sistemului</button>
+  <button data-tab="t-fun">3. Funcționarea liniei de evacuare</button>
+  <button data-tab="t-mas">4. Măsurători</button>
+  <button data-tab="t-tut">5. Tutorial și test</button>
+  <button data-tab="t-ref">6. Referat</button>
+  <span class="sp"></span>
+  <button class="tool" id="decBtn">Zecimale</button>
+  <button class="tool" id="themeBtn">Temă luminoasă / întunecată</button>
+</nav>
+<main>
+<section class="tab prose" id="t-teorie">
+  <h2>Scopul lucrării</h2>
+  <p>Lucrarea urmărește cunoașterea poluanților emiși de motoarele cu ardere internă, a mecanismelor lor de formare și a sistemelor de depoluare folosite la motoarele cu aprindere prin scânteie (MAS) și la motoarele cu aprindere prin comprimare (MAC): construcția și funcționarea componentelor, condițiile de lucru, strategiile de comandă și metodele de verificare la inspecția tehnică.</p>
+  <h2>Poluanții reglementați</h2>
+  <p><b>Monoxidul de carbon (CO)</b> rezultă din arderea incompletă, în principal la amestec bogat (λ &lt; 1). <b>Hidrocarburile nearse (HC)</b> provin din zonele reci ale camerei, din interstiții, din rateuri și din amestecul prea bogat sau prea sărac. <b>Oxizii de azot (NO<sub>x</sub> = NO + NO<sub>2</sub>)</b> se formează la temperaturi mari (&gt; 1800 K) în prezența oxigenului (mecanismul Zeldovich); au un maxim la amestec ușor sărac (λ ≈ 1,05–1,1). <b>Particulele (PM)</b> — funingine cu hidrocarburi adsorbite și sulfați — sunt caracteristice MAC și injecției directe de benzină; se limitează masa (PM) și numărul lor (PN). CO<sub>2</sub> nu este toxic, dar este gaz cu efect de seră, proporțional cu consumul de combustibil.</p>
+  <h2>Depoluarea la MAS: catalizatorul cu trei căi</h2>
+  <p>Catalizatorul cu trei căi (TWC) realizează simultan oxidarea CO și HC și reducerea NO<sub>x</sub>:</p>
+  <div class="eq">2 CO + O<sub>2</sub> → 2 CO<sub>2</sub> ;&nbsp;&nbsp; C<sub>x</sub>H<sub>y</sub> + (x + y/4) O<sub>2</sub> → x CO<sub>2</sub> + (y/2) H<sub>2</sub>O ;&nbsp;&nbsp; 2 NO + 2 CO → N<sub>2</sub> + 2 CO<sub>2</sub><span class="n">(1)</span></div>
+  <p>Conversia simultană este posibilă numai într-o fereastră îngustă în jurul lui λ = 1 (±0,5 %); oxidul de ceriu stochează și cedează oxigen, atenuând oscilațiile buclei lambda. Eficiența depinde de temperatură: temperatura de amorsare (light-off) T<sub>50</sub>, la care conversia atinge 50 %, este de 200–300 °C. Pentru amorsare rapidă catalizatorul se montează aproape de motor, iar ECU întârzie aprinderea după pornirea la rece. Sistemele auxiliare: recircularea gazelor arse (EGR) pentru NO<sub>x</sub>, aerul secundar pentru oxidarea CO și HC la pornire, sistemul EVAP pentru vaporii de benzină, filtrul de particule pentru benzină (GPF) la injecția directă.</p>
+  <div class="eq">η<sub>i</sub> = (C<sub>i,amonte</sub> − C<sub>i,aval</sub>) / C<sub>i,amonte</sub> · 100 %<span class="n">(2)</span></div>
+  <h2>Depoluarea la MAC</h2>
+  <p>MAC funcționează cu exces de aer (λ = 1,3–6), deci catalizatorul cu trei căi nu poate reduce NO<sub>x</sub>. Linia de post-tratare cuprinde: <b>catalizatorul de oxidare (DOC)</b>, care oxidează CO și HC și transformă o parte din NO în NO<sub>2</sub>; <b>filtrul de particule (DPF)</b>, un monolit ceramic cu canale închise alternativ, prin ai cărui pereți poroși trec gazele, reținând peste 99 % din numărul particulelor; <b>reducerea catalitică selectivă (SCR)</b>, în care amoniacul obținut din soluția de uree AdBlue (32,5 %) reduce NO<sub>x</sub> la azot:</p>
+  <div class="eq">(NH<sub>2</sub>)<sub>2</sub>CO + H<sub>2</sub>O → 2 NH<sub>3</sub> + CO<sub>2</sub> ;&nbsp;&nbsp; 4 NO + 4 NH<sub>3</sub> + O<sub>2</sub> → 4 N<sub>2</sub> + 6 H<sub>2</sub>O ;&nbsp;&nbsp; NO + NO<sub>2</sub> + 2 NH<sub>3</sub> → 2 N<sub>2</sub> + 3 H<sub>2</sub>O<span class="n">(3)</span></div>
+  <p>Raportul molar amoniac/NO<sub>x</sub> (ANR, α) se alege ≈ 1; excesul produce emisie de amoniac (slip), eliminată de un catalizator de oxidare a amoniacului (ASC). Reacția „rapidă” cu NO<sub>2</sub>/NO<sub>x</sub> ≈ 0,5 crește eficiența la temperaturi mici, motiv pentru care DOC se montează înaintea SCR. <b>Recircularea gazelor arse (EGR)</b> reduce temperatura de ardere și NO<sub>x</sub>, dar mărește particulele (compromisul NO<sub>x</sub>–PM).</p>
+  <p>Filtrul de particule se <b>regenerează</b> prin arderea funinginii: pasiv, cu NO<sub>2</sub>, la 250–450 °C, și activ, prin ridicarea temperaturii la 600–650 °C cu post-injecție și oxidarea combustibilului în DOC. Gradul de încărcare se estimează din căderea de presiune pe filtru și dintr-un model de funingine. Cenușa din uleiul de ungere nu se arde și limitează durata de viață a filtrului.</p>
+  <div class="eq">ṁ<sub>AdBlue</sub> = (ṁ<sub>NOx</sub> / M<sub>NO2</sub>) · α · (M<sub>uree</sub> / 2) / 0,325<span class="n">(4)</span></div>
+  <h2>Verificarea la inspecția tehnică</h2>
+  <p><b>MAS</b>: analizorul de gaze măsoară CO, CO<sub>2</sub>, HC și O<sub>2</sub> la ralanti și la turație ridicată (≥ 2000 rot/min) și calculează λ cu formula Brettschneider. Pentru vehiculele cu catalizator și reglaj lambda se verifică, de regulă, CO ≤ 0,3 % la ralanti, CO ≤ 0,2 % la turație ridicată și λ = 0,97–1,03 (valorile exacte depind de categoria vehiculului și de data înmatriculării). <b>MAC</b>: opacimetrul măsoară coeficientul de absorbție a luminii k [m<sup>−1</sup>] la accelerare liberă; limita este cea înscrisă pe plăcuța vehiculului sau cea prevăzută de reglementare în funcție de data înmatriculării.</p>
+  <div class="note warn"><b>Protecția muncii.</b> Gazele de evacuare conțin CO (toxic, inodor) și NO<sub>2</sub>: motorul se pornește numai cu exhaustarea racordată la țeava de evacuare. Catalizatorul și filtrul de particule ajung la 600–900 °C; nu se ating după funcționare. Soluția AdBlue este coroziva pentru metale neferoase; se spală imediat de pe piele.</div>
+</section>
+<section class="tab" id="t-sch">
+  <div class="card"><div class="bd ctlbar">
+    <div class="ctrl"><label><span>Tipul sistemului</span></label>
+      <div class="seg" id="segVar"><button data-v="mas" class="on">Motor cu aprindere prin scânteie</button><button data-v="mac">Motor Diesel (MAC)</button></div></div>
+    <div class="ctrl" style="min-width:230px"><label><span>Regimul motorului</span> <b id="v_sreg"></b></label><input type="range" id="sreg" min="0" max="1" step="0.01" value="0.3"></div>
+    <div class="ctrl"><label><span><input type="checkbox" id="sAnim" checked> Animă fluxurile</span></label></div>
+    <div class="ctrl"><label><span>Test de identificare (denumirile dispar)</span></label><div class="row"><button class="btn fuel" id="qStart">Începe testul</button><button class="btn alt" id="qSkip">Arată / sari</button></div></div>
+    <p class="small" id="qState" style="margin:0"></p>
+  </div></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Schema sistemului de depoluare <span class="tag" id="varTag"></span></h3><div class="bd"><canvas id="cvSch"></canvas><div class="legend2" id="leg"></div></div></div>
+    <div class="card"><h3>Fișa componentei</h3><div class="bd infobox"><div id="info"></div><div class="chips" id="chips"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Componentele sistemului</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 1. Componentele sistemului de depoluare</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblComp">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblComp" data-cap="Tabelul 1. Componentele sistemului de depoluare">Copiază pentru Word</button><button class="btn sm alt" data-copy="img" data-target="#cvSch" data-cap="Schema sistemului">Copiază schema</button></div>
+    <div class="tbl-wrap wraptbl" id="tblComp"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 2. Rezultatele testului de identificare</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblQuiz">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblQuiz" data-cap="Tabelul 2. Rezultatele testului de identificare">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblQuiz"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 3. Limitele de emisii Euro pentru autoturisme [g/km]</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblCmp">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblCmp" data-cap="Tabelul 3. Limitele de emisii Euro pentru autoturisme [g/km]">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblCmp"></div>
+  </div></div>
+</section>
+
+<section class="tab" id="t-fun">
+  <div class="grid3">
+    <div class="card"><h3>Regimul motorului și al post-tratării</h3><div class="bd">
+      <div class="ctrl"><label><span>Tipul motorului</span></label><div class="seg" id="segEng"><button data-v="mas" class="on">MAS</button><button data-v="mac">MAC</button></div></div>
+      <div class="ctrl"><label><span>Sarcina motorului</span> <b id="v_ld"></b></label><input type="range" id="ld" min="0" max="100" step="1" value="40"></div>
+      <div class="ctrl"><label><span><input type="checkbox" id="tAuto" checked> Temperatura gazelor din regim</span> <b id="v_tg"></b></label><input type="range" id="tg" min="20" max="900" step="5" value="450"></div>
+      <div class="ctrl mas"><label><span>Coeficientul de exces de aer λ</span> <b id="v_lam"></b></label><input type="range" id="lam" min="0.85" max="1.15" step="0.005" value="1.0"></div>
+      <div class="ctrl"><label><span>Rata de recirculare EGR</span> <b id="v_egr"></b></label><input type="range" id="egr" min="0" max="40" step="1" value="0"></div>
+      <div class="ctrl mac"><label><span>Raportul NH<sub>3</sub>/NO<sub>x</sub> (ANR)</span> <b id="v_anr"></b></label><input type="range" id="anr" min="0" max="1.4" step="0.05" value="1.0"></div>
+      <div class="ctrl mac"><label><span>Încărcarea DPF cu funingine</span> <b id="v_soot"></b></label><input type="range" id="soot" min="0" max="12" step="0.1" value="3"></div>
+      <div class="ctrl"><label><span>Îmbătrânirea catalizatoarelor</span> <b id="v_age"></b></label><input type="range" id="age" min="0" max="100" step="5" value="0"></div>
+      <div class="row"><button class="btn fuel" id="fPlay">Pornește</button><button class="btn alt" id="fPause">Pauză</button></div>
+    </div></div>
+    <div class="card stage"><h3>Linia de evacuare — transformarea poluanților <span class="tag" id="funTag"></span></h3><div class="bd">
+      <canvas id="cvLine"></canvas><div class="legend2" id="legSp"></div>
+      <h4 style="margin:12px 0 6px">Evoluția poluanților de-a lungul liniei (% din emisia brută)</h4>
+      <canvas id="cvStage"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvLine" data-cap="Linia de evacuare">Copiază animația</button><button class="btn sm alt" data-copy="img" data-target="#cvStage" data-cap="Evoluția poluanților">Copiază graficul</button></div>
+    </div></div>
+    <div class="card readouts"><h3>Emisii și eficiențe</h3><div class="bd"><table class="ro-table" id="roEcu"></table>
+      <div class="copybar"><button class="btn sm alt" data-copy="excel" data-target="#tblEcu">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblEcu" data-cap="Tabelul 4. Concentrațiile poluanților pe linia de evacuare">Copiază pentru Word</button></div>
+      <div id="tblEcu" style="display:none"></div></div></div>
+  </div>
+</section>
+<section class="tab" id="t-mas">
+  <div class="grid3">
+    <div class="card"><h3>Analiza gazelor (inspecția tehnică)</h3><div class="bd">
+      <div class="ctrl"><label><span>Vehiculul verificat</span></label><select id="veh"><option value="mas">Autoturism cu MAS, catalizator și reglaj λ</option><option value="mac">Autoturism cu MAC și filtru de particule</option></select></div>
+      <fieldset><legend>Defect introdus</legend>
+        <div class="ctrl"><select id="fault"><option value="none">Fără defect</option><option value="cat">Catalizator îmbătrânit / distrus</option><option value="lam">Sondă lambda defectă (buclă deschisă, amestec bogat)</option><option value="air">Aspirație de aer fals</option><option value="dpf">Filtru de particule fisurat / îndepărtat (MAC)</option><option value="inj">Injector cu picurare (MAC)</option></select></div>
+      </fieldset>
+      <div class="row"><button class="btn fuel" id="aRun">Efectuează măsurarea</button></div>
+      <p class="small" id="aHint">MAS: analizorul cu 4 gaze măsoară la ralanti și la turație ridicată; λ se calculează cu formula Brettschneider. MAC: opacimetrul face trei accelerări libere.</p>
+    </div></div>
+    <div class="card stage"><h3>Analizor de gaze / opacimetru <span class="tag" id="benchTag">pregătit</span></h3><div class="bd"><canvas id="cvBench"></canvas></div></div>
+    <div class="card readouts"><h3>Rezultatul inspecției</h3><div class="bd"><table class="ro-table" id="roBench"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabele de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 5. Rezultatele analizei gazelor</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblBench">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblBench" data-cap="Tabelul 5. Rezultatele analizei gazelor">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblBench"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 6. Eficiența catalizatorului cu trei căi în funcție de λ</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblMap">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblMap" data-cap="Tabelul 6. Eficiența catalizatorului cu trei căi">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblMap"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 1. Fereastra catalizatorului cu trei căi</span></h3><div class="bd"><canvas id="ch1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch1" data-cap="Fig. 1">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 2. Amorsarea catalizatorului (light-off)</span></h3><div class="bd"><canvas id="ch2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch2" data-cap="Fig. 2">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 3. Compromisul NO<sub>x</sub> – particule la EGR (MAC)</span></h3><div class="bd"><canvas id="ch3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch3" data-cap="Fig. 3">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 4. Eficiența SCR în funcție de temperatură</span></h3><div class="bd"><canvas id="ch4"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch4" data-cap="Fig. 4">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 5. Încărcarea și regenerarea filtrului de particule</span></h3><div class="bd"><canvas id="ch5"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch5" data-cap="Fig. 5">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 6. Evoluția limitelor Euro (autoturisme Diesel)</span></h3><div class="bd"><canvas id="ch6"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch6" data-cap="Fig. 6">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+<section class="tab prose" id="t-tut">
+  <h2>Desfășurarea lucrării</h2>
+  <ol class="steps">
+    <li><b>Teorie.</b> Citiți secțiunea 1 și notați reacțiile (1) și (3) și relația (2).</li>
+    <li><b>Schema sistemului.</b> Parcurgeți componentele pentru MAS și pentru MAC; notați pentru fiecare ce poluant tratează.</li>
+    <li><b>Testul de identificare</b> pe ambele variante; rezultatul intră în referat.</li>
+    <li><b>Funcționarea.</b> La MAS variați λ între 0,95 și 1,05 și urmăriți eficiența catalizatorului; coborâți temperatura sub 250 °C. La MAC variați EGR și ANR și urmăriți NO<sub>x</sub>, particulele și amoniacul.</li>
+    <li><b>Analiza gazelor.</b> Efectuați măsurarea fără defect și cu fiecare defect; comparați rezultatele cu limitele.</li>
+    <li><b>Referat.</b> Copiați referatul și adăugați figurile.</li>
+  </ol>
+  <h2>Experimente dirijate</h2>
+  <div class="row"><button class="btn alt" data-exp="A">A — Pornire la rece (catalizator sub T<sub>50</sub>)</button><button class="btn alt" data-exp="B">B — Amestec bogat, λ = 0,95</button><button class="btn alt" data-exp="C">C — MAC fără AdBlue</button></div>
+  <p class="small">A: catalizatorul rece nu convertește — cea mai mare parte a emisiilor unui ciclu de omologare se produce în primele zeci de secunde. B: NO<sub>x</sub> se reduce, dar CO și HC trec neconvertite. C: fără amoniac SCR nu reduce NO<sub>x</sub>.</p>
+  <h2>Test grilă</h2>
+  <div id="mcq"></div>
+</section>
+
+<section class="tab" id="t-ref">
+  <div class="card"><h3>Date de identificare</h3><div class="bd"><div class="row">
+    <input class="field" style="max-width:260px" id="stName" placeholder="Numele și prenumele studentului">
+    <input class="field" style="max-width:140px" id="stGroup" placeholder="Grupa">
+    <input class="field" style="max-width:170px" id="stDate" type="date">
+    <button class="btn fuel" id="bRef">Copiază referatul pentru Word</button><button class="btn alt" id="bRefTxt">Copiază ca text</button></div>
+    <p class="small">Referatul include tabelele componentelor, limitele Euro, concentrațiile pe linia de evacuare, analiza gazelor și concluziile.</p></div></div>
+  <div class="card" style="margin-top:16px"><div class="bd prose" id="refBody" style="max-width:none"></div></div>
+</section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box"><div class="row" style="justify-content:space-between"><b id="modalT"></b><button class="btn sm alt" onclick="document.getElementById('modal').classList.remove('on')">Închide</button></div><div id="modalB"></div></div></div>
+<script>/* ===== Utilitare comune simulatoare laborator ===== */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let DEC = ',';
+try { const d = localStorage.getItem('lab_dec'); if (d) DEC = d; } catch(e){}
+function fmt(x, d=2){ if (x===null||x===undefined||!isFinite(x)) return '–'; return x.toFixed(d).replace('.', DEC); }
+function fmtS(x, s=3){ if(!isFinite(x)) return '–'; if (x===0) return '0'; const d = Math.max(0, s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x, Math.min(d,6)); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaFn(z){ // Lanczos
+  if (z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gammaFn(1-z));
+  z-=1; const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0]; for(let i=1;i<g+2;i++) x+=c[i]/(z+i); const t=z+g+0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x; }
+function linreg(x,y){ const n=x.length; let sx=0,sy=0,sxx=0,sxy=0,syy=0; for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];syy+=y[i]*y[i];}
+  const b=(n*sxy-sx*sy)/(n*sxx-sx*sx), a=(sy-b*sx)/n; const r=(n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy)); return {a,b,r2:r*r}; }
+function toast(msg){ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---- Tab-uri ---- */
+function initTabs(onChange){
+  $$('nav.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    $$('nav.tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('section.tab').forEach(s=>s.classList.toggle('on', s.id===b.dataset.tab));
+    try{localStorage.setItem(document.title+'_tab', b.dataset.tab);}catch(e){}
+    onChange && onChange(b.dataset.tab); window.scrollTo({top:0});
+  }));
+  let t=null; try{t=localStorage.getItem(document.title+'_tab');}catch(e){}
+  const btn = t && $(`nav.tabs button[data-tab="${t}"]`); (btn||$('nav.tabs button[data-tab]')).click();
+}
+function initTheme(){
+  const b=$('#themeBtn'); if(!b) return; let th=null; try{th=localStorage.getItem('lab_theme');}catch(e){}
+  if(th) document.documentElement.dataset.theme=th;
+  b.addEventListener('click',()=>{ const cur=document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx; try{localStorage.setItem('lab_theme',nx);}catch(e){} window.dispatchEvent(new Event('themechange')); });
+  const d=$('#decBtn'); if(d){ d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct');
+    d.addEventListener('click',()=>{ DEC = DEC===','?'.':','; d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct'); try{localStorage.setItem('lab_dec',DEC);}catch(e){} window.dispatchEvent(new Event('decchange')); toast('Separator zecimal: '+(DEC===','?'virgulă (Excel RO)':'punct (Excel EN)')); }); }
+}
+
+/* ---- Canvas HiDPI ---- */
+function fitCanvas(cv, h){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=cv.clientWidth||cv.parentElement.clientWidth; const H=h||cv._h||Math.round(w*0.56);
+  cv._h=h||cv._h; cv.style.height=H+'px'; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(H*dpr);} const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h:H}; }
+
+/* ---- Grafic generic ---- */
+function niceTicks(min,max,n=6){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const t=[]; for(let v=Math.ceil(min/step-1e-9)*step; v<=max+step*1e-6; v+=step) t.push(+v.toFixed(12)); return {t,step}; }
+function plot(cv, o){
+  if(!cv.clientWidth) return null;
+  const {c,w,h}=fitCanvas(cv, o.height||300);
+  const ink=css('--ink'), ink2=css('--ink2'), grid=css('--grid'), bg=css('--canvas-bg');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const L=62,R=o.y2?60:18,T=o.title?30:14,B=46; const pw=w-L-R, ph=h-T-B;
+  let xs=[],ys=[],y2s=[]; o.series.forEach(s=>{ s.x.forEach((v,i)=>{ if(isFinite(v)&&isFinite(s.y[i])){ xs.push(v); (s.axis===2?y2s:ys).push(s.y[i]); } }); });
+  let xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs); if(!(xmax>xmin)){xmax=xmin+1;}
+  const lg=o.logx, lgy=o.logy;
+  const tx=v=>lg?Math.log10(v):v, ty=v=>lgy?Math.log10(v):v;
+  let ymin=o.ymin??Math.min(...ys), ymax=o.ymax??Math.max(...ys); if(!isFinite(ymin)){ymin=0;ymax=1;} if(ymax===ymin){ymax+=1;ymin-=lgy?0:1;}
+  if(o.ymax===undefined && o.ymin!==undefined && !lgy){ ymax+=(ymax-ymin)*0.08; }
+  if(o.ymin===undefined && !lgy){ const pad=(ymax-ymin)*0.08; ymax+=pad; if(ymin>0 && ymin<(ymax-ymin)*0.6) ymin=0; else ymin-=pad; }
+  let y2min=o.y2min??Math.min(...y2s), y2max=o.y2max??Math.max(...y2s); if(o.y2 && o.y2min===undefined){const p=(y2max-y2min)*0.08||1; y2max+=p; y2min=Math.max(0,y2min-p);}
+  const X=v=>L+(tx(v)-tx(xmin))/(tx(xmax)-tx(xmin))*pw, Y=v=>T+ph-(ty(v)-ty(ymin))/(ty(ymax)-ty(ymin))*ph, Y2=v=>T+ph-(v-y2min)/(y2max-y2min)*ph;
+  c.font='12px Barlow Condensed, Arial Narrow, sans-serif'; c.lineWidth=1;
+  // grid
+  const xt = o.xcats? o.xcats.map((_,i)=>i+1) : lg? logTicks(xmin,xmax) : niceTicks(xmin,xmax,o.xticks||7).t; const yt = lgy? logTicks(ymin,ymax): niceTicks(ymin,ymax,6).t;
+  c.strokeStyle=grid; c.fillStyle=ink2; c.textAlign='center'; c.textBaseline='top';
+  xt.forEach(v=>{ if(v<xmin-1e-12||v>xmax+1e-12) return; const x=X(v); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.fillText(o.xcats? o.xcats[v-1] : fmtTick(v), x, T+ph+5); });
+  c.textAlign='right'; c.textBaseline='middle';
+  yt.forEach(v=>{ if(v<ymin-1e-12||v>ymax+1e-12) return; const y=Y(v); c.beginPath(); c.moveTo(L,y); c.lineTo(L+pw,y); c.stroke(); c.fillText(fmtTick(v), L-6, y); });
+  if(o.y2){ c.textAlign='left'; niceTicks(y2min,y2max,6).t.forEach(v=>{ if(v<y2min||v>y2max) return; c.fillText(fmtTick(v), L+pw+6, Y2(v)); }); }
+  c.strokeStyle=ink; c.lineWidth=1.2; c.strokeRect(L,T,pw,ph);
+  c.fillStyle=ink; c.font='13px Barlow, Arial, sans-serif'; c.textAlign='center'; c.textBaseline='bottom'; c.fillText(o.xlabel||'', L+pw/2, h-4);
+  c.save(); c.translate(14, T+ph/2); c.rotate(-Math.PI/2); c.textBaseline='middle'; c.fillText(o.ylabel||'',0,0); c.restore();
+  if(o.y2){ c.save(); c.translate(w-10, T+ph/2); c.rotate(Math.PI/2); c.textBaseline='middle'; c.fillText(o.y2label||'',0,0); c.restore(); }
+  if(o.title){ c.font='600 14px Barlow, Arial, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(o.title, L, 8); }
+  // series
+  c.save(); c.beginPath(); c.rect(L,T,pw,ph); c.clip();
+  o.series.forEach(s=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const YY=s.axis===2?Y2:Y;
+    if(s.bars){ const n=s.x.length; const bw=s.bw? (X(s.x[0]+s.bw)-X(s.x[0])) : pw/n*0.8; c.fillStyle=col; c.globalAlpha=s.alpha??0.75;
+      s.x.forEach((v,i)=>{ const x=X(v)-bw/2+(s.shift||0)*bw; const y=YY(s.y[i]); c.fillRect(x+ (s.gap||1), y, bw*(s.wf||1)-2*(s.gap||1), YY(s.axis===2?y2min:Math.max(ymin,0))-y); }); c.globalAlpha=1; return; }
+    c.strokeStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+    if(!s.pointsOnly){ c.beginPath(); let st=false; s.x.forEach((v,i)=>{ if(!isFinite(v)||!isFinite(s.y[i])){st=false;return;} const x=X(v),y=YY(s.y[i]); st?c.lineTo(x,y):c.moveTo(x,y); st=true; }); c.stroke(); }
+    c.setLineDash([]);
+    if(s.markers){ c.fillStyle=css('--canvas-bg'); c.strokeStyle=col; c.lineWidth=1.8; s.x.forEach((v,i)=>{ if(!isFinite(s.y[i]))return; const x=X(v),y=YY(s.y[i]); c.beginPath();
+      if(s.markers==='sq') c.rect(x-3.5,y-3.5,7,7); else if(s.markers==='tri'){c.moveTo(x,y-4.5);c.lineTo(x+4.2,y+3.5);c.lineTo(x-4.2,y+3.5);c.closePath();} else c.arc(x,y,3.6,0,7); c.fill(); c.stroke(); }); }
+  });
+  (o.vlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(X(v.x),T); c.lineTo(X(v.x),T+ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(v.label||'', X(v.x)+4, T+4+(v.dy||0)); });
+  (o.hlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(L,Y(v.y)); c.lineTo(L+pw,Y(v.y)); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='right'; c.textBaseline='bottom'; c.fillText(v.label||'', L+pw-4, Y(v.y)-2); });
+  c.restore();
+  // legend
+  const named=o.series.filter(s=>s.name); if(named.length){ c.font='12.5px Barlow, Arial, sans-serif'; let lx=L+10, ly=o.legendBR? T+ph-named.length*18-4 : T+10; const lw=Math.max(...named.map(s=>c.measureText(s.name).width))+36;
+    let lxr = o.legendLeft? L+10 : L+pw-lw-8; c.fillStyle=css('--canvas-bg'); c.globalAlpha=.88; c.fillRect(lxr-6, ly-6, lw+4, named.length*18+8); c.globalAlpha=1;
+    named.forEach((s,i)=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const yy=ly+i*18+6; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+      if(s.bars){ c.globalAlpha=.75; c.fillRect(lxr,yy-5,22,10); c.globalAlpha=1;} else if(s.pointsOnly){ c.beginPath(); c.arc(lxr+11,yy,3.6,0,7); c.stroke(); } else { c.beginPath(); c.moveTo(lxr,yy); c.lineTo(lxr+22,yy); c.stroke(); }
+      c.setLineDash([]); c.fillStyle=ink; c.textAlign='left'; c.textBaseline='middle'; c.fillText(s.name, lxr+28, yy); }); }
+  cv._plot={o,X,Y,L,T,pw,ph};
+  return cv._plot;
+}
+function logTicks(a,b){ const t=[]; for(let e=Math.floor(Math.log10(a)); e<=Math.ceil(Math.log10(b)); e++){ [1,2,5].forEach(m=>{ const v=m*Math.pow(10,e); if(v>=a*0.999&&v<=b*1.001) t.push(v); }); } return t; }
+function fmtTick(v){ const a=Math.abs(v); if(a===0) return '0'; if(a>=1000) return String(Math.round(v)); if(a>=10) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=1) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=0.1) return fmt(v,2); return fmt(v,3); }
+
+/* ---- Tabele & copiere ---- */
+function buildTable(el, T){ // T={head:[..], rows:[[..]], foot:[..]?, left:[colIdx]}
+  const left=new Set(T.left||[0]);
+  let h='<table class="data"><thead><tr>'+T.head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  T.rows.forEach(r=>{ h+='<tr>'+r.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr>'; });
+  h+='</tbody>'; if(T.foot) h+='<tfoot><tr>'+T.foot.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr></tfoot>'; h+='</table>';
+  el.innerHTML=h; el._T=T; }
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,'$1').replace(/<sup>(.*?)<\/sup>/g,'^$1').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+function tableTSV(T){ const lines=[T.head.map(strip).join('\t')]; T.rows.forEach(r=>lines.push(r.map(strip).join('\t'))); if(T.foot) lines.push(T.foot.map(strip).join('\t')); return lines.join('\r\n'); }
+function tableHTMLWord(T, caption){
+  const th='border:1px solid #16324A;background:#16324A;color:#fff;padding:3pt 5pt;font:bold 9.5pt Calibri,Arial;text-align:center';
+  const td='border:1px solid #9AA8B4;padding:2pt 5pt;font:9.5pt Calibri,Arial;text-align:right'; const tdl=td.replace('right','left');
+  const left=new Set(T.left||[0]);
+  let h=(caption?`<p style="font:bold 10pt Calibri,Arial;color:#16324A;margin:6pt 0 3pt">${caption}</p>`:'')+'<table style="border-collapse:collapse;mso-table-lspace:0">';
+  h+='<tr>'+T.head.map(x=>`<th style="${th}">${x}</th>`).join('')+'</tr>';
+  T.rows.forEach((r,j)=>{ h+='<tr>'+r.map((x,i)=>`<td style="${left.has(i)?tdl:td};${j%2?'background:#F2F5F7':''}">${x}</td>`).join('')+'</tr>'; });
+  if(T.foot) h+='<tr>'+T.foot.map((x,i)=>`<td style="${left.has(i)?tdl:td};font-weight:bold;border-top:2px solid #16324A">${x}</td>`).join('')+'</tr>';
+  return h+'</table>'; }
+async function copyRich(html, text){
+  try{ if(navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  try{ const d=document.createElement('div'); d.contentEditable='true'; d.style.cssText='position:fixed;left:-9999px;top:0'; d.innerHTML=html; document.body.appendChild(d);
+    const r=document.createRange(); r.selectNodeContents(d); const s=getSelection(); s.removeAllRanges(); s.addRange(r); const ok=document.execCommand('copy'); s.removeAllRanges(); d.remove(); if(ok) return true; }catch(e){}
+  return false; }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) return true; }catch(e){}
+  return false; }
+function manualModal(title, content, isHTML){ const m=$('#modal'); $('#modalT').textContent=title;
+  const b=$('#modalB'); b.innerHTML=''; if(isHTML){ const d=document.createElement('div'); d.innerHTML=content; d.style.cssText='border:1px solid var(--line);padding:8px;background:#fff;color:#000;overflow:auto'; b.appendChild(d);
+    b.insertAdjacentHTML('afterbegin','<p class="small">Selectați conținutul de mai jos (Ctrl+A în chenar nu funcționează – trageți cu mouse-ul) și apăsați Ctrl+C.</p>'); }
+  else { const t=document.createElement('textarea'); t.value=content; b.appendChild(t); setTimeout(()=>{t.focus();t.select();},50); b.insertAdjacentHTML('afterbegin','<p class="small">Copierea automată a fost blocată de browser. Textul este selectat – apăsați Ctrl+C (Cmd+C).</p>'); }
+  m.classList.add('on'); }
+async function copyTableExcel(T){ const txt=tableTSV(T); if(await copyText(txt)) toast('Tabel copiat – lipiți în Excel (Ctrl+V)'); else manualModal('Copiere pentru Excel', txt); }
+async function copyTableWord(T, cap){ const html=tableHTMLWord(T,cap); if(await copyRich(html, tableTSV(T))) toast('Tabel copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere pentru Word', html, true); }
+async function copyCanvas(cv, name){
+  // exportă pe fundal alb pentru documente
+  const tmp=document.createElement('canvas'); tmp.width=cv.width; tmp.height=cv.height; const c=tmp.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,tmp.width,tmp.height); c.drawImage(cv,0,0);
+  try{ const blob=await new Promise(r=>tmp.toBlob(r,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Grafic copiat ca imagine – lipiți în Word/Excel'); return; }catch(e){}
+  const url=tmp.toDataURL('image/png'); manualModal('Copiere grafic: '+(name||''), `<img src="${url}" style="max-width:100%"><p style="font:12px Arial">Clic dreapta pe imagine → „Copiere imagine”, apoi lipiți în Word.</p>`, true); }
+function wireCopy(scope){ $$('[data-copy]',scope).forEach(b=>{ if(b._w) return; b._w=1; b.addEventListener('click',()=>{ const tgt=$(b.dataset.target); const mode=b.dataset.copy;
+  if(mode==='excel') copyTableExcel(tgt._T); else if(mode==='word') copyTableWord(tgt._T, b.dataset.cap); else if(mode==='img') copyCanvas(tgt, b.dataset.cap); }); }); }
+function copyButtons(target, cap, img){ return img? `<button class="btn sm alt" data-copy="img" data-target="${target}" data-cap="${cap||''}">Copiază graficul</button>`
+  : `<button class="btn sm alt" data-copy="excel" data-target="${target}">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="${target}" data-cap="${cap||''}">Copiază pentru Word</button>`; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#modal')?.classList.remove('on'); });
+</script><script>/* ======================================================================
+   Motor comun pentru lucrările de cunoaștere (L3–L5):
+   schemă interactivă, osciloscop, test de identificare, test grilă
+   ====================================================================== */
+const HOT='#E0561E';
+const FLOW={lp:{c:'--fuel',w:5,sp:22},hp:{c:HOT,w:5,sp:34},ret:{c:'--fuel-deep',w:3,sp:14,dash:[7,5]},air:{c:'#7FAEDB',w:13,sp:30},exh:{c:'#A08C78',w:13,sp:36},
+  sig:{c:'--violet',w:1.6,sp:30,dash:[4,4]},act:{c:'--teal',w:1.6,sp:30,dash:[4,4]},vap:{c:'--ok',w:3,sp:12,dash:[5,4]},urea:{c:'#2BA3C7',w:3.5,sp:16},cool:{c:'--blue',w:4,sp:12},oil:{c:'#8A6A2A',w:3,sp:10}};
+const FLOWNAME={lp:'combustibil joasă presiune',hp:'combustibil înaltă presiune',ret:'retur combustibil',air:'aer de admisie',exh:'gaze de evacuare',sig:'semnale senzori → ECU',act:'comenzi ECU → actuatori',vap:'vapori de benzină',urea:'soluție AdBlue',cool:'lichid de răcire'};
+const col=v=>v&&v.startsWith('--')?css(v):v;
+
+/* ---------- glife pentru componente ---------- */
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function body(c,b,fill,stroke,r=6){ rr(c,b.x,b.y,b.w,b.h,r); c.fillStyle=fill||css('--panel2'); c.fill(); c.lineWidth=1.4; c.strokeStyle=stroke||css('--steel-d'); c.stroke(); }
+const G={
+  box(c,b){ body(c,b); },
+  tank(c,b,s,cm){ body(c,b,css('--panel2'),css('--steel-d'),8); const lv=b.y+b.h*(1-(cm.level??0.62)); c.save(); rr(c,b.x+2,b.y+2,b.w-4,b.h-4,6); c.clip(); c.fillStyle=cm.fluid?col(cm.fluid):css('--fuel-soft'); c.beginPath(); c.moveTo(b.x,lv); for(let x=0;x<=b.w;x+=6) c.lineTo(b.x+x,lv+Math.sin(x/9+s.t*2)*1.6); c.lineTo(b.x+b.w,b.y+b.h); c.lineTo(b.x,b.y+b.h); c.fill(); c.restore(); },
+  pump(c,b,s,cm){ const r=Math.min(b.w,b.h)/2, x=b.x+b.w/2, y=b.y+b.h/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.4; c.stroke();
+    c.save(); c.translate(x,y); c.rotate(cm.on===false?0:s.t*6); c.strokeStyle=css('--fuel-deep'); for(let k=0;k<4;k++){ c.rotate(Math.PI/2); c.beginPath(); c.arc(r*0.35,0,r*0.35,Math.PI,Math.PI*1.8); c.stroke(); } c.restore();
+    c.fillStyle=css('--ink'); c.font=`600 ${Math.max(10,r*0.7)}px Barlow Condensed,sans-serif`; c.textAlign='center'; c.fillText(cm.sym||'M',x,y+r*0.25); },
+  filter(c,b){ body(c,b); c.strokeStyle=css('--steel'); c.lineWidth=1; for(let x=b.x+6;x<b.x+b.w-4;x+=5){ c.beginPath(); c.moveTo(x,b.y+5); c.lineTo(x+2.5,b.y+b.h/2); c.lineTo(x,b.y+b.h-5); c.stroke(); } },
+  rail(c,b,s,cm){ rr(c,b.x,b.y,b.w,b.h,b.h/2); c.fillStyle=cm.hp?'rgba(224,86,30,.25)':css('--fuel-soft'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke(); },
+  preg(c,b){ body(c,b,css('--panel2'),css('--steel-d'),b.w/2); const x=b.x+b.w/2; c.strokeStyle=css('--blue'); c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+4,b.y+b.h*0.55); c.lineTo(b.x+b.w-4,b.y+b.h*0.55); c.stroke(); c.strokeStyle=css('--steel-d'); c.beginPath(); for(let i=0;i<=6;i++) c.lineTo(x+(i%2?5:-5),b.y+4+i*(b.h*0.5-6)/6); c.stroke(); },
+  inj(c,b,s,cm){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); rr(c,b.x+b.w*0.2,b.y,b.w*0.6,b.h*0.78,3); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke();
+    c.fillStyle=cm.coil||css('--ink'); c.fillRect(b.x+b.w*0.2,b.y+b.h*0.18,b.w*0.6,b.h*0.18);
+    c.beginPath(); c.moveTo(x-b.w*0.15,b.y+b.h*0.78); c.lineTo(x+b.w*0.15,b.y+b.h*0.78); c.lineTo(x,b.y+b.h); c.fillStyle=css('--steel-d'); c.fill();
+    if(cm.spray){ const L=b.h*0.9*cm.spray; c.fillStyle=cm.sprayCol||css('--fuel'); c.globalAlpha=.55; const d=cm.dir||1; c.beginPath(); c.moveTo(x,b.y+b.h); c.lineTo(x-L*0.35,b.y+b.h+L*d); c.lineTo(x+L*0.35,b.y+b.h+L*d); c.fill(); c.globalAlpha=1; } },
+  ecu(c,b,s){ body(c,b,'#20303D','#0e1a24',5); c.fillStyle='#9fb3c4'; for(let i=0;i<8;i++) c.fillRect(b.x+8+i*(b.w-16)/8,b.y+b.h-5,3,5); const k=Math.floor(s.t*4)%3; c.fillStyle=['#4ade80','#20303D','#4ade80'][k]; c.beginPath(); c.arc(b.x+b.w-10,b.y+9,3,0,7); c.fill();
+    c.fillStyle='#fff'; c.font='600 13px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('ECU',b.x+b.w/2,b.y+b.h/2+4); },
+  sens(c,b){ const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--violet'); c.lineWidth=2; c.stroke(); c.fillStyle=css('--violet'); c.beginPath(); c.arc(x,y,r*0.35,0,7); c.fill(); },
+  maf(c,b,s){ body(c,b,'rgba(127,174,219,.25)',css('--steel-d'),4); c.strokeStyle=HOT; c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+b.w/2,b.y+3); c.lineTo(b.x+b.w/2,b.y+b.h-3); c.stroke(); },
+  throttle(c,b,s,cm){ body(c,b,'rgba(127,174,219,.25)',css('--steel-d'),4); const a=(cm.open??0.3)*Math.PI/2; const x=b.x+b.w/2,y=b.y+b.h/2,L=b.h*0.42; c.strokeStyle=css('--ink'); c.lineWidth=3; c.beginPath(); c.moveTo(x-Math.sin(a)*L*0.2-Math.cos(a)*0,y-Math.cos(a)*L); c.lineTo(x+Math.sin(a)*L*0.2,y+Math.cos(a)*L); c.stroke(); c.fillStyle=css('--ink'); c.beginPath(); c.arc(x,y,3,0,7); c.fill(); },
+  airf(c,b){ body(c,b); c.strokeStyle=css('--steel'); for(let y=b.y+5;y<b.y+b.h-3;y+=4){ c.beginPath(); c.moveTo(b.x+5,y); c.lineTo(b.x+b.w-5,y); c.stroke(); } },
+  engine(c,b,s,cm){ body(c,b,'#7d8c99','#56636e',6); const z=cm.z||4, cw=(b.w-16)/z; for(let i=0;i<z;i++){ const x=b.x+8+i*cw, ph=s.t*(cm.rpm||3)+[0,Math.PI,Math.PI,0,Math.PI/2,Math.PI*1.5][i%6]; const py=b.y+b.h*0.45+Math.cos(ph)*b.h*0.14;
+      c.fillStyle='#dfe5ea'; c.fillRect(x+3,b.y+8,cw-6,b.h*0.62); c.fillStyle='#8a99a6'; c.fillRect(x+4,py,cw-8,b.h*0.16); c.fillStyle=cm.flame&&Math.cos(ph)<-0.8?'rgba(224,86,30,.8)':'transparent'; c.fillRect(x+4,b.y+9,cw-8,py-b.y-10); }
+    c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(cm.txt||'MOTOR',b.x+b.w/2,b.y+b.h-8); },
+  cat(c,b,s,cm){ rr(c,b.x,b.y,b.w,b.h,b.h/2); c.fillStyle=css('--panel2'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.6; c.stroke(); c.save(); rr(c,b.x+b.h*0.35,b.y+4,b.w-b.h*0.7,b.h-8,3); c.clip();
+    c.fillStyle=cm.hot?`rgba(224,86,30,${0.15+0.5*cm.hot})`:css('--fuel-soft'); c.fillRect(b.x,b.y,b.w,b.h); c.strokeStyle=css('--steel'); c.lineWidth=0.8;
+    const pat=cm.pat||'honey'; if(pat==='check'){ for(let x=b.x;x<b.x+b.w;x+=7) for(let y=b.y;y<b.y+b.h;y+=7) if(((x-b.x)/7+(y-b.y)/7)%2<1){ c.fillStyle=cm.soot?`rgba(30,30,30,${0.2+0.7*cm.soot})`:'rgba(94,110,123,.35)'; c.fillRect(x,y,7,7);} }
+    else for(let x=b.x;x<b.x+b.w;x+=6){ c.beginPath(); c.moveTo(x,b.y); c.lineTo(x,b.y+b.h); c.stroke(); } c.restore(); },
+  muffler(c,b){ rr(c,b.x,b.y,b.w,b.h,b.h/2.4); c.fillStyle=css('--panel2'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.6; c.stroke(); for(let i=1;i<4;i++){ c.beginPath(); c.moveTo(b.x+i*b.w/4,b.y+4); c.lineTo(b.x+i*b.w/4,b.y+b.h-4); c.stroke(); } },
+  valve(c,b,s,cm){ body(c,b,css('--panel2'),css('--teal'),3); c.strokeStyle=css('--teal'); c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+4,b.y+4); c.lineTo(b.x+b.w-4,b.y+b.h-4); c.moveTo(b.x+b.w-4,b.y+4); c.lineTo(b.x+4,b.y+b.h-4); c.stroke(); if(cm.open!==undefined){ c.fillStyle=css('--teal'); c.fillRect(b.x,b.y+b.h+2,b.w*Math.max(0,Math.min(1,cm.open)),3); } },
+  canister(c,b){ body(c,b,css('--panel2'),css('--ok'),8); c.fillStyle='#39433f'; const r=mulberry32(5); for(let i=0;i<40;i++){ c.beginPath(); c.arc(b.x+4+r()*(b.w-8),b.y+6+r()*(b.h-12),1.3,0,7); c.fill(); } },
+  hpp(c,b,s){ body(c,b,css('--panel2'),css('--steel-d'),6); const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)*0.32; c.save(); c.translate(x,y); for(let k=0;k<3;k++){ c.rotate(Math.PI*2/3); const e=Math.sin(s.t*8+k*2.1)*r*0.15; c.fillStyle=css('--steel'); c.fillRect(-4,-r-e-8,8,12); } c.restore(); c.fillStyle=css('--steel-d'); c.beginPath(); c.arc(x+Math.cos(s.t*8)*3,y+Math.sin(s.t*8)*3,r*0.45,0,7); c.fill(); },
+  turbo(c,b,s){ const r=b.h*0.42; [[b.x+r+2,css('--steel')],[b.x+b.w-r-2,'#b9a08a']].forEach(([x,f],i)=>{ c.fillStyle=f; c.beginPath(); c.arc(x,b.y+b.h/2,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke(); c.save(); c.translate(x,b.y+b.h/2); c.rotate(s.t*12); c.strokeStyle='#fff'; for(let k=0;k<6;k++){ c.rotate(Math.PI/3); c.beginPath(); c.moveTo(0,0); c.lineTo(r*0.8,0); c.stroke(); } c.restore(); }); c.fillStyle=css('--steel-d'); c.fillRect(b.x+r+2,b.y+b.h/2-3,b.w-2*r-4,6); },
+  cooler(c,b){ body(c,b,'rgba(47,108,168,.15)',css('--blue'),4); c.strokeStyle=css('--blue'); c.lineWidth=1; for(let x=b.x+5;x<b.x+b.w-3;x+=4){ c.beginPath(); c.moveTo(x,b.y+3); c.lineTo(x,b.y+b.h-3); c.stroke(); } },
+  lambda(c,b){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); c.beginPath(); for(let k=0;k<6;k++){ const a=k*Math.PI/3; c.lineTo(x+Math.cos(a)*b.w*0.45,b.y+b.h*0.3+Math.sin(a)*b.w*0.3); } c.fill(); c.fillStyle=css('--violet'); c.fillRect(x-b.w*0.18,b.y+b.h*0.45,b.w*0.36,b.h*0.55); c.fillStyle=css('--steel-d'); c.fillRect(x-2,b.y,4,b.h*0.2); },
+  dosing(c,b,s,cm){ G.inj(c,b,s,{...cm,coil:'#2BA3C7',sprayCol:'#2BA3C7'}); },
+  mixer(c,b){ body(c,b,css('--panel2'),css('--steel-d'),4); c.strokeStyle=css('--steel-d'); for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(b.x+6+i*(b.w-12)/4,b.y+4); c.lineTo(b.x+6+(i+0.8)*(b.w-12)/4,b.y+b.h-4); c.stroke(); } },
+  battery(c,b){ body(c,b,'#2d3a45','#111',3); c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('+   −',b.x+b.w/2,b.y+b.h/2+4); },
+  inpump(c,b,s,cm){ body(c,b,'#8193a3','#5e6e7b',4); const z=cm.z||4; for(let i=0;i<z;i++){ const x=b.x+8+i*(b.w-16)/z; c.fillStyle='#dfe5ea'; c.fillRect(x+2,b.y-10+Math.sin(s.t*6+i*1.6)*2,(b.w-16)/z-4,14); } },
+  vepump(c,b,s){ body(c,b,'#8193a3','#5e6e7b',b.h/2); c.save(); c.translate(b.x+b.h/2,b.y+b.h/2); c.rotate(s.t*5); c.strokeStyle='#fff'; c.lineWidth=2; c.beginPath(); c.moveTo(-b.h*0.3,0); c.lineTo(b.h*0.3,0); c.stroke(); c.restore(); },
+  psens(c,b){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); c.fillRect(x-b.w*0.3,b.y+b.h*0.35,b.w*0.6,b.h*0.65); c.fillStyle=css('--violet'); rr(c,b.x,b.y,b.w,b.h*0.4,3); c.fill(); },
+  coil(c,b){ body(c,b,'#2d3a45','#111',3); c.strokeStyle='#e9a93a'; c.beginPath(); for(let i=0;i<=8;i++) c.lineTo(b.x+4+i*(b.w-8)/8,b.y+b.h/2+(i%2?-5:5)); c.stroke(); },
+  cam(c,b,s){ const x=b.x+b.w/2,y=b.y+b.h/2,r=b.h*0.35; c.save(); c.translate(x,y); c.rotate(s.t*4); c.fillStyle=css('--steel'); c.beginPath(); c.ellipse(r*0.2,0,r*1.2,r,0,0,7); c.fill(); c.restore(); },
+};
+/* ---------- schema interactivă ---------- */
+const ckey=cm=>cm.grp||cm.id;
+function Schem(cv,spec,opt={}){
+  const S={cv,spec,sel:null,hover:null,t:0,quiz:null,flash:null,run:false,last:0,sc:1,active:()=>true,onSel:opt.onSel||(()=>{}),onQuiz:opt.onQuiz||(()=>{})};
+  S.setSpec=sp=>{ S.spec=sp; S.sel=null; S.draw(); };
+  S.draw=()=>{ if(!cv.clientWidth) return; const sp=S.spec, Wv=sp.W||1000, Hv=sp.H||560; const {c,w,h}=fitCanvas(cv,Math.round(cv.clientWidth*Hv/Wv)); S.sc=w/Wv;
+    c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); c.save(); c.scale(S.sc,S.sc);
+    // zone de fond
+    (sp.zones||[]).forEach(z=>{ c.fillStyle=col(z.c)||'rgba(0,0,0,.03)'; c.globalAlpha=z.a??0.07; rr(c,z.x,z.y,z.w,z.h,10); c.fill(); c.globalAlpha=1; c.fillStyle=css('--ink2'); c.font='600 13px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText(z.t,z.x+10,z.y+18); });
+    // legături
+    (sp.links||[]).forEach(L=>{ const F=FLOW[L.type]; const on=L.on?L.on():true; const cc=col(F.c); c.lineJoin='round'; c.lineCap='round';
+      c.beginPath(); L.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+      if(F.w>8){ c.strokeStyle=css('--steel-d'); c.lineWidth=F.w+2.5; c.stroke(); c.strokeStyle=cc; c.globalAlpha=on?0.45:0.2; c.lineWidth=F.w; c.stroke(); c.globalAlpha=1;
+        if(on){ c.setLineDash([3,F.w*1.4]); c.lineDashOffset=-S.t*F.sp*(L.speed||1); c.strokeStyle=L.dot?col(L.dot):'#fff'; c.lineWidth=4; c.stroke(); c.setLineDash([]); } }
+      else { c.strokeStyle=cc; c.lineWidth=F.w; c.globalAlpha=on?0.35:0.18; c.setLineDash(F.dash||[]); c.stroke(); c.globalAlpha=1;
+        if(on){ c.setLineDash(F.dash||[F.w*2,F.w*2.2]); c.lineDashOffset=-S.t*F.sp*(L.speed||1); c.lineWidth=F.w; c.stroke(); } c.setLineDash([]); } });
+    // componente
+    sp.comps.forEach(cm=>{ const b={x:cm.x,y:cm.y,w:cm.w,h:cm.h}; const st=cm.st?cm.st():{}; (G[cm.type]||G.box)(c,b,S,{...cm,...st});
+      const K=ckey(cm), isSel=S.sel===K, isHov=S.hover===K, fl=S.flash&&S.flash.id===K?S.flash:null;
+      if(isSel||isHov||fl){ c.strokeStyle=fl?(fl.ok?css('--ok'):css('--alert')):isSel?css('--fuel'):css('--blue'); c.lineWidth=isSel||fl?3:1.6; rr(c,b.x-5,b.y-5,b.w+10,b.h+10,8); c.stroke(); }
+      const hideLab=S.quiz&&!S.quiz.done; if(cm.lab&&!hideLab){ c.fillStyle=css('--ink'); c.font='600 12.5px Barlow Condensed,sans-serif'; const pos=cm.lp||'b'; c.textAlign=pos==='r'?'left':pos==='l'?'right':'center';
+        const tx=pos==='r'?b.x+b.w+6:pos==='l'?b.x-6:b.x+b.w/2, ty=pos==='a'?b.y-7:pos==='b'?b.y+b.h+14:b.y+b.h/2+4; cm.lab.split('|').forEach((t,i)=>c.fillText(t,tx,ty+i*13)); }
+      if(S.quiz&&!S.quiz.done&&S.quiz.found.includes(K)&&!cm.grpSub){ c.fillStyle=css('--ok'); c.beginPath(); c.arc(b.x+b.w,b.y,7,0,7); c.fill(); c.fillStyle='#fff'; c.font='bold 10px Arial'; c.textAlign='center'; c.fillText('✓',b.x+b.w,b.y+3.5); } });
+    (sp.texts||[]).forEach(t=>{ c.fillStyle=col(t.c)||css('--ink2'); c.font=(t.f||'12px')+' Barlow Condensed,sans-serif'; c.textAlign=t.al||'left'; c.fillText(t.t,t.x,t.y); });
+    if(sp.overlay) sp.overlay(c,S);
+    c.restore();
+    if(S.quiz&&!S.quiz.done){ c.fillStyle='rgba(22,50,74,.92)'; c.fillRect(0,0,w,34); c.fillStyle='#fff'; c.font='600 15px Barlow,sans-serif'; c.textAlign='left'; c.fillText(`Indicați: ${S.quiz.cur.name}`,12,22); c.textAlign='right'; c.fillText(`${S.quiz.i+1} / ${S.quiz.list.length}   corecte: ${S.quiz.ok}`,w-12,22); } };
+  S.hit=(e)=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)/S.sc, y=(e.clientY-r.top)/S.sc; let best=null;
+    S.spec.comps.forEach(cm=>{ if(x>=cm.x-6&&x<=cm.x+cm.w+6&&y>=cm.y-6&&y<=cm.y+cm.h+6){ const a=cm.w*cm.h; if(!best||a<best.a) best={id:ckey(cm),a}; } }); return best?best.id:null; };
+  cv.addEventListener('mousemove',e=>{ const id=S.hit(e); if(id!==S.hover){ S.hover=id; cv.style.cursor=id?'pointer':'default'; if(!S.run) S.draw(); } });
+  cv.addEventListener('click',e=>{ const id=S.hit(e); if(!id) return; if(S.quiz&&!S.quiz.done){ S.answer(id); return; } S.sel=id; S.onSel(S.spec.comps.find(c=>ckey(c)===id)); S.draw(); });
+  S.select=id=>{ S.sel=id; S.onSel(S.spec.comps.find(c=>ckey(c)===id)); S.draw(); };
+  S.startQuiz=()=>{ const r=mulberry32(Date.now()%100000); const seen=new Set(); const list=S.spec.comps.filter(c=>c.quiz!==false&&!c.grpSub&&!seen.has(ckey(c))&&seen.add(ckey(c))).map(c=>({c,k:r()})).sort((a,b)=>a.k-b.k).map(o=>o.c);
+    S.quiz={list,i:0,cur:list[0],ok:0,tries:0,found:[],log:[],done:false,first:true}; S.sel=null; S.draw(); S.onQuiz(S.quiz); };
+  S.answer=id=>{ const q=S.quiz; const good=id===ckey(q.cur); S.flash={id,ok:good}; setTimeout(()=>{ S.flash=null; if(!S.run) S.draw(); },600);
+    if(good){ if(q.first) q.ok++; q.log.push({name:q.cur.name,res:q.first?'corect':'corect după greșeală'}); q.found.push(ckey(q.cur)); q.i++; q.first=true; if(q.i>=q.list.length){ q.done=true; } else q.cur=q.list[q.i]; }
+    else { q.first=false; toast('Nu este '+q.cur.name+' — mai încercați'); }
+    S.draw(); S.onQuiz(q); };
+  S.skip=()=>{ const q=S.quiz; if(!q||q.done) return; q.log.push({name:q.cur.name,res:'sărit'}); S.select(ckey(q.cur)); q.i++; q.first=true; if(q.i>=q.list.length) q.done=true; else q.cur=q.list[q.i]; S.draw(); S.onQuiz(q); };
+  S.loop=ts=>{ if(!S.run) return; const dt=S.last?Math.min(0.05,(ts-S.last)/1000):0; S.last=ts; S.t+=dt; if(S.active()) S.draw(); requestAnimationFrame(S.loop); };
+  S.start=()=>{ if(S.run) return; S.run=true; S.last=0; requestAnimationFrame(S.loop); }; S.stop=()=>{ S.run=false; };
+  return S;
+}
+function infoHTML(cm){ if(!cm) return '<p class="small">Selectați o componentă pe schemă (clic) sau din lista de mai jos.</p>'; const i=cm.info||{};
+  const sec=(t,v)=>v?`<div class="info-s"><div class="info-t">${t}</div><div>${v}</div></div>`:'';
+  return `<h4 class="info-h">${cm.name}</h4>${cm.cat?`<span class="tag">${cm.cat}</span>`:''}${sec('Rol funcțional',i.rol)}${sec('Construcție',i.con)}${sec('Parametri tipici',i.par)}${sec('Defecte și simptome',i.def)}${sec('Verificare',i.ver)}`; }
+function legendHTML(types){ return types.map(t=>{ const F=FLOW[t]; return `<span><i style="display:inline-block;width:22px;height:${Math.min(8,F.w)}px;background:${col(F.c)};vertical-align:middle;margin-right:5px;border-radius:2px;${F.dash?'opacity:.8':''}"></i>${FLOWNAME[t]}</span>`; }).join(''); }
+function compTable(comps){ comps=comps.filter(c=>!c.grpSub); return {head:['Nr.','Componenta','Categoria','Rol funcțional'],rows:comps.map((c,i)=>[i+1,c.name,c.cat||'',(c.info&&c.info.rol||'').replace(/<[^>]+>/g,'')]),left:[1,2,3]}; }
+
+/* ---------- osciloscop ---------- */
+function scope(cv,o){ if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,o.height||300); c.fillStyle='#0c1418'; c.fillRect(0,0,w,h);
+  const L=46,T=10,R=10,B=26, pw=w-L-R, ph=h-T-B; c.strokeStyle='rgba(120,180,160,.18)'; c.lineWidth=1;
+  for(let i=0;i<=10;i++){ c.beginPath(); c.moveTo(L+i*pw/10,T); c.lineTo(L+i*pw/10,T+ph); c.stroke(); } for(let i=0;i<=8;i++){ c.beginPath(); c.moveTo(L,T+i*ph/8); c.lineTo(L+pw,T+i*ph/8); c.stroke(); }
+  const n=o.traces.length, bh=ph/n, cols=['#F2D34B','#4FE3C1','#FF6FB5','#7FB6FF','#FF9A3C'];
+  o.traces.forEach((tr,k)=>{ const y0=T+k*bh; const Y=v=>y0+bh-6-(v-tr.min)/(tr.max-tr.min)*(bh-14); c.strokeStyle=tr.col||cols[k%5]; c.lineWidth=1.6; c.beginPath();
+    const N=Math.max(400,Math.round(pw*1.5)); for(let i=0;i<=N;i++){ const t=o.t0+(o.t1-o.t0)*i/N; const v=tr.f(t); const x=L+pw*i/N, y=Y(Math.max(tr.min-0.1*(tr.max-tr.min),Math.min(tr.max+0.1*(tr.max-tr.min),v))); i?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
+    c.fillStyle=tr.col||cols[k%5]; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText(`CH${k+1}  ${tr.name}`,L+6,y0+13); c.textAlign='right'; c.fillStyle='rgba(220,235,230,.7)'; c.font='11px Barlow Condensed,sans-serif';
+    c.fillText(fmt(tr.max,tr.dec??1)+' '+tr.unit,L-4,y0+12); c.fillText(fmt(tr.min,tr.dec??1),L-4,y0+bh-4); if(k) { c.strokeStyle='rgba(120,180,160,.4)'; c.beginPath(); c.moveTo(L,y0); c.lineTo(L+pw,y0); c.stroke(); } });
+  (o.marks||[]).forEach(m=>{ const x=L+(m.t-o.t0)/(o.t1-o.t0)*pw; c.strokeStyle='rgba(255,255,255,.35)'; c.setLineDash([3,3]); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.setLineDash([]); c.fillStyle='rgba(255,255,255,.75)'; c.font='11px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(m.l,x,T+ph+12); });
+  c.fillStyle='rgba(220,235,230,.8)'; c.font='11.5px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(o.xlabel||'',L+pw/2,h-4);
+  if(o.cursor!==undefined){ const x=L+(o.cursor-o.t0)/(o.t1-o.t0)*pw; c.strokeStyle='#fff'; c.lineWidth=1; c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); } }
+
+/* ---------- test grilă ---------- */
+function quizRender(el,Q,onDone){ el.innerHTML=Q.map((q,i)=>`<div class="mcq" data-i="${i}"><p><b>${i+1}.</b> ${q.q}</p>${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}<div class="expl"></div></div>`).join('')+'<div class="row"><button class="btn fuel" id="mcqCheck">Verifică răspunsurile</button><span id="mcqScore" class="tag"></span></div>';
+  $('#mcqCheck',el).onclick=()=>{ let ok=0; Q.forEach((q,i)=>{ const d=$(`.mcq[data-i="${i}"]`,el), s=$(`input[name=q${i}]:checked`,el); const g=s&&+s.value===q.a; if(g) ok++;
+    d.classList.remove('good','badq'); d.classList.add(g?'good':'badq'); $('.expl',d).innerHTML=(g?'<b>Corect.</b> ':'<b>'+(s?'Greșit':'Fără răspuns')+'.</b> Răspuns corect: '+q.o[q.a]+'. ')+q.e; });
+    $('#mcqScore',el).textContent=`Scor: ${ok} / ${Q.length} (nota ${fmt(1+9*ok/Q.length,1)})`; onDone&&onDone(ok,Q.length); }; }
+</script><script>/* ===== Lucrarea 5 — Sisteme de depoluare ===== */
+const INFO={
+ airf:{name:'Filtrul de aer',cat:'aer',rol:'Reține praful din aerul aspirat.',con:'Element pliat.',par:'—',def:'Colmatare.',ver:'Inspecție.'},
+ maf:{name:'Debitmetrul de aer',cat:'senzor',rol:'Măsoară masa de aer; la MAC servește și la reglarea în buclă închisă a ratei EGR (aerul proaspăt scade când crește EGR).',con:'Film cald.',par:'—',def:'Contaminare: rată EGR greșită.',ver:'Valoarea măsurată față de cea teoretică.'},
+ thr:{name:'Clapeta de admisie',cat:'aer / actuator',rol:'La MAS reglează sarcina; la MAC se închide parțial pentru a crea depresiunea necesară EGR și la regenerarea DPF.',con:'Clapetă cu motor electric și senzor de poziție.',par:'—',def:'Blocare, depuneri.',ver:'Tester: poziția cerută/reală.'},
+ plen:{name:'Colectorul de admisie',cat:'aer',rol:'Distribuie aerul și gazele recirculate la cilindri.',con:'Plastic sau aluminiu.',par:'—',def:'Depuneri de funingine (EGR la MAC).',ver:'—'},
+ eng:{name:'Motorul',cat:'motor',rol:'Sursa poluanților: CO, HC, NO<sub>x</sub>, particule.',con:'—',par:'—',def:'Rateuri, consum de ulei (otrăvesc catalizatorul).',ver:'—'},
+ egr:{name:'Supapa de recirculare a gazelor arse (EGR)',cat:'depoluare / actuator',rol:'Readuce în admisie o parte din gazele arse (inerte), scăzând temperatura maximă de ardere și deci formarea NO<sub>x</sub>.',con:'Supapă cu taler sau clapetă acționată electric (motor de c.c. cu senzor de poziție) sau pneumatic.',par:'Rată EGR 0–15 % la MAS, 0–50 % la MAC, la sarcini parțiale',def:'Blocată deschisă: fum negru, ralanti instabil; blocată închisă: NO<sub>x</sub> mare (P0400).',ver:'Poziția cerută/reală, variația debitului de aer la comandă, depunerile de calamină.'},
+ egrc:{name:'Răcitorul EGR',cat:'depoluare',rol:'Răcește gazele recirculate pentru a le crește densitatea și a reduce suplimentar temperatura de ardere.',con:'Schimbător de căldură gaze–lichid de răcire, cu clapetă de ocolire pentru faza de încălzire.',par:'Răcire de la 500–600 °C la 150–200 °C',def:'Fisuri (pierdere de lichid de răcire, fum alb), colmatare.',ver:'Test de presiune a sistemului de răcire.'},
+ sap:{name:'Pompa de aer secundar',cat:'depoluare',rol:'Suflă aer în galeria de evacuare după pornirea la rece, pentru oxidarea CO și HC și încălzirea rapidă a catalizatorului.',con:'Suflantă electrică radială.',par:'Funcționează 30–120 s după pornire',def:'Pompă blocată (cod P0410), zgomot.',ver:'Comanda cu testerul, curentul absorbit, debitul.'},
+ sav:{name:'Supapa de aer secundar',cat:'depoluare',rol:'Permite trecerea aerului numai în sensul spre evacuare și închide circuitul când pompa este oprită.',con:'Supapă combinată: supapă de sens și supapă comandată pneumatic sau electric.',par:'—',def:'Neetanșeitate: gaze fierbinți distrug pompa.',ver:'Etanșeitate cu pompa de vid.'},
+ lam1:{name:'Sonda lambda de bandă largă (amonte)',cat:'senzor',rol:'Măsoară continuu λ pentru reglarea amestecului; la MAC este folosită și pentru reglarea EGR și pentru diagnoză.',con:'Celulă de pompare și celulă Nernst din ZrO<sub>2</sub>, încălzitor integrat; semnal de curent de pompare.',par:'λ = 0,65 … aer curat; temperatura de lucru ≈ 780 °C',def:'Îmbătrânire, încălzitor defect.',ver:'Tester: valoarea λ și curentul de pompare; răspunsul la îmbogățire/sărăcire.'},
+ lam2:{name:'Sonda lambda aval',cat:'senzor',rol:'Monitorizează capacitatea catalizatorului de a stoca oxigen (OBD) și corectează fin bucla principală.',con:'Sondă cu salt încălzită.',par:'0,1–0,9 V',def:'Semnal oscilant ca al sondei amonte: catalizator ineficient.',ver:'Osciloscop, comparație amonte/aval.'},
+ twc:{name:'Catalizatorul cu trei căi',cat:'depoluare',rol:'Oxidează CO și HC și reduce NO<sub>x</sub> simultan, cu eficiență de peste 95 % la λ = 1 și temperatură de lucru.',con:'Monolit ceramic sau metalic cu 400–900 celule/in², strat suport Al<sub>2</sub>O<sub>3</sub> + CeO<sub>2</sub>, metale prețioase Pd, Rh, Pt; montat aproape de motor pentru amorsare rapidă.',par:'T<sub>50</sub> = 200–300 °C; lucru 400–900 °C; se deteriorează peste 1000 °C',def:'Topire (rateuri, amestec bogat), otrăvire (Pb, S, P din ulei), pierderea capacității de stocare O<sub>2</sub> (P0420).',ver:'Analiza gazelor, comparația sondelor lambda, contrapresiunea.'},
+ muf:{name:'Amortizorul de zgomot',cat:'evacuare',rol:'Reduce zgomotul gazelor de evacuare.',con:'Camere de reflexie și absorbție.',par:'—',def:'Perforare, desprindere.',ver:'Inspecție vizuală.'},
+ tank:{name:'Rezervorul de benzină',cat:'combustibil',rol:'Sursa vaporilor de benzină tratați de sistemul EVAP.',con:'—',par:'—',def:'Neetanșeitate.',ver:'Test EVAP.'},
+ can:{name:'Canistra cu cărbune activ',cat:'depoluare',rol:'Adsoarbe vaporii de benzină din rezervor (emisii evaporative).',con:'Cărbune activ granulat.',par:'—',def:'Saturare.',ver:'Test EVAP.'},
+ pv:{name:'Supapa de purjare a canistrei',cat:'depoluare / actuator',rol:'Dozează vaporii desorbiți din canistră spre admisie, unde sunt arși.',con:'Electrovalvă PWM.',par:'—',def:'Blocată deschisă.',ver:'Etanșeitate, comandă.'},
+ ecu:{name:'Unitatea electronică de comandă',cat:'comandă',rol:'Reglează amestecul, EGR, dozarea AdBlue și regenerarea filtrului de particule; monitorizează eficiența componentelor (OBD) și aprinde martorul de avarie.',con:'—',par:'—',def:'—',ver:'Coduri OBD, parametri în timp real, teste de componente (ex. regenerare forțată DPF).'},
+ doc:{name:'Catalizatorul de oxidare Diesel (DOC)',cat:'depoluare',rol:'Oxidează CO și HC (și fracțiunea organică a particulelor); oxidează NO la NO<sub>2</sub> pentru regenerarea pasivă și pentru SCR; arde combustibilul post-injectat la regenerarea activă a DPF.',con:'Monolit cu Pt și Pd; fără componentă de reducere.',par:'Amorsare CO la ≈ 180–200 °C',def:'Otrăvire cu sulf, colmatare cu funingine la frontul de intrare.',ver:'Temperatura după DOC în timpul regenerării (creștere de 150–300 °C).'},
+ dpf:{name:'Filtrul de particule (DPF)',cat:'depoluare',rol:'Reține particulele: gazele trec prin pereții poroși ai canalelor închise alternativ.',con:'Monolit din carbură de siliciu sau cordierit, canale de intrare și ieșire astupate alternativ; adesea acoperit catalitic (cDPF).',par:'Eficiență > 99 % în număr de particule; regenerare la ≈ 600 °C',def:'Încărcare excesivă (drumuri scurte), fisurare la regenerare necontrolată, încărcare cu cenușă.',ver:'Presiunea diferențială, cantitatea de funingine calculată, opacitatea la ITP.'},
+ dps:{name:'Senzorul de presiune diferențială DPF',cat:'senzor',rol:'Măsoară căderea de presiune pe filtru, din care ECU estimează încărcarea cu funingine și detectează filtrul fisurat sau lipsă.',con:'Senzor piezorezistiv cu două racorduri (înainte și după filtru).',par:'0–100 kPa diferențial',def:'Furtun desprins sau înfundat: regenerări false sau lipsă de regenerare.',ver:'Valoarea la ralanti (câțiva mbar) și la accelerare.'},
+ tdoc:{name:'Senzorii de temperatură a gazelor',cat:'senzor',rol:'Controlează temperatura la intrarea în DOC, DPF și SCR, pentru regenerare și pentru dozarea AdBlue.',con:'Termorezistențe din platină (PT200).',par:'−40…1000 °C',def:'Semnal eronat: regenerare împiedicată.',ver:'Comparația valorilor senzorilor cu motorul rece.'},
+ nox1:{name:'Senzorul de NO<sub>x</sub> amonte de SCR',cat:'senzor',rol:'Măsoară NO<sub>x</sub> la intrarea în SCR pentru calculul dozei de AdBlue.',con:'Senzor ZrO<sub>2</sub> cu două camere de pompare și unitate electronică proprie, comunicare CAN.',par:'0–1500 ppm; măsoară și λ',def:'Semnal eronat: dozare greșită.',ver:'Tester: valoarea NO<sub>x</sub>, testul de plauzibilitate.'},
+ nox2:{name:'Senzorul de NO<sub>x</sub> aval de SCR',cat:'senzor',rol:'Verifică eficiența SCR (OBD) și corectează dozarea; este sensibil și la amoniac.',con:'Identic cu senzorul amonte.',par:'—',def:'—',ver:'Tester.'},
+ dos:{name:'Injectorul de AdBlue (dozatorul)',cat:'depoluare / actuator',rol:'Pulverizează soluția de uree în gazele de evacuare, înaintea mixerului.',con:'Injector electromagnetic răcit, rezistent la coroziune.',par:'4–10 bar; debit mg/s comandat PWM',def:'Cristalizarea ureei (depuneri albe), înfundare.',ver:'Testul de dozare cu testerul (cantitate colectată într-un recipient gradat).'},
+ mix:{name:'Mixerul',cat:'depoluare',rol:'Amestecă soluția pulverizată cu gazele și favorizează evaporarea și descompunerea ureei în NH<sub>3</sub>.',con:'Palete sau plăci perforate în tubulatură.',par:'—',def:'Depuneri de uree.',ver:'Inspecție endoscopică.'},
+ scr:{name:'Catalizatorul SCR cu catalizator de amoniac (ASC)',cat:'depoluare',rol:'Reduce NO<sub>x</sub> la N<sub>2</sub> cu amoniac; catalizatorul ASC de la ieșire oxidează amoniacul în exces.',con:'Zeolit cu Cu sau Fe (sau vanadiu la vehicule grele); stochează amoniac.',par:'Eficiență > 90 % peste ≈ 250 °C',def:'Îmbătrânire termică, otrăvire, depuneri.',ver:'Eficiența calculată din senzorii NO<sub>x</sub>.'},
+ adt:{name:'Rezervorul de AdBlue',cat:'depoluare',rol:'Stochează soluția de uree 32,5 % (ISO 22241).',con:'Rezervor din plastic cu senzor de nivel, de temperatură și de calitate, încălzitor (soluția îngheață la −11 °C).',par:'10–30 L la autoturisme; consum ≈ 1–5 % din consumul de motorină',def:'Soluție necorespunzătoare, încălzitor defect; la golire motorul nu mai pornește după un număr de pornire-oprire.',ver:'Refractometrul pentru concentrație, testul senzorului de calitate.'},
+ adp:{name:'Modulul de alimentare cu AdBlue',cat:'depoluare',rol:'Pompează soluția la injectorul dozator și o aspiră înapoi la oprire, pentru a nu îngheța în conducte.',con:'Pompă cu membrană, supapă de inversare, filtru, senzor de presiune.',par:'≈ 5 bar',def:'Presiune insuficientă, pompă blocată de cristale.',ver:'Presiunea și testul de debit.'},
+};
+const X4=[124,195,266,337];
+function mkSpec(v){ const load=()=>+$('#sreg').value; const C=[],L=[], add=(id,type,x,y,w,h,lab,lp,o={})=>{ if(lp&&typeof lp==='object'){ o=lp; lp=undefined; } const I=INFO[id]||{}; C.push({id,type,x,y,w,h,lab,lp:lp||'b',name:I.name,cat:I.cat,info:I,...o}); };
+  const f=(t,pts,o={})=>L.push({type:t,pts,...o}), sp=()=>0.6+1.2*load(), sig=p=>f('sig',p), act=p=>f('act',p);
+  add('airf','airf',20,60,70,50,'Filtru aer'); f('air',[[90,85],[120,85]],{speed:sp()}); add('maf','maf',120,72,56,26,'Debitmetru'); f('air',[[176,85],[210,85]],{speed:sp()}); add('thr','throttle',210,64,44,42,'Clapetă','b',{st:()=>({open:0.2+0.7*load()})});
+  f('air',[[254,85],[300,85],[300,190]],{speed:sp()}); add('plen','box',70,190,320,40,'Colector de admisie','c'); X4.forEach(x=>f('air',[[x,230],[x,262]],{speed:sp()}));
+  add('eng','engine',70,262,320,150,'','b',{st:()=>({rpm:3+8*load(),flame:true,txt:v==='mas'?'MOTOR MAS':'MOTOR DIESEL'})});
+  f('exh',[[390,340],[470,340]],{speed:sp()});
+  // EGR
+  if(v==='mac'){ f('exh',[[420,340],[420,300]],{speed:0.5}); add('egrc','cooler',400,250,40,50,'Răcitor|EGR','r'); f('exh',[[420,250],[420,226]],{speed:0.5}); add('egr','valve',410,204,22,22,'EGR','r',{st:()=>({open:0.6*(1-load())})}); f('exh',[[410,215],[390,215]],{speed:0.5}); }
+  else { f('exh',[[412,340],[412,226]],{speed:0.4}); add('egr','valve',401,204,22,22,'EGR','l',{st:()=>({open:0.3*(1-load())})}); f('exh',[[401,215],[390,215]],{speed:0.4}); }
+  if(v==='mas'){ add('lam1','lambda',446,300,16,36,'λ amonte','r'); add('twc','cat',470,320,110,40,'Catalizator 3 căi','b',{st:()=>({hot:0.3+0.5*load()})}); f('exh',[[580,340],[800,340]],{speed:sp()}); add('lam2','lambda',610,300,16,36,'λ aval','a');
+    add('muf','muffler',800,320,130,40,'Amortizor','b'); f('exh',[[930,340],[990,340]],{speed:sp()});
+    add('sap','pump',470,190,40,40,'Pompă aer|secundar','r',{sym:'A'}); f('air',[[490,230],[490,262]],{speed:0.4}); add('sav','valve',480,262,20,20,'Supapă','r'); f('air',[[490,282],[490,296],[432,296],[432,332]],{speed:0.4});
+    add('tank','tank',30,450,140,70,'Rezervor','b'); add('can','canister',210,456,60,40,'Canistră','b'); f('vap',[[100,450],[100,436],[240,436],[240,456]]); f('vap',[[270,476],[450,476],[450,160],[340,160],[340,190]]); add('pv','valve',441,420,18,18,'Purjare','r');
+    add('ecu','ecu',860,40,110,64,'','b'); sig([[454,300],[454,160],[880,160],[880,104]]); sig([[618,300],[618,170],[890,170],[890,104]]); sig([[148,72],[148,20],[900,20],[900,40]]);
+    act([[920,104],[920,210],[510,210]]); act([[930,104],[930,215],[423,215]]); act([[940,104],[940,429],[459,429]]); act([[950,104],[950,272],[500,272]]); }
+  else { add('lam1','lambda',440,300,16,36,'λ','a'); add('tdoc','sens',462,316,14,14,'','a'); add('doc','cat',480,320,90,40,'DOC','b',{st:()=>({hot:0.2+0.6*load()})}); f('exh',[[570,340],[590,340]],{speed:sp()});
+    add('dpf','cat',590,320,110,40,'DPF','b',{st:()=>({pat:'check',soot:(+$('#soot')?.value||3)/12})}); add('dps','psens',634,276,22,26,'Δp','l'); f('sig',[[600,320],[600,290],[634,290]]); f('sig',[[690,320],[690,290],[656,290]]);
+    f('exh',[[700,340],[800,340]],{speed:sp()}); add('nox1','sens',712,318,14,14,'NOx','a'); add('dos','dosing',736,284,16,34,'Dozator','a',{st:()=>({spray:Math.sin(SCH.t*8)>0?0.8:0})}); add('mix','mixer',760,322,36,36,'','b');
+    add('scr','cat',800,320,130,40,'SCR + ASC','b',{st:()=>({hot:0.2+0.5*load()})}); f('exh',[[930,340],[990,340]],{speed:sp()}); add('nox2','sens',948,318,14,14,'NOx','a');
+    add('adt','tank',700,440,120,74,'Rezervor AdBlue','b',{fluid:'rgba(43,163,199,.35)',level:0.55}); add('adp','pump',840,456,40,40,'Modul|pompă','r',{sym:'U'}); f('urea',[[820,476],[840,476]]); f('urea',[[860,456],[860,420],[744,420],[744,318]]);
+    add('ecu','ecu',860,40,110,64,'','b'); sig([[448,300],[448,160],[880,160],[880,104]]); sig([[645,276],[645,170],[890,170],[890,104]]); sig([[719,318],[719,180],[900,180],[900,104]]); sig([[955,318],[955,190],[910,190],[910,104]]); sig([[148,72],[148,20],[900,20],[900,40]]); sig([[469,316],[469,165],[885,165]]);
+    act([[930,104],[930,215],[432,215]]); act([[960,104],[960,270],[752,270],[752,284]]); act([[970,104],[970,530],[860,530],[860,496]]); }
+  return {W:1000,H:560,comps:C,links:L,texts:[{t:v==='mas'?'Depoluarea MAS: catalizator cu trei căi, EGR, aer secundar, EVAP':'Depoluarea MAC: EGR, DOC, DPF, SCR cu AdBlue',x:20,y:550,f:'600 14px',c:'--ink'}]};
+}
+const EURO={head:['Norma','Anul (omologare)','Benzină CO','Benzină HC','Benzină NO<sub>x</sub>','Diesel CO','Diesel HC + NO<sub>x</sub>','Diesel NO<sub>x</sub>','Diesel PM'],rows:[
+ ['Euro 3','2000','2,30','0,20','0,15','0,64','0,56','0,50','0,050'],['Euro 4','2005','1,00','0,10','0,08','0,50','0,30','0,25','0,025'],['Euro 5','2009','1,00','0,10','0,06','0,50','0,23','0,18','0,005'],['Euro 6','2014','1,00','0,10','0,06','0,50','0,17','0,08','0,0045']],left:[0]};
+/* ---------- modelul de emisii ---------- */
+const sig=(x)=>1/(1+Math.exp(-x));
+function rdF(){ const g=id=>+$('#'+id).value; const eng=$('#segEng button.on').dataset.v; const ld=g('ld')/100; const Tauto=eng==='mas'?300+500*ld:170+400*ld; return {eng,ld,T:$('#tAuto').checked?Tauto:g('tg'),lam:g('lam'),egr:g('egr')/100,anr:g('anr'),soot:g('soot'),age:g('age')/100}; }
+function rawMAS(lam,ld,egr){ const CO=0.25+0.35*Math.exp(-(lam-1)*20); const HC=300+1500*Math.max(0,1-lam)**2*10+4000*Math.max(0,lam-1.2)**2; const NOx=(300+2500*Math.exp(-(((lam-1.08)/0.12)**2)))*(0.4+0.6*ld)*Math.exp(-egr/0.1*0.5);
+  const O2=lam<1?0.3+0.5*(lam-0.85)/0.15:0.5+20*(lam-1)/lam; const CO2=14.8-Math.abs(lam-1)*12-CO*0.6; return {CO,HC,NOx,O2,CO2}; }
+function twcEff(lam,T,age){ const fT=k=>sig((T-(k+age*120))/22), m=1-0.35*age; return {CO:0.985*m*sig((lam-0.985)/0.005)*fT(240),HC:0.97*m*sig((lam-0.982)/0.006)*fT(265),NOx:0.985*m*sig((1.008-lam)/0.004)*fT(250)}; }
+function rawMAC(ld,egr){ return {NOx:(250+900*ld)*Math.exp(-egr/0.25),PM:(4+30*ld*ld)*Math.exp(egr/0.18),CO:300*(1-0.6*ld)+300*egr,HC:100+150*(1-ld),O2:21*(1-(0.25+0.6*ld))}; }
+function docEff(T,age){ const m=1-0.25*age; return {CO:0.98*m*sig((T-(190+age*80))/20),HC:0.95*m*sig((T-(220+age*80))/22),NO2:0.45*sig((T-250)/30)*(1-sig((T-450)/40))*m}; }
+function scrEff(T,anr,age,no2){ const fast=0.12*Math.min(1,no2/0.5)*(1-sig((T-260)/20)); return Math.min(anr,1)*Math.min(0.99,(0.97*sig((T-(215+age*50))/22)+fast))*(1-0.25*age)*(1-sig((T-560)/30)); }
+function emis(p){ if(p.eng==='mas'){ const r=rawMAS(p.lam,p.ld,p.egr), e=twcEff(p.lam,p.T,p.age); const out={CO:r.CO*(1-e.CO),HC:r.HC*(1-e.HC),NOx:r.NOx*(1-e.NOx)};
+    return {r,e,out,stages:[{n:'Motor',v:{CO:1,HC:1,NOx:1}},{n:'După catalizator',v:{CO:1-e.CO,HC:1-e.HC,NOx:1-e.NOx}}],sp:['CO','HC','NOx']}; }
+  const r=rawMAC(p.ld,p.egr), d=docEff(p.T,p.age); const pmEff=0.97+0.025*Math.min(1,p.soot/4); const no2=d.NO2; const es=scrEff(p.T-20,p.anr,p.age,no2); const slip=Math.max(0,p.anr-es)*r.NOx*0.1*(p.T>200?1:0.3);
+  const out={CO:r.CO*(1-d.CO),HC:r.HC*(1-d.HC),PM:r.PM*(1-pmEff),NOx:r.NOx*(1-es),NH3:slip}; const dp=(8+9*p.soot)*(0.3+0.7*p.ld)*(1+0.6*(p.T-300)/500);
+  const mexh=50+250*p.ld; const noxgh=r.NOx*1e-6*mexh*1000*46/28.9; const ad=noxgh/46*p.anr/2*60/0.325; // g/h
+  return {r,d,es,pmEff,no2,out,dp,ad,noxgh,slip,stages:[{n:'Motor',v:{CO:1,HC:1,PM:1,NOx:1}},{n:'După DOC',v:{CO:1-d.CO,HC:1-d.HC,PM:0.95,NOx:1}},{n:'După DPF',v:{CO:1-d.CO,HC:1-d.HC,PM:1-pmEff,NOx:1}},{n:'După SCR',v:{CO:1-d.CO,HC:1-d.HC,PM:1-pmEff,NOx:1-es}}],sp:['CO','HC','PM','NOx']}; }
+/* ---------- animația liniei de evacuare ---------- */
+const SPC={CO:['CO','#6f6f6f'],HC:['HC','#8a5a2b'],NOx:['NOx','#d9481c'],PM:['particule','#111111'],NH3:['NH₃','#2BA3C7'],CO2:['CO₂','#b8c2ca'],H2O:['H₂O','#7FAEDB'],N2:['N₂','#9fd3a8']};
+const A={parts:[],play:false,last:0,t:0,trap:0};
+function zones(eng,w){ const X=f=>40+f*(w-60); return eng==='mas'?[{k:'twc',n:'Catalizator cu trei căi',x1:X(0.34),x2:X(0.56)},{k:'muf',n:'Amortizor',x1:X(0.74),x2:X(0.9)}]:[{k:'doc',n:'DOC',x1:X(0.17),x2:X(0.3)},{k:'dpf',n:'DPF',x1:X(0.34),x2:X(0.52)},{k:'dos',n:'AdBlue',x1:X(0.57),x2:X(0.58)},{k:'scr',n:'SCR + ASC',x1:X(0.64),x2:X(0.84)}]; }
+function spawnRates(p,E){ if(p.eng==='mas') return {CO:E.r.CO/1.0*6,HC:E.r.HC/1000*6,NOx:E.r.NOx/1500*6}; return {CO:E.r.CO/300*4,HC:E.r.HC/200*3,NOx:E.r.NOx/800*6,PM:E.r.PM/20*6}; }
+function stepLine(dt,w){ const p=rdF(), E=emis(p), Z=zones(p.eng,w), sp=60+220*p.ld; A.t+=dt; const R=spawnRates(p,E);
+  Object.entries(R).forEach(([s,r])=>{ let n=r*dt*3; while(n>0){ if(Math.random()<Math.min(1,n)) A.parts.push({s,x:40,y:(Math.random()-0.5)*26,done:{}}); n-=1; } });
+  if(p.eng==='mac'){ let n=E.r.NOx/800*6*p.anr*dt*3; while(n>0){ if(Math.random()<Math.min(1,n)) A.parts.push({s:'NH3',x:Z[2].x1,y:(Math.random()-0.5)*20,done:{dos:1}}); n-=1; } }
+  A.parts.forEach(q=>{ if(q.stuck) return; q.x+=sp*dt*(0.9+0.2*Math.random()); Z.forEach(z=>{ if(q.x>=z.x1&&!q.done[z.k]){ q.done[z.k]=1; conv(q,z.k,p,E,z); } }); });
+  A.parts=A.parts.filter(q=>q.x<w-10&&!(q.stuck&&Math.random()<dt*0.02)).slice(-900); }
+function conv(q,k,p,E,z){ const R=Math.random();
+  if(p.eng==='mas'&&k==='twc'){ if(q.s==='CO'&&R<E.e.CO) q.s='CO2'; else if(q.s==='HC'&&R<E.e.HC) q.s=Math.random()<0.5?'CO2':'H2O'; else if(q.s==='NOx'&&R<E.e.NOx) q.s='N2'; }
+  if(k==='doc'){ if(q.s==='CO'&&R<E.d.CO) q.s='CO2'; else if(q.s==='HC'&&R<E.d.HC) q.s=Math.random()<0.5?'CO2':'H2O'; }
+  if(k==='dpf'&&q.s==='PM'&&R<E.pmEff){ q.stuck=1; q.x=z.x1+4+Math.random()*(z.x2-z.x1-8)*0.5; }
+  if(k==='scr'){ if(q.s==='NOx'&&R<E.es) q.s='N2'; else if(q.s==='NH3'&&R<Math.min(1,E.es/Math.max(0.01,p.anr))+0.9*(1-Math.min(1,E.es/Math.max(0.01,p.anr)))) q.s='N2'; } }
+function drawLine(){ const cv=$('#cvLine'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,230); const p=rdF(), E=emis(p), Z=zones(p.eng,w); const ink=css('--ink'),ink2=css('--ink2'); c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h);
+  const y0=h/2+6; c.fillStyle='rgba(160,140,120,.22)'; c.fillRect(40,y0-20,w-50,40); c.strokeStyle=css('--steel-d'); c.lineWidth=1.5; c.strokeRect(40,y0-20,w-50,40);
+  c.fillStyle='#7d8c99'; rr(c,4,y0-52,44,104,6); c.fill(); c.save(); c.translate(26,y0); c.rotate(-Math.PI/2); c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('MOTOR',0,4); c.restore();
+  Z.forEach(z=>{ if(z.k==='dos'){ c.fillStyle='#2BA3C7'; c.fillRect(z.x1-5,y0-46,10,26); c.fillStyle=ink2; c.font='11px Barlow Condensed,sans-serif'; c.fillText('AdBlue',z.x1,y0-50); return; }
+    const hot=p.T>((z.k==='scr'?215:z.k==='doc'?190:240)+p.age*100); rr(c,z.x1,y0-34,z.x2-z.x1,68,14); c.fillStyle=z.k==='muf'?css('--panel2'):hot?'rgba(224,86,30,.18)':'rgba(47,108,168,.14)'; c.fill(); c.strokeStyle=css('--steel-d'); c.stroke();
+    if(z.k==='dpf'){ c.fillStyle=`rgba(20,20,20,${0.1+0.6*p.soot/12})`; c.fillRect(z.x1+6,y0-30,(z.x2-z.x1)*0.5,60); }
+    c.fillStyle=ink; c.font='600 12.5px Barlow Condensed,sans-serif'; c.fillText(z.n,(z.x1+z.x2)/2,y0+52); if(z.k!=='muf'){ c.fillStyle=ink2; c.font='11px Barlow Condensed,sans-serif'; c.fillText(hot?'activ':'sub temperatura de amorsare',(z.x1+z.x2)/2,y0-40); } });
+  A.parts.forEach(q=>{ c.fillStyle=SPC[q.s][1]; c.beginPath(); c.arc(q.x,y0+q.y,q.s==='PM'?2.2:2.8,0,7); c.fill(); });
+  c.fillStyle=ink; c.font='600 13px Barlow,sans-serif'; c.textAlign='left'; c.fillText(`${p.eng==='mas'?'MAS, λ = '+fmt(p.lam,3):'MAC'} — T gaze ≈ ${fmt(p.T,0)} °C — sarcină ${fmt(p.ld*100,0)} %`,8,16);
+  $('#funTag').textContent=p.eng==='mas'?(Math.abs(p.lam-1)<0.006?'fereastra λ = 1':'în afara ferestrei λ'):(p.anr<0.1?'fără AdBlue':'SCR activ'); }
+function drawStages(){ const cv=$('#cvStage'); if(!cv.clientWidth) return; const p=rdF(), E=emis(p); const xs=E.stages.map((_,i)=>i+1), cols={CO:'#6f6f6f',HC:'#8a5a2b',NOx:'#d9481c',PM:'#333'}; const n=E.sp.length;
+  plot(cv,{height:250,xlabel:'',ylabel:'% din emisia brută',xcats:E.stages.map(s=>s.n),xmin:0.5,xmax:E.stages.length+0.5,ymin:0,ymax:110,legendBR:false,series:E.sp.map((s,i)=>({name:SPC[s][0],x:xs,y:E.stages.map(st=>st.v[s]*100),bars:true,bw:0.8/n,shift:(i-(n-1)/2),color:cols[s]}))}); }
+function lineLoop(ts){ if(!A.play) return; if(!$('#t-fun').classList.contains('on')){ A.play=false; return; } const dt=A.last?Math.min(0.05,(ts-A.last)/1000):0; A.last=ts; stepLine(dt,$('#cvLine').clientWidth); drawLine(); requestAnimationFrame(lineLoop); }
+function ro2(el,rows){ el.innerHTML=rows.map(r=>`<tr class="${r[2]?'hl':''}"><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''); }
+function emisT(){ const p=rdF(), E=emis(p); if(p.eng==='mas'){ const u={CO:'%',HC:'ppm',NOx:'ppm'}; return {head:['Poluant','U.M.','Motor (brut)','După catalizator','Eficiență [%]'],rows:['CO','HC','NOx'].map(s=>[SPC[s][0],u[s],fmt(E.r[s],s==='CO'?2:0),fmt(E.out[s],s==='CO'?3:0),fmt(E.e[s]*100,1)]),left:[0]}; }
+  const u={CO:'ppm',HC:'ppm',PM:'mg/m³',NOx:'ppm'}; return {head:['Poluant','U.M.','Motor (brut)','După DOC','După DPF','După SCR (evacuare)','Eficiență [%]'],rows:['CO','HC','PM','NOx'].map(s=>{ const st=E.stages.map(x=>x.v[s]*E.r[s]); return [SPC[s][0],u[s],...st.map(v=>fmt(v,s==='PM'?2:0)),fmt((1-st[3]/E.r[s])*100,1)]; }),left:[0]}; }
+function renderEcu(){ const p=rdF(), E=emis(p); const rows=[['Temperatura gazelor',fmt(p.T,0)+' °C']];
+  if(p.eng==='mas'){ rows.push(['λ',fmt(p.lam,3)],['CO brut / evacuare',fmt(E.r.CO,2)+' / '+fmt(E.out.CO,3)+' %',1],['HC brut / evacuare',fmt(E.r.HC,0)+' / '+fmt(E.out.HC,0)+' ppm',1],['NO<sub>x</sub> brut / evacuare',fmt(E.r.NOx,0)+' / '+fmt(E.out.NOx,0)+' ppm',1],['O<sub>2</sub> brut',fmt(E.r.O2,2)+' %'],['η CO / HC / NO<sub>x</sub>',`${fmt(E.e.CO*100,0)} / ${fmt(E.e.HC*100,0)} / ${fmt(E.e.NOx*100,0)} %`,1],['Rata EGR',fmt(p.egr*100,0)+' %']); }
+  else rows.push(['Rata EGR',fmt(p.egr*100,0)+' %'],['NO<sub>x</sub> brut / evacuare',fmt(E.r.NOx,0)+' / '+fmt(E.out.NOx,0)+' ppm',1],['Particule brut / evacuare',fmt(E.r.PM,1)+' / '+fmt(E.out.PM,2)+' mg/m³',1],['CO brut / evacuare',fmt(E.r.CO,0)+' / '+fmt(E.out.CO,0)+' ppm'],['HC brut / evacuare',fmt(E.r.HC,0)+' / '+fmt(E.out.HC,0)+' ppm'],
+    ['η DOC (CO / HC)',`${fmt(E.d.CO*100,0)} / ${fmt(E.d.HC*100,0)} %`],['NO<sub>2</sub>/NO<sub>x</sub> după DOC',fmt(E.no2*100,0)+' %'],['η DPF',fmt(E.pmEff*100,1)+' %'],['η SCR',fmt(E.es*100,1)+' %',1],['Amoniac la evacuare (slip)',fmt(E.slip,1)+' ppm'],['Căderea de presiune pe DPF',fmt(E.dp,0)+' mbar'],['Debitul de AdBlue (rel. 4)',fmt(E.ad,0)+' g/h'],['Oxigen în gaze',fmt(E.r.O2,1)+' %']);
+  ro2($('#roEcu'),rows); buildTable($('#tblEcu'),emisT()); }
+/* ---------- analiza gazelor ---------- */
+const GA={res:null,anim:null};
+function brett(CO,CO2,HC,O2){ const Hcv=1.7261,Ocv=0.0176,K1=6e-4; const num=CO2+CO/2+O2+(Hcv/4*3.5/(3.5+CO/CO2)-Ocv/2)*(CO2+CO); const den=(1+Hcv/4-Ocv/2)*(CO2+CO+K1*HC); return num/den; }
+function measure(){ const veh=$('#veh').value, fault=$('#fault').value, r=mulberry32(Date.now()%9973); const N=()=>gauss(r);
+  if(veh==='mas'){ const pts=[{n:'Ralanti (≈ 800 rot/min)',rpm:800,T:420,ld:0.1},{n:'Turație ridicată (≈ 2500 rot/min)',rpm:2500,T:560,ld:0.25}].map(k=>{ let lam=1+0.002*N(), age=0.05; if(fault==='cat') age=0.95; if(fault==='lam') lam=0.93; if(fault==='air') lam=k.rpm<1000?1.07:1.025;
+      const raw=rawMAS(lam,k.ld,0), e=twcEff(lam,k.T,age); const CO=Math.max(0.003,raw.CO*(1-e.CO)); const HC=Math.max(3,raw.HC*(1-e.HC)*0.5); const O2=lam<1?0.05+0.05*Math.random():Math.max(0.05,(lam-1)*21*0.95+0.05);
+      const CO2=14.9-Math.abs(lam-1)*14-CO*0.4; const L=brett(CO,CO2,HC,O2); return {...k,CO,CO2,HC,O2,lam:L,NOx:raw.NOx*(1-e.NOx)}; });
+    const lim=[0.3,0.2]; pts.forEach((q,i)=>{ q.okCO=q.CO<=lim[i]; q.lim=lim[i]; q.okL=i===0||(q.lam>=0.97&&q.lam<=1.03); });
+    GA.res={veh,fault,pts,ok:pts.every(q=>q.okCO&&q.okL)}; }
+  else { const base=fault==='dpf'?1.4:fault==='inj'?0.35:0.08; const k=[0,1,2].map(()=>Math.max(0.02,base*(1+0.12*N())+(fault==='dpf'?0.1*N():0))); const m=k.reduce((a,b)=>a+b)/3; GA.res={veh,fault,k,m,lim:0.7,ok:m<=0.7}; }
+  GA.anim={t:0}; GA.last=0; requestAnimationFrame(anLoop); }
+function anLoop(ts){ const dt=GA.last?Math.min(0.05,(ts-GA.last)/1000):0; GA.last=ts; if(!GA.anim) return; GA.anim.t+=dt; drawAnalyzer(); if(GA.anim.t<2.5) requestAnimationFrame(anLoop); else { GA.anim=null; drawAnalyzer(); renderBench(); schedCharts(); } }
+function drawAnalyzer(){ const cv=$('#cvBench'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,400); c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); const ink=css('--ink'), R=GA.res, pr=GA.anim?Math.min(1,GA.anim.t/2.2):1;
+  c.fillStyle='#26343f'; rr(c,20,20,w-40,h-110,10); c.fill(); c.fillStyle='#0c1418'; rr(c,36,36,w-72,h-150,6); c.fill();
+  c.fillStyle='#4FE3C1'; c.font='600 14px Consolas,monospace'; c.textAlign='left';
+  if(!R){ c.fillText('PREGĂTIT — introduceți sonda în țeava de evacuare',52,70); }
+  else if(R.veh==='mas'){ c.fillText('ANALIZOR 4 GAZE — test la ralanti și la turație ridicată',52,62); R.pts.forEach((q,i)=>{ const x=52+i*(w-110)/2; const v=(a)=>a*pr; c.fillStyle='#F2D34B'; c.font='600 13px Consolas,monospace'; c.fillText(q.n,x,92);
+      c.font='600 20px Consolas,monospace'; c.fillStyle='#4FE3C1'; [[`CO   ${fmt(v(q.CO),2)} %vol`,q.okCO],[`CO2  ${fmt(v(q.CO2),1)} %vol`,1],[`HC   ${fmt(v(q.HC),0)} ppm`,1],[`O2   ${fmt(v(q.O2),2)} %vol`,1],[`λ    ${fmt(pr<1?1:q.lam,3)}`,q.okL]].forEach(([t,ok],j)=>{ c.fillStyle=pr>=1&&!ok?'#FF6F6F':'#4FE3C1'; c.fillText(t,x,124+j*30); }); }); }
+  else { c.fillText('OPACIMETRU — trei accelerări libere',52,62); R.k.forEach((k,i)=>{ const x=70+i*((w-160)/3), bh=(h-230)*Math.min(1,k/2)*(pr>i/3?Math.min(1,(pr-i/3)*3):0); c.fillStyle=k>R.lim?'#FF6F6F':'#4FE3C1'; c.fillRect(x,h-130-bh,40,bh); c.fillStyle='#fff'; c.font='13px Consolas,monospace'; c.fillText(`${i+1}: ${fmt(pr>=1?k:0,2)}`,x-4,h-118); });
+    const ly=h-130-(h-230)*R.lim/2; c.strokeStyle='#F2D34B'; c.setLineDash([5,4]); c.beginPath(); c.moveTo(52,ly); c.lineTo(w-60,ly); c.stroke(); c.setLineDash([]); c.fillStyle='#F2D34B'; c.fillText(`limita de pe plăcuță: ${fmt(R.lim,2)} m⁻¹`,w-300,ly-6); if(pr>=1){ c.fillStyle='#4FE3C1'; c.font='600 18px Consolas,monospace'; c.fillText(`k mediu = ${fmt(R.m,2)} m⁻¹`,52,96); } }
+  c.fillStyle=css('--steel-d'); c.fillRect(w/2-4,h-90,8,40); c.strokeStyle=css('--steel-d'); c.lineWidth=4; c.beginPath(); c.moveTo(w/2,h-50); c.bezierCurveTo(w/2,h-10,w-120,h-10,w-80,h-40); c.stroke(); c.fillStyle=css('--ink2'); c.font='12px Barlow Condensed,sans-serif'; c.textAlign='right'; c.fillText('sonda de prelevare → țeava de evacuare',w-24,h-14);
+  $('#benchTag').textContent=!R?'pregătit':GA.anim?'măsurare…':R.ok?'ADMIS':'RESPINS'; $('#benchTag').className='tag'+(R&&!GA.anim?(R.ok?' ok':' bad'):''); }
+function benchT(){ const R=GA.res; if(!R) return {head:['Măsurare','Rezultat'],rows:[],left:[0,1]};
+  if(R.veh==='mas') return {head:['Regim','CO [%vol]','CO<sub>2</sub> [%vol]','HC [ppm]','O<sub>2</sub> [%vol]','λ calculat','Limită CO','Verdict'],rows:R.pts.map(q=>[q.n,fmt(q.CO,2),fmt(q.CO2,1),fmt(q.HC,0),fmt(q.O2,2),fmt(q.lam,3),'≤ '+fmt(q.lim,1)+(q.rpm>1000?'; λ 0,97–1,03':''),q.okCO&&q.okL?'admis':'respins']),left:[0,6,7]};
+  return {head:['Accelerarea','k [m<sup>−1</sup>]','Limită [m<sup>−1</sup>]','Verdict'],rows:[...R.k.map((k,i)=>[i+1,fmt(k,2),fmt(R.lim,1),'']),['Media',fmt(R.m,2),fmt(R.lim,1),R.ok?'admis':'respins']],left:[3]}; }
+const FAULTN={none:'fără defect',cat:'catalizator îmbătrânit',lam:'sondă lambda defectă',air:'aspirație de aer fals',dpf:'filtru de particule fisurat',inj:'injector cu picurare'};
+function renderBench(){ buildTable($('#tblBench'),benchT()); const R=GA.res; const rows=[['Vehicul',R?(R.veh==='mas'?'MAS cu catalizator':'MAC cu DPF'):'–'],['Defect simulat',R?FAULTN[R.fault]:'–']];
+  if(R&&R.veh==='mas') R.pts.forEach(q=>rows.push([q.n,`CO ${fmt(q.CO,2)} %, λ ${fmt(q.lam,3)}`,q.okCO&&q.okL?0:1])); if(R&&R.veh==='mac') rows.push(['Opacitate medie',fmt(R.m,2)+' m⁻¹',R.ok?0:1]);
+  if(R) rows.push(['Rezultat',R.ok?'<span class="tag ok">admis</span>':'<span class="tag bad">respins</span>']); ro2($('#roBench'),rows); }
+/* ---------- grafice ---------- */
+let chT=null; function schedCharts(){ clearTimeout(chT); chT=setTimeout(()=>{ renderCharts(); renderTables(); renderReport(); },100); }
+function dpfSim(){ const km=[],s=[],d=[]; let soot=1.0, reg=0; for(let k=0;k<=2000;k+=2){ if(reg>0){ soot=Math.max(0.8,soot-0.9); reg-=2; } else { soot+=0.013*2; if(soot>=8) reg=16; } km.push(k); s.push(soot); d.push((8+9*soot)*0.65); } return {km,s,d}; }
+function renderCharts(){ if(!$('#t-mas').classList.contains('on')) return; const p=rdF(); const ls=[]; for(let l=0.95;l<=1.0501;l+=0.001) ls.push(l);
+  plot($('#ch1'),{height:300,xlabel:'Abaterea de la stoichiometrie (λ − 1) · 100 [%]',ylabel:'Eficiența de conversie [%]',xmin:-5,xmax:5,ymin:0,ymax:105,legendBR:true,series:['CO','HC','NOx'].map((s,i)=>({name:SPC[s][0],x:ls.map(l=>(l-1)*100),y:ls.map(l=>twcEff(l,500,p.age)[s]*100),color:['#6f6f6f','#8a5a2b','#d9481c'][i],lw:2.2})),vlines:[{x:0,label:'λ = 1'}]});
+  const Ts=[]; for(let t=100;t<=500;t+=2) Ts.push(t);
+  plot($('#ch2'),{height:300,xlabel:'Temperatura catalizatorului [°C]',ylabel:'Eficiența [%]',xmin:100,xmax:500,ymin:0,ymax:105,legendBR:true,series:[...['CO','HC','NOx'].map((s,i)=>({name:SPC[s][0]+' nou',x:Ts,y:Ts.map(t=>twcEff(1.0,t,0)[s]*100),color:['#6f6f6f','#8a5a2b','#d9481c'][i],lw:2})),{name:'CO îmbătrânit',x:Ts,y:Ts.map(t=>twcEff(1.0,t,0.6).CO*100),color:'#6f6f6f',dash:[6,4],lw:1.6}],hlines:[{y:50,label:'T50'}]});
+  const eg=[]; for(let e=0;e<=40;e+=0.5) eg.push(e);
+  plot($('#ch3'),{height:300,xlabel:'Rata EGR [%]',ylabel:'NOx brut [ppm]',y2:true,y2label:'Particule brut [mg/m³]',xmin:0,xmax:40,ymin:0,y2min:0,series:[{name:'NOx',x:eg,y:eg.map(e=>rawMAC(p.ld,e/100).NOx),color:'#d9481c',lw:2.2},{name:'particule',x:eg,y:eg.map(e=>rawMAC(p.ld,e/100).PM),color:'#333',axis:2,lw:2.2}]});
+  const T2=[]; for(let t=120;t<=600;t+=3) T2.push(t);
+  plot($('#ch4'),{height:300,xlabel:'Temperatura SCR [°C]',ylabel:'η SCR [%]',y2:true,y2label:'NH₃ slip [ppm]',xmin:120,xmax:600,ymin:0,ymax:105,y2min:0,legendBR:true,series:[...[0.8,1.0,1.2].map((a,i)=>({name:`ANR = ${fmt(a,1)}`,x:T2,y:T2.map(t=>scrEff(t,a,p.age,0.3)*100),color:['--blue','--ok','--fuel'][i],lw:2})),{name:'slip la ANR 1,2',x:T2,y:T2.map(t=>Math.max(0,1.2-scrEff(t,1.2,p.age,0.3))*600*0.1),color:'#2BA3C7',dash:[5,4],axis:2,lw:1.6}]});
+  const D=dpfSim(); plot($('#ch5'),{height:300,xlabel:'Distanța parcursă [km]',ylabel:'Funingine [g/L]',y2:true,y2label:'Δp DPF [mbar]',xmin:0,xmax:2000,ymin:0,ymax:10,y2min:0,y2max:70,series:[{name:'încărcare',x:D.km,y:D.s,color:'#333',lw:2},{name:'Δp la 50 % sarcină',x:D.km,y:D.d,color:'--fuel',axis:2,lw:1.4,dash:[5,3]}],hlines:[{y:8,label:'prag regenerare',color:'--alert'}]});
+  plot($('#ch6'),{height:300,xlabel:'',ylabel:'NOx [g/km]',y2:true,y2label:'PM [g/km]',xcats:['Euro 3','Euro 4','Euro 5','Euro 6'],xmin:0.5,xmax:4.5,ymin:0,ymax:0.6,y2min:0,y2max:0.06,series:[{name:'NOx',x:[1,2,3,4],y:[0.5,0.25,0.18,0.08],bars:true,bw:0.35,shift:-0.5,color:'#d9481c'},{name:'PM',x:[1,2,3,4],y:[0.05,0.025,0.005,0.0045],bars:true,bw:0.35,shift:0.5,color:'#333',axis:2}]}); }
+const LAMS=[0.95,0.97,0.98,0.99,0.995,1.0,1.005,1.01,1.02,1.03,1.05];
+function mapT(){ const age=rdF().age; return {head:['λ','η CO [%]','η HC [%]','η NO<sub>x</sub> [%]'],rows:LAMS.map(l=>{ const e=twcEff(l,500,age); return [fmt(l,3),fmt(e.CO*100,1),fmt(e.HC*100,1),fmt(e.NOx*100,1)]; }),left:[]}; }
+function renderTables(){ buildTable($('#tblMap'),mapT()); buildTable($('#tblBench'),benchT()); }
+/* ---------- schema, test, referat ---------- */
+let SCH=null, VAR='mas', QZ=null, MCQS=null;
+function renderInfo(cm){ $('#info').innerHTML=infoHTML(cm); $$('#chips button').forEach(b=>b.classList.toggle('on',cm&&b.dataset.id===ckey(cm))); }
+function renderChips(){ $('#chips').innerHTML=SCH.spec.comps.map(c=>`<button data-id="${ckey(c)}">${c.name.replace(/<[^>]+>/g,'')}</button>`).join(''); $$('#chips button').forEach(b=>b.onclick=()=>SCH.select(b.dataset.id)); buildTable($('#tblComp'),compTable(SCH.spec.comps)); }
+function quizT(){ const q=QZ; return {head:['Nr.','Componenta cerută','Rezultat'],rows:q?q.log.map((l,i)=>[i+1,l.name,l.res]):[],left:[1,2]}; }
+function onQuiz(q){ QZ=q; $('#qState').innerHTML=q.done?`<b>Test încheiat:</b> ${q.ok} din ${q.list.length} corecte din prima încercare (${fmt(q.ok/q.list.length*100,0)} %).`:`Componenta ${q.i+1} din ${q.list.length}; corecte: ${q.ok}`; buildTable($('#tblQuiz'),quizT()); if(q.done) renderReport(); }
+const MCQ=[
+ {q:'De ce catalizatorul cu trei căi necesită λ ≈ 1?',o:['Pentru a funcționa la temperatură mai mică','Numai în jurul stoichiometriei se pot oxida CO și HC și reduce NO<sub>x</sub> simultan','Pentru a reduce consumul','Pentru a proteja sonda lambda'],a:1,e:'La amestec sărac lipsesc reducătorii pentru NO<sub>x</sub>, la amestec bogat lipsește oxigenul pentru CO și HC.'},
+ {q:'Ce reprezintă temperatura T<sub>50</sub> a unui catalizator?',o:['Temperatura maximă admisă','Temperatura la care conversia atinge 50 %','Temperatura gazelor la ralanti','Temperatura de regenerare'],a:1,e:'Sub această temperatură catalizatorul este practic inactiv.'},
+ {q:'De ce nu se poate folosi catalizatorul cu trei căi la MAC?',o:['Temperatura gazelor este prea mare','Excesul de aer împiedică reducerea NO<sub>x</sub>','Motorina conține plumb','Debitul de gaze este prea mic'],a:1,e:'De aceea NO<sub>x</sub> se reduce la MAC prin SCR sau capcane de NO<sub>x</sub>.'},
+ {q:'Care este efectul recirculării gazelor arse (EGR) la MAC?',o:['Scad NO<sub>x</sub> și particulele','Scad NO<sub>x</sub>, dar cresc particulele','Cresc NO<sub>x</sub>','Scade temperatura gazelor la zero'],a:1,e:'Este compromisul NO<sub>x</sub>–particule.'},
+ {q:'Ce substanță reduce NO<sub>x</sub> în catalizatorul SCR?',o:['Oxigenul','Amoniacul obținut din uree','Monoxidul de carbon','Hidrogenul din motorină'],a:1,e:'Soluția AdBlue conține 32,5 % uree.'},
+ {q:'De ce se montează DOC înaintea SCR?',o:['Pentru a reține particulele','Pentru a produce NO<sub>2</sub>, care accelerează reacția SCR la temperaturi mici','Pentru a dozarea AdBlue','Pentru a răci gazele'],a:1,e:'Reacția rapidă are loc la NO<sub>2</sub>/NO<sub>x</sub> ≈ 0,5.'},
+ {q:'Cum se estimează încărcarea filtrului de particule?',o:['Din temperatura gazelor','Din căderea de presiune pe filtru și dintr-un model de funingine','Din debitul de AdBlue','Din semnalul sondei lambda aval'],a:1,e:'La depășirea pragului ECU declanșează regenerarea activă.'},
+ {q:'Ce indică o opacitate mare la un MAC echipat cu filtru de particule?',o:['Filtru plin cu funingine','Filtru fisurat sau îndepărtat','Catalizator SCR îmbătrânit','AdBlue diluat'],a:1,e:'Un filtru integru reține peste 99 % din particule, chiar încărcat.'},
+ {q:'Ce limită se verifică uzual la ITP pentru CO la ralanti la un MAS cu catalizator și reglaj λ?',o:['4,5 %','0,3 %','3 %','0,01 %'],a:1,e:'La turație ridicată limita este 0,2 %, iar λ trebuie să fie 0,97–1,03.'},
+ {q:'Rolul canistrei cu cărbune activ este:',o:['Reducerea NO<sub>x</sub>','Reținerea vaporilor de benzină','Filtrarea particulelor','Stocarea oxigenului'],a:1,e:'Vaporii sunt arși ulterior în motor.'}];
+function conclusions(){ const p=rdF(), E=emis(p), L=[];
+  if(p.eng==='mas') L.push(`La λ = ${fmt(p.lam,3)} și T = ${fmt(p.T,0)} °C catalizatorul cu trei căi convertește ${fmt(E.e.CO*100,0)} % din CO, ${fmt(E.e.HC*100,0)} % din HC și ${fmt(E.e.NOx*100,0)} % din NO<sub>x</sub>${Math.abs(p.lam-1)>0.006?'; amestecul este în afara ferestrei de lucru, deci unul dintre poluanți trece neconvertit':''}.`);
+  else L.push(`La sarcina de ${fmt(p.ld*100,0)} % și T = ${fmt(p.T,0)} °C, linia DOC–DPF–SCR reduce NO<sub>x</sub> de la ${fmt(E.r.NOx,0)} la ${fmt(E.out.NOx,0)} ppm (η SCR = ${fmt(E.es*100,0)} %) și particulele cu ${fmt(E.pmEff*100,1)} %; debitul de AdBlue necesar este de ≈ ${fmt(E.ad,0)} g/h.`);
+  const e2=twcEff(1,250,0), e3=twcEff(1,250,0.6); L.push(`La 250 °C un catalizator nou convertește ${fmt(e2.CO*100,0)} % din CO, iar unul îmbătrânit numai ${fmt(e3.CO*100,0)} %: îmbătrânirea deplasează temperatura de amorsare spre valori mai mari.`);
+  const a=rawMAC(0.5,0), b=rawMAC(0.5,0.3); L.push(`O rată EGR de 30 % reduce NO<sub>x</sub> brut cu ${fmt((1-b.NOx/a.NOx)*100,0)} %, dar crește particulele de ${fmt(b.PM/a.PM,1)} ori (compromisul NO<sub>x</sub>–particule).`);
+  const R=GA.res; if(R) L.push(R.veh==='mas'?`La analiza gazelor (${FAULTN[R.fault]}) s-au obținut CO = ${fmt(R.pts[0].CO,2)} % la ralanti și ${fmt(R.pts[1].CO,2)} % la turație ridicată, λ = ${fmt(R.pts[1].lam,3)}: vehiculul este ${R.ok?'admis':'respins'}.`:`Opacitatea medie la accelerare liberă (${FAULTN[R.fault]}) este ${fmt(R.m,2)} m⁻¹: vehiculul este ${R.ok?'admis':'respins'}.`);
+  if(QZ&&QZ.done) L.push(`La testul de identificare au fost recunoscute corect din prima încercare ${QZ.ok} din ${QZ.list.length} componente.`); if(MCQS) L.push(`Scorul la testul grilă: ${MCQS[0]} din ${MCQS[1]}.`); return L; }
+function reportHTML(forWord){ const name=$('#stName').value||'…………………………', grp=$('#stGroup').value||'……', dt=$('#stDate').value||'…………';
+  const H=t=>forWord?`<h2 style="font:bold 13pt Calibri,Arial;color:#16324A;border-bottom:1.5pt solid #D9961A;margin:14pt 0 6pt">${t}</h2>`:`<h2>${t}</h2>`; const Pp=t=>forWord?`<p style="font:11pt Calibri,Arial;text-align:justify;margin:0 0 6pt">${t}</p>`:`<p>${t}</p>`;
+  const tb=(T,cap)=>forWord?tableHTMLWord(T,cap):`<p><b>${cap}</b></p><div class="tbl-wrap">${(()=>{const d=document.createElement('div'); buildTable(d,T); return d.innerHTML;})()}</div>`; const title='Referat — Lucrarea nr. 5: Cunoașterea sistemelor de depoluare';
+  let h=forWord?`<p style="font:10pt Calibri,Arial;color:#4E6072">Universitatea Politehnica Timișoara, Facultatea de Inginerie Mecanică</p><h1 style="font:bold 16pt Calibri,Arial;color:#16324A;margin:4pt 0">${title}</h1><p style="font:11pt Calibri,Arial">Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`:`<h1 style="font-size:22px;margin:0 0 4px">${title}</h1><p>Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`;
+  h+=H('1. Scopul lucrării')+Pp('Cunoașterea poluanților emiși de motoare, a sistemelor de depoluare pentru MAS și MAC, a condițiilor lor de funcționare și a metodelor de verificare la inspecția tehnică.');
+  h+=H('2. Componentele sistemului')+tb(compTable(SCH.spec.comps),'Tabelul 1. Componentele sistemului de depoluare ('+(VAR==='mas'?'MAS':'MAC')+')'); if(QZ&&QZ.log.length) h+=tb(quizT(),'Tabelul 2. Testul de identificare'); h+=tb(EURO,'Tabelul 3. Limitele de emisii Euro pentru autoturisme [g/km]');
+  h+=H('3. Transformarea poluanților')+tb(emisT(),'Tabelul 4. Concentrațiile poluanților pe linia de evacuare'); h+=H('4. Analiza gazelor')+(GA.res?tb(benchT(),'Tabelul 5. Rezultatele analizei gazelor'):Pp('Nu s-a efectuat analiza gazelor.'))+tb(mapT(),'Tabelul 6. Eficiența catalizatorului cu trei căi la 500 °C');
+  h+=H('5. Concluzii')+conclusions().map(Pp).join('')+Pp('<i>Concluzii personale ale studentului: …</i>'); return h; }
+function renderReport(){ if($('#t-ref').classList.contains('on')) $('#refBody').innerHTML=reportHTML(false); }
+function labels(){ const s=(id,t)=>$('#v_'+id).textContent=t; const p=rdF(); s('ld',fmt(p.ld*100,0)+' %'); s('tg',fmt(p.T,0)+' °C'); s('lam',fmt(p.lam,3)); s('egr',fmt(p.egr*100,0)+' %'); s('anr',fmt(p.anr,2)); s('soot',fmt(p.soot,1)+' g/L'); s('age',fmt(p.age*100,0)+' %'); s('sreg',fmt(+$('#sreg').value*100,0)+' % sarcină');
+  $('#tg').disabled=$('#tAuto').checked; $$('.ctrl.mas').forEach(e=>e.style.display=p.eng==='mas'?'':'none'); $$('.ctrl.mac').forEach(e=>e.style.display=p.eng==='mac'?'':'none'); }
+function funAll(){ labels(); renderEcu(); drawLine(); drawStages(); schedCharts(); }
+window.addEventListener('DOMContentLoaded',()=>{ initTheme();
+  SCH=Schem($('#cvSch'),mkSpec('mas'),{onSel:renderInfo,onQuiz}); SCH.active=()=>$('#t-sch').classList.contains('on')&&$('#sAnim').checked; SCH.start();
+  $('#leg').innerHTML=legendHTML(['air','exh','vap','urea','sig','act']); renderChips(); renderInfo(null); $('#varTag').textContent='MAS'; buildTable($('#tblCmp'),EURO);
+  $$('#segVar button').forEach(b=>b.onclick=()=>{ $$('#segVar button').forEach(x=>x.classList.toggle('on',x===b)); VAR=b.dataset.v; SCH.quiz=null; SCH.setSpec(mkSpec(VAR)); renderChips(); renderInfo(null); $('#varTag').textContent=VAR.toUpperCase(); $('#qState').textContent=''; renderReport(); });
+  $('#sreg').oninput=()=>{ labels(); SCH.draw(); }; $('#sAnim').onchange=()=>SCH.draw(); $('#qStart').onclick=()=>SCH.startQuiz(); $('#qSkip').onclick=()=>SCH.skip();
+  $('#legSp').innerHTML=Object.values(SPC).map(([n,c])=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:5px;vertical-align:middle"></i>${n}</span>`).join('');
+  $$('#segEng button').forEach(b=>b.onclick=()=>{ $$('#segEng button').forEach(x=>x.classList.toggle('on',x===b)); A.parts=[]; if(b.dataset.v==='mac'){ $('#egr').value=20; } else $('#egr').value=0; funAll(); });
+  ['ld','tg','lam','egr','anr','soot','age'].forEach(k=>$('#'+k).addEventListener('input',funAll)); $('#tAuto').onchange=funAll;
+  $('#fPlay').onclick=()=>{ if(A.play) return; A.play=true; A.last=0; requestAnimationFrame(lineLoop); }; $('#fPause').onclick=()=>A.play=false;
+  $('#aRun').onclick=measure; $('#veh').onchange=()=>{ $('#fault').value=$('#veh').value==='mas'?'none':'none'; };
+  $$('[data-exp]').forEach(b=>b.onclick=()=>{ const e=b.dataset.exp; const eng=e==='C'?'mac':'mas'; $$('#segEng button').forEach(x=>x.classList.toggle('on',x.dataset.v===eng)); A.parts=[];
+    if(e==='A'){ $('#tAuto').checked=false; $('#tg').value=160; $('#lam').value=1; } if(e==='B'){ $('#tAuto').checked=true; $('#lam').value=0.95; } if(e==='C'){ $('#tAuto').checked=true; $('#anr').value=0; $('#egr').value=20; }
+    funAll(); $('nav.tabs button[data-tab="t-fun"]').click(); if(!A.play) $('#fPlay').click(); toast('Experimentul '+e+' a fost aplicat'); });
+  quizRender($('#mcq'),MCQ,(ok,n)=>{ MCQS=[ok,n]; renderReport(); });
+  $('#stDate').valueAsDate=new Date(); ['stName','stGroup','stDate'].forEach(k=>$('#'+k).addEventListener('input',renderReport));
+  $('#bRef').onclick=async()=>{ const hh=reportHTML(true); if(await copyRich(hh,$('#refBody').innerText)) toast('Referat copiat – lipiți în Word'); else manualModal('Referat pentru Word',hh,true); };
+  $('#bRefTxt').onclick=async()=>{ const t=$('#refBody').innerText; if(await copyText(t)) toast('Referat copiat ca text'); else manualModal('Referat',t); };
+  wireCopy(document); labels(); renderEcu(); renderTables(); renderBench(); buildTable($('#tblQuiz'),quizT());
+  initTabs(t=>{ if(t==='t-sch') SCH.draw(); if(t==='t-fun'){ drawLine(); drawStages(); } if(t==='t-mas'){ drawAnalyzer(); renderCharts(); } if(t==='t-ref') renderReport(); });
+  if(document.fonts) document.fonts.ready.then(()=>{ SCH.draw(); drawLine(); drawStages(); drawAnalyzer(); renderCharts(); });
+  let rz; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ SCH.draw(); drawLine(); drawStages(); drawAnalyzer(); renderCharts(); },150); });
+  ['themechange','decchange'].forEach(ev=>window.addEventListener(ev,()=>{ funAll(); SCH.draw(); drawAnalyzer(); renderBench(); buildTable($('#tblCmp'),EURO); }));
+});
+</script></body></html>

@@ -1,0 +1,869 @@
+<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lucrarea 1 – Indici de pulverizare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDF0F2; --panel:#FFFFFF; --panel2:#F6F8F9; --ink:#16324A; --ink2:#4E6072; --muted:#7B8A97;
+  --fuel:#D9961A; --fuel-soft:#F6E3B8; --fuel-deep:#A8680A; --steel:#8A99A6; --steel-d:#5E6E7B; --line:#CBD3DA;
+  --alert:#B3362B; --ok:#2E7D4F; --blue:#2F6CA8; --violet:#6B4FA0; --teal:#1F8A8A;
+  --canvas-bg:#FBFCFC; --grid:#E1E6EA; --shadow:0 1px 2px rgba(22,50,74,.08);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}}
+:root[data-theme="dark"]{
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow","Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5}
+.num,.ro{font-family:"Barlow Condensed","Arial Narrow","Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 10px;border-bottom:3px solid var(--ink)}
+header.top .lab{font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink2);letter-spacing:.02em}
+header.top h1{margin:0;font-size:26px;line-height:1.15;font-weight:700}
+header.top .inst{margin-left:auto;text-align:right;font-size:13px;color:var(--ink2)}
+.fuelbar{height:6px;background:linear-gradient(90deg,var(--fuel) 0 38%,transparent 38%)}
+nav.tabs{display:flex;gap:2px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+nav.tabs button{font:inherit;font-weight:600;border:0;background:none;color:var(--ink2);padding:12px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fuel)}
+nav.tabs .sp{flex:1}
+nav.tabs .tool{font-weight:500;font-size:13px}
+main{padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+section.tab{display:none} section.tab.on{display:block}
+.grid3{display:grid;grid-template-columns:300px minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:1150px){.grid3{grid-template-columns:280px minmax(0,1fr)} .grid3>.readouts{grid-column:1/-1}}
+@media (max-width:760px){.grid3{grid-template-columns:1fr} main{padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow)}
+.card>h3{margin:0;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card>.bd{padding:12px 14px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink2)}
+.ctrl label b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:600}
+.ctrl input[type=range]{width:100%;accent-color:var(--fuel)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text],.field{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink)}
+fieldset{border:0;border-top:1px solid var(--line);margin:12px 0 6px;padding:10px 0 0}
+fieldset legend{font-weight:700;font-size:13.5px;padding-right:8px;color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:4px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.fuel{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative}
+canvas{display:block;width:100%;background:var(--canvas-bg);border-radius:4px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px}
+.ro-table td{padding:4px 2px;border-bottom:1px dashed var(--line)}
+.ro-table td:first-child{width:56%}
+.ro-table td:last-child{text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:600}
+.ro-table tr.hl td:last-child{color:var(--fuel-deep)}
+.ro-table .sym{color:var(--muted);font-style:italic;font-family:"Times New Roman",serif}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--fuel-soft);color:var(--ink)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent)} .tag.bad{background:color-mix(in srgb,var(--alert) 22%,transparent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table.data{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+table.data th{background:var(--ink);color:var(--panel);font-weight:600;padding:6px 8px;text-align:center;white-space:nowrap}
+table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:15px;white-space:nowrap}
+table.data td.l{text-align:left;font-family:inherit;font-size:13.5px}
+table.data tr:nth-child(even) td{background:var(--panel2)}
+table.data tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.copybar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.copybar .t{font-weight:700;margin-right:auto}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.charts{grid-template-columns:1fr}}
+.prose{max-width:860px}
+.prose h2{font-size:21px;margin:26px 0 8px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.prose h3{font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{line-height:1.62}
+.eq{font-family:"Cambria Math","Times New Roman",serif;font-size:17px;background:var(--panel);border-left:4px solid var(--fuel);padding:8px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-size:14px;font-family:"Barlow",sans-serif}
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);padding:8px 12px;border-radius:4px;margin:10px 0}
+.warn{border-left-color:var(--alert)}
+ol.steps{counter-reset:s;list-style:none;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;margin:0 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700}
+ol.steps>li b.h{display:block;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);max-width:760px;width:100%;border-radius:8px;padding:16px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;height:260px;font-family:Consolas,monospace;font-size:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
+.toast.on{opacity:1}
+.legend-inline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend-inline i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.small{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{nav.tabs,.copybar,.btn{display:none!important} section.tab{display:block!important} body{background:#fff}}
+</style></head><body><header class="top">
+  <div>
+    <div class="lab">Laborator Sisteme de alimentare și injecție pentru MAC — Lucrarea nr. 1</div>
+    <h1>Determinarea indicilor de pulverizare ai injectorului  - autor: S.L dr. ing Vetreș Ion</h1>
+  </div>
+  <div class="inst">Universitatea Politehnica Timișoara<br>Facultatea de Mecanică, Departamentul MMUT</div>
+</header>
+<div class="fuelbar"></div>
+<nav class="tabs" aria-label="Secțiuni">
+  <button data-tab="t-teorie">1. Teorie</button>
+  <button data-tab="t-tester">2. Verificarea injectorului</button>
+  <button data-tab="t-jet">3. Jetul de combustibil</button>
+  <button data-tab="t-micro">4. Analiza picăturilor</button>
+  <button data-tab="t-rez">5. Rezultate și grafice</button>
+  <button data-tab="t-tut">6. Tutorial</button>
+  <button data-tab="t-ref">7. Referat</button>
+  <span class="sp"></span>
+  <button class="tool" id="decBtn">Zecimale</button>
+  <button class="tool" id="themeBtn">Temă luminoasă / întunecată</button>
+</nav>
+<main>
+
+<!-- ============ TEORIE ============ -->
+<section class="tab prose" id="t-teorie">
+  <h2>Scopul lucrării</h2>
+  <p>Lucrarea urmărește determinarea experimentală și prin calcul a indicilor care caracterizează calitatea pulverizării combustibilului de către injectorul unui motor cu aprindere prin comprimare: <b>finețea</b> și <b>omogenitatea</b> pulverizării, <b>lungimea (penetrația) jetului</b> și <b>unghiul conului</b> jetului. Se verifică totodată starea tehnică a injectorului: presiunea de deschidere, etanșeitatea și aspectul jetului.</p>
+
+  <h2>Procesul de pulverizare</h2>
+  <p>Combustibilul iese prin orificiile pulverizatorului cu o viteză de 150–600 m/s, determinată de diferența de presiune Δp = p<sub>inj</sub> − p<sub>a</sub>. Jetul se dezintegrează sub acțiunea turbulenței interne, a cavitației din orificiu și a forțelor aerodinamice exercitate de aerul comprimat. Pe o lungime inițială L<sub>b</sub> (lungimea de rupere) există un miez lichid compact; în aval jetul devine un nor de picături cu diametre de 2…80 µm, care formează un con cu unghiul θ.</p>
+  <div class="eq">U<sub>0</sub> = C<sub>d</sub> · √(2 Δp / ρ<sub>c</sub>)<span class="n">(1)</span></div>
+  <p>Regimul de dezintegrare se apreciază prin criteriile adimensionale:</p>
+  <div class="eq">Re = ρ<sub>c</sub> U<sub>0</sub> d<sub>0</sub> / μ<sub>c</sub> ;&nbsp;&nbsp; We<sub>c</sub> = ρ<sub>c</sub> U<sub>0</sub><sup>2</sup> d<sub>0</sub> / σ ;&nbsp;&nbsp; We<sub>g</sub> = ρ<sub>a</sub> U<sub>0</sub><sup>2</sup> d<sub>0</sub> / σ ;&nbsp;&nbsp; Oh = μ<sub>c</sub> / √(ρ<sub>c</sub> σ d<sub>0</sub>)<span class="n">(2)</span></div>
+  <p>Conform criteriului Reitz: We<sub>g</sub> &lt; 0,4 regim Rayleigh; 0,4…13 primul regim aerodinamic; 13…40,3 al doilea regim aerodinamic; We<sub>g</sub> &gt; 40,3 regim de <b>atomizare</b> — regimul normal al injectoarelor diesel.</p>
+
+  <h2>Indicii de pulverizare</h2>
+  <h3>Finețea pulverizării</h3>
+  <p>Se exprimă prin diametre medii ale picăturilor. Pentru o probă împărțită în clase de diametre d<sub>i</sub> cu n<sub>i</sub> picături:</p>
+  <div class="eq">d<sub>10</sub> = Σ n<sub>i</sub> d<sub>i</sub> / Σ n<sub>i</sub> &nbsp;(diametrul mediu aritmetic)<span class="n">(3)</span></div>
+  <div class="eq">d<sub>30</sub> = (Σ n<sub>i</sub> d<sub>i</sub><sup>3</sup> / Σ n<sub>i</sub>)<sup>1/3</sup> &nbsp;(diametrul mediu volumic)<span class="n">(4)</span></div>
+  <div class="eq">d<sub>32</sub> = SMD = Σ n<sub>i</sub> d<sub>i</sub><sup>3</sup> / Σ n<sub>i</sub> d<sub>i</sub><sup>2</sup> &nbsp;(diametrul mediu Sauter)<span class="n">(5)</span></div>
+  <p>Diametrul Sauter este indicele principal: o picătură cu diametrul d<sub>32</sub> are același raport volum/suprafață ca întregul jet, deci descrie direct viteza de vaporizare. Pulverizarea este cu atât mai fină cu cât d<sub>32</sub> este mai mic.</p>
+  <p>Estimarea teoretică a diametrului Sauter se face cu corelația Hiroyasu–Arai–Tabata (maximul celor două expresii):</p>
+  <div class="eq">SMD / d<sub>0</sub> = max{ 4,12 Re<sup>0,12</sup> We<sub>c</sub><sup>−0,75</sup> (μ<sub>c</sub>/μ<sub>a</sub>)<sup>0,54</sup> (ρ<sub>c</sub>/ρ<sub>a</sub>)<sup>0,18</sup> ; 0,38 Re<sup>0,25</sup> We<sub>c</sub><sup>−0,32</sup> (μ<sub>c</sub>/μ<sub>a</sub>)<sup>0,37</sup> (ρ<sub>c</sub>/ρ<sub>a</sub>)<sup>−0,47</sup> }<span class="n">(6)</span></div>
+
+  <h3>Omogenitatea pulverizării</h3>
+  <p>Distribuția volumului de combustibil pe diametre se descrie cu legea Rosin–Rammler, unde Q(d) este fracția de volum conținută în picăturile mai mici decât d:</p>
+  <div class="eq">Q(d) = 1 − exp[ −(d / X)<sup>q</sup> ]<span class="n">(7)</span></div>
+  <p>X este diametrul caracteristic (Q = 63,2 %), iar exponentul q este <b>indicele de omogenitate</b>: cu cât q este mai mare, cu atât picăturile au dimensiuni mai apropiate (pentru injectoarele diesel q ≈ 1,8…3,5). Prin logaritmare de două ori se obține o dreaptă, din a cărei pantă se determină q:</p>
+  <div class="eq">ln ln[ 1/(1 − Q) ] = q · ln d − q · ln X<span class="n">(8)</span></div>
+  <p>Ca indicator complementar se folosește lărgimea relativă a distribuției Δ = (d<sub>V90</sub> − d<sub>V10</sub>) / d<sub>V50</sub>; o valoare mică indică o pulverizare omogenă. Între parametri există relația SMD = X / Γ(1 − 1/q).</p>
+
+  <h3>Penetrația jetului</h3>
+  <p>Lungimea jetului S(t) se calculează cu relațiile Hiroyasu–Arai, cu timpul de rupere t<sub>b</sub>:</p>
+  <div class="eq">t<sub>b</sub> = 28,65 ρ<sub>c</sub> d<sub>0</sub> / √(ρ<sub>a</sub> Δp)<span class="n">(9)</span></div>
+  <div class="eq">S = 0,39 √(2Δp/ρ<sub>c</sub>) · t &nbsp;&nbsp; pentru t &lt; t<sub>b</sub> ;&nbsp;&nbsp;&nbsp; S = 2,95 (Δp/ρ<sub>a</sub>)<sup>0,25</sup> √(d<sub>0</sub> t) &nbsp;&nbsp; pentru t ≥ t<sub>b</sub><span class="n">(10)</span></div>
+  <p>Penetrația trebuie corelată cu dimensiunile camerei de ardere: un jet prea scurt nu utilizează aerul din periferie, un jet prea lung udă pereții și crește emisiile de hidrocarburi și fum.</p>
+
+  <h3>Unghiul conului jetului</h3>
+  <div class="eq">θ = 83,5 (L/d<sub>0</sub>)<sup>−0,22</sup> (d<sub>0</sub>/D<sub>sac</sub>)<sup>0,15</sup> (ρ<sub>a</sub>/ρ<sub>c</sub>)<sup>0,26</sup> &nbsp;[°]<span class="n">(11)</span></div>
+
+  <h2>Metode experimentale</h2>
+  <p><b>Verificarea injectorului</b> se face pe un tester manual (pompă cu pârghie, manometru 0–40 MPa, vas colector). Se determină presiunea de deschidere p<sub>d</sub> (reglată din șaibele arcului), etanșeitatea scaunului acului (timpul de scădere a presiunii) și aspectul jetului (fără picurare, jeturi simetrice, zgomot caracteristic de „scârțâit” la pompare lentă).</p>
+  <p><b>Captarea picăturilor</b> se realizează prin trecerea rapidă a unei lamele de sticlă acoperite cu un strat subțire de ulei (sau funingine / oxid de magneziu) prin jet. Picăturile rămân pe lamelă și se măsoară la microscop cu ocular micrometric. Se măsoară minimum 300–500 de picături din mai multe câmpuri, se grupează pe clase de diametre și se calculează indicii (3)…(8).</p>
+  <p><b>Penetrația și unghiul conului</b> se determină într-o cameră de presiune constantă cu hublouri, prin filmare rapidă (10 000–50 000 cadre/s): pe fiecare cadru se măsoară distanța vârfului jetului față de orificiu și unghiul conului la jumătatea lungimii.</p>
+  <div class="note warn"><b>Protecția muncii.</b> Jetul de combustibil la presiunea de injecție pătrunde prin piele și poate provoca leziuni grave. Nu se apropie mâinile de pulverizator în timpul pompării; se lucrează cu vasul colector și cu ochelari de protecție; vaporii de motorină se evacuează prin ventilație.</div>
+</section>
+
+<!-- ============ TESTER ============ -->
+<section class="tab" id="t-tester">
+  <div class="grid3">
+    <div class="card"><h3>Tester manual de injectoare</h3><div class="bd">
+      <div class="ctrl"><label><span>Presiune de deschidere nominală</span> <b id="v_pdn"></b></label><input type="range" id="pdn" min="12" max="30" step="0.5" value="20"></div>
+      <div class="ctrl"><label><span>Șaibe de reglaj adăugate Δs</span> <b id="v_shim"></b></label><input type="range" id="shim" min="-0.4" max="0.4" step="0.05" value="0.15"></div>
+      <div class="ctrl"><label><span>Uzura scaunului acului</span> <b id="v_wear"></b></label><input type="range" id="wear" min="0" max="1" step="0.05" value="0.15"></div>
+      <div class="ctrl"><label><span>Viteza simulării</span> <b id="v_tsp"></b></label><input type="range" id="tsp" min="1" max="8" step="1" value="1"></div>
+      <fieldset><legend>Încercări</legend>
+      <div class="row" style="margin-bottom:8px"><button class="btn fuel" id="bOpen">Pompare lentă — p<sub>d</sub></button><button class="btn alt" id="bTight">Test de etanșeitate</button></div>
+      <div class="row"><button class="btn alt" id="bFast">Pompare rapidă — aspect jet</button><button class="btn alt" id="bStop">Oprește</button></div>
+      </fieldset>
+      <p class="small">Regula practică: 0,1 mm de șaibe modifică presiunea de deschidere cu aproximativ 1 MPa. Presiunea se citește în momentul deschiderii acului, la pompare lentă (1 cursă / 1–2 s).</p>
+    </div></div>
+    <div class="card stage"><h3>Stand de verificare <span class="tag" id="tsState">repaus</span></h3><div class="bd"><canvas id="cvTester"></canvas>
+      <div class="legend-inline"><span><i style="background:var(--fuel)"></i>combustibil sub presiune</span><span><i style="background:var(--steel)"></i>corp injector / pompă</span><span><i style="background:var(--alert)"></i>acul indicator de maxim</span></div></div></div>
+    <div class="card readouts"><h3>Citiri</h3><div class="bd">
+      <table class="ro-table">
+        <tr><td>Presiune instantanee</td><td id="r_p">–</td></tr>
+        <tr class="hl"><td>Presiune de deschidere (ultima)</td><td id="r_po">–</td></tr>
+        <tr><td>Ridicarea acului</td><td id="r_lift">–</td></tr>
+        <tr><td>Timp etanșeitate (p<sub>d</sub>−2 → p<sub>d</sub>−7)</td><td id="r_tt">–</td></tr>
+        <tr><td>Aspect jet</td><td id="r_asp">–</td></tr>
+      </table>
+      <p class="small" style="margin-top:8px">Criterii orientative: abatere p<sub>d</sub> ±0,5 MPa față de valoarea din fișa tehnică; timp de etanșeitate ≥ 10 s; fără picături la vârful pulverizatorului după încetarea injecției.</p>
+    </div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Registrul încercărilor</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 1. Verificarea injectorului</span><span id="cbT1"></span><button class="btn sm alt" id="bClrT1">Golește</button></div>
+    <div class="tbl-wrap" id="tblTester"></div></div></div>
+</section>
+
+<!-- ============ JET ============ -->
+<section class="tab" id="t-jet">
+  <div class="grid3">
+    <div class="card"><h3>Parametri de intrare</h3><div class="bd">
+      <div class="ctrl"><label>Tipul injectorului</label><select id="preset"></select></div>
+      <fieldset><legend>Pulverizator</legend>
+      <div class="ctrl"><label><span>Număr de orificii i</span> <b id="v_nh"></b></label><input type="range" id="nh" min="1" max="10" step="1"></div>
+      <div class="ctrl"><label><span>Diametrul orificiului d<sub>0</sub></span> <b id="v_d0"></b></label><input type="range" id="d0" min="0.08" max="0.9" step="0.01"></div>
+      <div class="ctrl"><label><span>Raportul L/d<sub>0</sub></span> <b id="v_LD"></b></label><input type="range" id="LD" min="1.5" max="10" step="0.1"></div>
+      <div class="ctrl"><label><span>Coeficient de debit C<sub>d</sub></span> <b id="v_Cd"></b></label><input type="range" id="Cd" min="0.55" max="0.9" step="0.01"></div>
+      <div class="ctrl"><label><span>Diametrul sacului D<sub>sac</sub></span> <b id="v_dsac"></b></label><input type="range" id="dsac" min="0.5" max="1.6" step="0.05"></div>
+      </fieldset>
+      <fieldset><legend>Injecție</legend>
+      <div class="ctrl"><label><span>Presiunea de injecție p<sub>inj</sub></span> <b id="v_pinj"></b></label><input type="range" id="pinj" min="8" max="300" step="1"></div>
+      <div class="ctrl"><label><span>Durata injecției t<sub>inj</sub></span> <b id="v_tinj"></b></label><input type="range" id="tinj" min="0.3" max="3" step="0.05"></div>
+      <div class="ctrl"><label>Combustibil</label><select id="fuel"></select></div>
+      </fieldset>
+      <fieldset><legend>Mediul de injectare</legend>
+      <div class="ctrl"><label>Incinta</label><select id="mode"><option value="atm">Aer atmosferic (stand manual)</option><option value="ch">Cameră de presiune constantă</option></select></div>
+      <div class="ctrl"><label><span>Presiunea aerului p<sub>a</sub></span> <b id="v_pa"></b></label><input type="range" id="pa" min="0.1" max="8" step="0.1"></div>
+      <div class="ctrl"><label><span>Temperatura aerului T<sub>a</sub></span> <b id="v_Ta"></b></label><input type="range" id="Ta" min="293" max="900" step="1"></div>
+      </fieldset>
+      <fieldset><legend>Model de distribuție</legend>
+      <div class="ctrl"><label><span><input type="checkbox" id="qauto" checked> q calculat automat</span> <b id="v_q"></b></label><input type="range" id="q" min="1.4" max="4" step="0.05"></div>
+      </fieldset>
+    </div></div>
+
+    <div>
+      <div class="card stage"><h3>Camera de vizualizare a jetului <span class="tag" id="jetState"></span></h3><div class="bd">
+        <canvas id="cvJet"></canvas>
+        <div class="row" style="margin-top:10px">
+          <button class="btn fuel" id="jPlay">Pornește injecția</button><button class="btn alt" id="jPause">Pauză</button><button class="btn alt" id="jStep">Cadru +</button>
+          <span class="small" style="margin-left:6px">Încetinire</span><input type="range" id="jslow" min="0.1" max="2" step="0.1" value="0.6" style="width:110px" aria-label="Încetinire">
+          <span class="small" id="jslowv"></span>
+        </div>
+        <div class="ctrl" style="margin-top:8px"><label><span>Timp de la începutul injecției</span> <b id="v_jt"></b></label><input type="range" id="jt" min="0" max="1000" step="1" value="0"></div>
+        <div class="legend-inline"><span><i style="background:var(--fuel-deep)"></i>miez lichid (până la L<sub>b</sub>)</span><span><i style="background:var(--fuel)"></i>picături</span><span><i style="background:var(--blue)"></i>conturul conului θ</span><span><i style="background:var(--alert)"></i>vârful jetului S(t)</span></div>
+      </div></div>
+    </div>
+
+    <div class="card readouts"><h3>Mărimi calculate</h3><div class="bd"><table class="ro-table" id="roJet"></table>
+      <p class="small" style="margin-top:8px">Valorile se recalculează la fiecare modificare a parametrilor. Tabelul complet se copiază din secțiunea 5.</p></div></div>
+  </div>
+</section>
+
+<!-- ============ MICROSCOP ============ -->
+<section class="tab" id="t-micro">
+  <div class="grid3">
+    <div class="card"><h3>Proba de picături</h3><div class="bd">
+      <div class="ctrl"><label><span>Număr de picături măsurate N</span> <b id="v_Nd"></b></label><input type="range" id="Nd" min="100" max="2000" step="50" value="500"></div>
+      <div class="ctrl"><label><span>Lățimea clasei Δd</span> <b id="v_dd"></b></label><input type="range" id="dd" min="1" max="10" step="0.5" value="3"></div>
+      <div class="ctrl"><label><span>Limita de detecție a microscopului</span> <b id="v_dmin"></b></label><input type="range" id="dmin" min="1" max="6" step="0.5" value="2"></div>
+      <div class="ctrl"><label><span>Diviziunea ocularului micrometric</span> <b id="v_res"></b></label><input type="range" id="res" min="0.25" max="2" step="0.25" value="0.5"></div>
+      <div class="ctrl"><label><span>Numărul probei (lamela)</span> <b id="v_seed"></b></label><input type="range" id="seed" min="1" max="30" step="1" value="1"></div>
+      <div class="row"><button class="btn fuel" id="mNext">Măsoară câmpul următor</button><button class="btn alt" id="mAll">Măsoară toată proba</button><button class="btn alt" id="mReset">Reia</button></div>
+      <p class="small" style="margin-top:10px">Proba este generată din distribuția Rosin–Rammler corespunzătoare parametrilor din secțiunea 3, cu erori de citire la diviziunea ocularului. Fiecare câmp microscopic conține aproximativ 40 de amprente.</p>
+    </div></div>
+    <div class="card stage"><h3>Câmpul microscopului <span class="tag" id="mState"></span></h3><div class="bd"><canvas id="cvMicro"></canvas></div></div>
+    <div class="card readouts"><h3>Indici măsurați</h3><div class="bd"><table class="ro-table" id="roMicro"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Repartiția picăturilor pe clase de diametre</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 2. Prelucrarea măsurătorilor la microscop</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblClass">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblClass" data-cap="Tabelul 2. Repartiția picăturilor pe clase de diametre">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblClass"></div></div></div>
+</section>
+
+<!-- ============ REZULTATE ============ -->
+<section class="tab" id="t-rez">
+  <div class="card"><h3>Sinteza rezultatelor</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 3. Parametrii încercării și indicii de pulverizare</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblSum">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblSum" data-cap="Tabelul 3. Parametrii încercării și indicii de pulverizare">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblSum"></div></div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3>Fig. 1. Penetrația jetului S(t)</h3><div class="bd"><canvas id="ch1"></canvas><div class="copybar"><span class="small">Cameră rapidă:</span><select id="fps" class="field" style="width:auto"><option value="10000">10 000 cadre/s</option><option value="20000" selected>20 000 cadre/s</option><option value="50000">50 000 cadre/s</option></select><button class="btn sm alt" data-copy="img" data-target="#ch1" data-cap="Fig. 1">Copiază graficul</button></div></div></div>
+    <div class="card"><h3>Fig. 2. Histograma diametrelor picăturilor</h3><div class="bd"><canvas id="ch2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch2" data-cap="Fig. 2">Copiază graficul</button></div></div></div>
+    <div class="card"><h3>Fig. 3. Distribuția cumulativă a volumului</h3><div class="bd"><canvas id="ch3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch3" data-cap="Fig. 3">Copiază graficul</button></div></div></div>
+    <div class="card"><h3>Fig. 4. Diagrama Rosin–Rammler liniarizată</h3><div class="bd"><canvas id="ch4"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch4" data-cap="Fig. 4">Copiază graficul</button></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Penetrația măsurată cadru cu cadru</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 4. Lungimea jetului în funcție de timp</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblPen">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblPen" data-cap="Tabelul 4. Lungimea jetului în funcție de timp">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblPen" style="max-height:320px;overflow:auto"></div></div></div>
+  <div class="card" style="margin-top:16px"><h3>Studiu parametric</h3><div class="bd">
+    <div class="row"><span>Variabila studiată:</span><select id="swVar" class="field" style="width:auto">
+      <option value="pinj">Presiunea de injecție p_inj</option><option value="d0">Diametrul orificiului d0</option><option value="pa">Presiunea aerului p_a</option><option value="Ta">Temperatura aerului T_a</option><option value="fuel">Tipul combustibilului</option></select>
+      <span class="small">Ceilalți parametri rămân cei din secțiunea 3.</span></div>
+    <div class="charts" style="margin-top:10px"><div><canvas id="ch5"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch5" data-cap="Fig. 5">Copiază graficul</button></div></div>
+      <div><div class="copybar"><span class="t">Tabelul 5. Influența parametrului asupra indicilor</span><button class="btn sm alt" data-copy="excel" data-target="#tblSw">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblSw" data-cap="Tabelul 5. Studiu parametric">Copiază pentru Word</button></div><div class="tbl-wrap" id="tblSw"></div></div></div>
+  </div></div>
+</section>
+
+<!-- ============ TUTORIAL ============ -->
+<section class="tab prose" id="t-tut">
+  <h2>Desfășurarea lucrării pas cu pas</h2>
+  <ol class="steps">
+    <li><b class="h">Citiți partea teoretică</b>Notați relațiile (1)…(11) și semnificația indicilor: d<sub>32</sub> pentru finețe, q și Δ pentru omogenitate, S(t) și θ pentru forma jetului.</li>
+    <li><b class="h">Verificați injectorul pe tester (secțiunea 2)</b>Apăsați „Pompare lentă — p<sub>d</sub>” de cel puțin 3 ori și notați presiunea la care se deschide acul. Calculați media. Dacă diferă de valoarea nominală cu mai mult de 0,5 MPa, modificați șaibele Δs și repetați. Rulați testul de etanșeitate și pompare rapidă pentru aspectul jetului. Copiați Tabelul 1.</li>
+    <li><b class="h">Stabiliți parametrii jetului (secțiunea 3)</b>Alegeți tipul injectorului, combustibilul și mediul de injectare. Porniți animația și urmăriți: miezul lichid până la L<sub>b</sub>, dezvoltarea conului, încetinirea vârfului după t<sub>b</sub>. Folosiți cursorul de timp pentru a citi S la momente fixe.</li>
+    <li><b class="h">Măsurați picăturile (secțiunea 4)</b>Măsurați câmp cu câmp sau toată proba (minimum 500 de picături). Observați cum se stabilizează d<sub>10</sub> și d<sub>32</sub> pe măsură ce crește numărul de picături. Copiați Tabelul 2 în Excel și verificați calculele manual pentru primele trei clase.</li>
+    <li><b class="h">Analizați rezultatele (secțiunea 5)</b>Comparați valorile măsurate cu cele teoretice în Tabelul 3. Din Fig. 4 citiți panta dreptei — indicele de omogenitate q. Copiați figurile 1–4 în referat.</li>
+    <li><b class="h">Efectuați studiul parametric</b>Realizați cele trei experimente de mai jos și formulați concluzii privind influența fiecărui parametru.</li>
+    <li><b class="h">Completați referatul (secțiunea 7)</b>Introduceți datele de identificare, copiați referatul generat în Word și completați concluziile proprii.</li>
+  </ol>
+  <h2>Experimente dirijate</h2>
+  <div class="note"><b>Experimentul A — influența presiunii de injecție.</b> Injector common rail 7 × 0,14 mm în cameră de presiune la 3 MPa. Variați p<sub>inj</sub> între 40 și 250 MPa. Întrebare: de câte ori scade d<sub>32</sub> când presiunea crește de 5 ori? <button class="btn sm fuel" data-exp="A">Aplică setările</button></div>
+  <div class="note"><b>Experimentul B — influența contrapresiunii.</b> Același injector, p<sub>inj</sub> = 120 MPa. Comparați aerul atmosferic cu 2, 4 și 6 MPa. Explicați de ce jetul se scurtează și unghiul conului crește. <button class="btn sm fuel" data-exp="B">Aplică setările</button></div>
+  <div class="note"><b>Experimentul C — influența combustibilului.</b> Injector clasic 4 × 0,30 mm pe stand manual. Comparați motorina, biodieselul B100 și uleiul vegetal brut. Care indice se degradează cel mai mult și de ce? <button class="btn sm fuel" data-exp="C">Aplică setările</button></div>
+  <h2>Întrebări de verificare</h2>
+  <ol>
+    <li>De ce diametrul Sauter este mai relevant decât diametrul mediu aritmetic pentru procesul de ardere?</li>
+    <li>Ce semnificație fizică are exponentul q din legea Rosin–Rammler?</li>
+    <li>Cum influențează densitatea aerului din cilindru penetrația și unghiul conului jetului?</li>
+    <li>De ce trebuie măsurate cel puțin câteva sute de picături pentru un rezultat reprezentativ?</li>
+    <li>Care sunt cauzele și efectele unei presiuni de deschidere prea mici?</li>
+    <li>Ce se întâmplă cu pulverizarea la un injector cu scaunul acului uzat?</li>
+  </ol>
+</section>
+
+<!-- ============ REFERAT ============ -->
+<section class="tab" id="t-ref">
+  <div class="card"><h3>Date de identificare</h3><div class="bd"><div class="row">
+    <input class="field" style="max-width:260px" id="stName" placeholder="Numele și prenumele studentului">
+    <input class="field" style="max-width:140px" id="stGroup" placeholder="Grupa">
+    <input class="field" style="max-width:170px" id="stDate" type="date">
+    <button class="btn fuel" id="bRef">Copiază referatul pentru Word</button><button class="btn alt" id="bRefTxt">Copiază ca text</button></div>
+    <p class="small">Referatul include datele de intrare, tabelele cu rezultate și concluziile generate automat. Graficele se copiază separat din secțiunea 5 (butonul „Copiază graficul”).</p></div></div>
+  <div class="card" style="margin-top:16px"><div class="bd prose" id="refBody" style="max-width:none"></div></div>
+</section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box"><div class="row" style="justify-content:space-between"><b id="modalT"></b><button class="btn sm alt" onclick="document.getElementById('modal').classList.remove('on')">Închide</button></div><div id="modalB"></div></div></div>
+<script>/* ===== Utilitare comune simulatoare laborator ===== */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let DEC = ',';
+try { const d = localStorage.getItem('lab_dec'); if (d) DEC = d; } catch(e){}
+function fmt(x, d=2){ if (x===null||x===undefined||!isFinite(x)) return '–'; return x.toFixed(d).replace('.', DEC); }
+function fmtS(x, s=3){ if(!isFinite(x)) return '–'; if (x===0) return '0'; const d = Math.max(0, s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x, Math.min(d,6)); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaFn(z){ // Lanczos
+  if (z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gammaFn(1-z));
+  z-=1; const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0]; for(let i=1;i<g+2;i++) x+=c[i]/(z+i); const t=z+g+0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x; }
+function linreg(x,y){ const n=x.length; let sx=0,sy=0,sxx=0,sxy=0,syy=0; for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];syy+=y[i]*y[i];}
+  const b=(n*sxy-sx*sy)/(n*sxx-sx*sx), a=(sy-b*sx)/n; const r=(n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy)); return {a,b,r2:r*r}; }
+function toast(msg){ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---- Tab-uri ---- */
+function initTabs(onChange){
+  $$('nav.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    $$('nav.tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('section.tab').forEach(s=>s.classList.toggle('on', s.id===b.dataset.tab));
+    try{localStorage.setItem(document.title+'_tab', b.dataset.tab);}catch(e){}
+    onChange && onChange(b.dataset.tab); window.scrollTo({top:0});
+  }));
+  let t=null; try{t=localStorage.getItem(document.title+'_tab');}catch(e){}
+  const btn = t && $(`nav.tabs button[data-tab="${t}"]`); (btn||$('nav.tabs button[data-tab]')).click();
+}
+function initTheme(){
+  const b=$('#themeBtn'); if(!b) return; let th=null; try{th=localStorage.getItem('lab_theme');}catch(e){}
+  if(th) document.documentElement.dataset.theme=th;
+  b.addEventListener('click',()=>{ const cur=document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx; try{localStorage.setItem('lab_theme',nx);}catch(e){} window.dispatchEvent(new Event('themechange')); });
+  const d=$('#decBtn'); if(d){ d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct');
+    d.addEventListener('click',()=>{ DEC = DEC===','?'.':','; d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct'); try{localStorage.setItem('lab_dec',DEC);}catch(e){} window.dispatchEvent(new Event('decchange')); toast('Separator zecimal: '+(DEC===','?'virgulă (Excel RO)':'punct (Excel EN)')); }); }
+}
+
+/* ---- Canvas HiDPI ---- */
+function fitCanvas(cv, h){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=cv.clientWidth||cv.parentElement.clientWidth; const H=h||cv._h||Math.round(w*0.56);
+  cv._h=h||cv._h; cv.style.height=H+'px'; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(H*dpr);} const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h:H}; }
+
+/* ---- Grafic generic ---- */
+function niceTicks(min,max,n=6){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const t=[]; for(let v=Math.ceil(min/step-1e-9)*step; v<=max+step*1e-6; v+=step) t.push(+v.toFixed(12)); return {t,step}; }
+function plot(cv, o){
+  if(!cv.clientWidth) return null;
+  const {c,w,h}=fitCanvas(cv, o.height||300);
+  const ink=css('--ink'), ink2=css('--ink2'), grid=css('--grid'), bg=css('--canvas-bg');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const L=62,R=o.y2?60:18,T=o.title?30:14,B=46; const pw=w-L-R, ph=h-T-B;
+  let xs=[],ys=[],y2s=[]; o.series.forEach(s=>{ s.x.forEach((v,i)=>{ if(isFinite(v)&&isFinite(s.y[i])){ xs.push(v); (s.axis===2?y2s:ys).push(s.y[i]); } }); });
+  let xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs); if(!(xmax>xmin)){xmax=xmin+1;}
+  const lg=o.logx, lgy=o.logy;
+  const tx=v=>lg?Math.log10(v):v, ty=v=>lgy?Math.log10(v):v;
+  let ymin=o.ymin??Math.min(...ys), ymax=o.ymax??Math.max(...ys); if(!isFinite(ymin)){ymin=0;ymax=1;} if(ymax===ymin){ymax+=1;ymin-=lgy?0:1;}
+  if(o.ymax===undefined && o.ymin!==undefined && !lgy){ ymax+=(ymax-ymin)*0.08; }
+  if(o.ymin===undefined && !lgy){ const pad=(ymax-ymin)*0.08; ymax+=pad; if(ymin>0 && ymin<(ymax-ymin)*0.6) ymin=0; else ymin-=pad; }
+  let y2min=o.y2min??Math.min(...y2s), y2max=o.y2max??Math.max(...y2s); if(o.y2 && o.y2min===undefined){const p=(y2max-y2min)*0.08||1; y2max+=p; y2min=Math.max(0,y2min-p);}
+  const X=v=>L+(tx(v)-tx(xmin))/(tx(xmax)-tx(xmin))*pw, Y=v=>T+ph-(ty(v)-ty(ymin))/(ty(ymax)-ty(ymin))*ph, Y2=v=>T+ph-(v-y2min)/(y2max-y2min)*ph;
+  c.font='12px Barlow Condensed, Arial Narrow, sans-serif'; c.lineWidth=1;
+  // grid
+  const xt = o.xcats? o.xcats.map((_,i)=>i+1) : lg? logTicks(xmin,xmax) : niceTicks(xmin,xmax,o.xticks||7).t; const yt = lgy? logTicks(ymin,ymax): niceTicks(ymin,ymax,6).t;
+  c.strokeStyle=grid; c.fillStyle=ink2; c.textAlign='center'; c.textBaseline='top';
+  xt.forEach(v=>{ if(v<xmin-1e-12||v>xmax+1e-12) return; const x=X(v); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.fillText(o.xcats? o.xcats[v-1] : fmtTick(v), x, T+ph+5); });
+  c.textAlign='right'; c.textBaseline='middle';
+  yt.forEach(v=>{ if(v<ymin-1e-12||v>ymax+1e-12) return; const y=Y(v); c.beginPath(); c.moveTo(L,y); c.lineTo(L+pw,y); c.stroke(); c.fillText(fmtTick(v), L-6, y); });
+  if(o.y2){ c.textAlign='left'; niceTicks(y2min,y2max,6).t.forEach(v=>{ if(v<y2min||v>y2max) return; c.fillText(fmtTick(v), L+pw+6, Y2(v)); }); }
+  c.strokeStyle=ink; c.lineWidth=1.2; c.strokeRect(L,T,pw,ph);
+  c.fillStyle=ink; c.font='13px Barlow, Arial, sans-serif'; c.textAlign='center'; c.textBaseline='bottom'; c.fillText(o.xlabel||'', L+pw/2, h-4);
+  c.save(); c.translate(14, T+ph/2); c.rotate(-Math.PI/2); c.textBaseline='middle'; c.fillText(o.ylabel||'',0,0); c.restore();
+  if(o.y2){ c.save(); c.translate(w-10, T+ph/2); c.rotate(Math.PI/2); c.textBaseline='middle'; c.fillText(o.y2label||'',0,0); c.restore(); }
+  if(o.title){ c.font='600 14px Barlow, Arial, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(o.title, L, 8); }
+  // series
+  c.save(); c.beginPath(); c.rect(L,T,pw,ph); c.clip();
+  o.series.forEach(s=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const YY=s.axis===2?Y2:Y;
+    if(s.bars){ const n=s.x.length; const bw=s.bw? (X(s.x[0]+s.bw)-X(s.x[0])) : pw/n*0.8; c.fillStyle=col; c.globalAlpha=s.alpha??0.75;
+      s.x.forEach((v,i)=>{ const x=X(v)-bw/2+(s.shift||0)*bw; const y=YY(s.y[i]); c.fillRect(x+ (s.gap||1), y, bw*(s.wf||1)-2*(s.gap||1), YY(s.axis===2?y2min:Math.max(ymin,0))-y); }); c.globalAlpha=1; return; }
+    c.strokeStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+    if(!s.pointsOnly){ c.beginPath(); let st=false; s.x.forEach((v,i)=>{ if(!isFinite(v)||!isFinite(s.y[i])){st=false;return;} const x=X(v),y=YY(s.y[i]); st?c.lineTo(x,y):c.moveTo(x,y); st=true; }); c.stroke(); }
+    c.setLineDash([]);
+    if(s.markers){ c.fillStyle=css('--canvas-bg'); c.strokeStyle=col; c.lineWidth=1.8; s.x.forEach((v,i)=>{ if(!isFinite(s.y[i]))return; const x=X(v),y=YY(s.y[i]); c.beginPath();
+      if(s.markers==='sq') c.rect(x-3.5,y-3.5,7,7); else if(s.markers==='tri'){c.moveTo(x,y-4.5);c.lineTo(x+4.2,y+3.5);c.lineTo(x-4.2,y+3.5);c.closePath();} else c.arc(x,y,3.6,0,7); c.fill(); c.stroke(); }); }
+  });
+  (o.vlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(X(v.x),T); c.lineTo(X(v.x),T+ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(v.label||'', X(v.x)+4, T+4+(v.dy||0)); });
+  (o.hlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(L,Y(v.y)); c.lineTo(L+pw,Y(v.y)); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='right'; c.textBaseline='bottom'; c.fillText(v.label||'', L+pw-4, Y(v.y)-2); });
+  c.restore();
+  // legend
+  const named=o.series.filter(s=>s.name); if(named.length){ c.font='12.5px Barlow, Arial, sans-serif'; let lx=L+10, ly=o.legendBR? T+ph-named.length*18-4 : T+10; const lw=Math.max(...named.map(s=>c.measureText(s.name).width))+36;
+    let lxr = o.legendLeft? L+10 : L+pw-lw-8; c.fillStyle=css('--canvas-bg'); c.globalAlpha=.88; c.fillRect(lxr-6, ly-6, lw+4, named.length*18+8); c.globalAlpha=1;
+    named.forEach((s,i)=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const yy=ly+i*18+6; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+      if(s.bars){ c.globalAlpha=.75; c.fillRect(lxr,yy-5,22,10); c.globalAlpha=1;} else if(s.pointsOnly){ c.beginPath(); c.arc(lxr+11,yy,3.6,0,7); c.stroke(); } else { c.beginPath(); c.moveTo(lxr,yy); c.lineTo(lxr+22,yy); c.stroke(); }
+      c.setLineDash([]); c.fillStyle=ink; c.textAlign='left'; c.textBaseline='middle'; c.fillText(s.name, lxr+28, yy); }); }
+  cv._plot={o,X,Y,L,T,pw,ph};
+  return cv._plot;
+}
+function logTicks(a,b){ const t=[]; for(let e=Math.floor(Math.log10(a)); e<=Math.ceil(Math.log10(b)); e++){ [1,2,5].forEach(m=>{ const v=m*Math.pow(10,e); if(v>=a*0.999&&v<=b*1.001) t.push(v); }); } return t; }
+function fmtTick(v){ const a=Math.abs(v); if(a===0) return '0'; if(a>=1000) return String(Math.round(v)); if(a>=10) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=1) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=0.1) return fmt(v,2); return fmt(v,3); }
+
+/* ---- Tabele & copiere ---- */
+function buildTable(el, T){ // T={head:[..], rows:[[..]], foot:[..]?, left:[colIdx]}
+  const left=new Set(T.left||[0]);
+  let h='<table class="data"><thead><tr>'+T.head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  T.rows.forEach(r=>{ h+='<tr>'+r.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr>'; });
+  h+='</tbody>'; if(T.foot) h+='<tfoot><tr>'+T.foot.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr></tfoot>'; h+='</table>';
+  el.innerHTML=h; el._T=T; }
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,'$1').replace(/<sup>(.*?)<\/sup>/g,'^$1').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+function tableTSV(T){ const lines=[T.head.map(strip).join('\t')]; T.rows.forEach(r=>lines.push(r.map(strip).join('\t'))); if(T.foot) lines.push(T.foot.map(strip).join('\t')); return lines.join('\r\n'); }
+function tableHTMLWord(T, caption){
+  const th='border:1px solid #16324A;background:#16324A;color:#fff;padding:3pt 5pt;font:bold 9.5pt Calibri,Arial;text-align:center';
+  const td='border:1px solid #9AA8B4;padding:2pt 5pt;font:9.5pt Calibri,Arial;text-align:right'; const tdl=td.replace('right','left');
+  const left=new Set(T.left||[0]);
+  let h=(caption?`<p style="font:bold 10pt Calibri,Arial;color:#16324A;margin:6pt 0 3pt">${caption}</p>`:'')+'<table style="border-collapse:collapse;mso-table-lspace:0">';
+  h+='<tr>'+T.head.map(x=>`<th style="${th}">${x}</th>`).join('')+'</tr>';
+  T.rows.forEach((r,j)=>{ h+='<tr>'+r.map((x,i)=>`<td style="${left.has(i)?tdl:td};${j%2?'background:#F2F5F7':''}">${x}</td>`).join('')+'</tr>'; });
+  if(T.foot) h+='<tr>'+T.foot.map((x,i)=>`<td style="${left.has(i)?tdl:td};font-weight:bold;border-top:2px solid #16324A">${x}</td>`).join('')+'</tr>';
+  return h+'</table>'; }
+async function copyRich(html, text){
+  try{ if(navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  try{ const d=document.createElement('div'); d.contentEditable='true'; d.style.cssText='position:fixed;left:-9999px;top:0'; d.innerHTML=html; document.body.appendChild(d);
+    const r=document.createRange(); r.selectNodeContents(d); const s=getSelection(); s.removeAllRanges(); s.addRange(r); const ok=document.execCommand('copy'); s.removeAllRanges(); d.remove(); if(ok) return true; }catch(e){}
+  return false; }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) return true; }catch(e){}
+  return false; }
+function manualModal(title, content, isHTML){ const m=$('#modal'); $('#modalT').textContent=title;
+  const b=$('#modalB'); b.innerHTML=''; if(isHTML){ const d=document.createElement('div'); d.innerHTML=content; d.style.cssText='border:1px solid var(--line);padding:8px;background:#fff;color:#000;overflow:auto'; b.appendChild(d);
+    b.insertAdjacentHTML('afterbegin','<p class="small">Selectați conținutul de mai jos (Ctrl+A în chenar nu funcționează – trageți cu mouse-ul) și apăsați Ctrl+C.</p>'); }
+  else { const t=document.createElement('textarea'); t.value=content; b.appendChild(t); setTimeout(()=>{t.focus();t.select();},50); b.insertAdjacentHTML('afterbegin','<p class="small">Copierea automată a fost blocată de browser. Textul este selectat – apăsați Ctrl+C (Cmd+C).</p>'); }
+  m.classList.add('on'); }
+async function copyTableExcel(T){ const txt=tableTSV(T); if(await copyText(txt)) toast('Tabel copiat – lipiți în Excel (Ctrl+V)'); else manualModal('Copiere pentru Excel', txt); }
+async function copyTableWord(T, cap){ const html=tableHTMLWord(T,cap); if(await copyRich(html, tableTSV(T))) toast('Tabel copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere pentru Word', html, true); }
+async function copyCanvas(cv, name){
+  // exportă pe fundal alb pentru documente
+  const tmp=document.createElement('canvas'); tmp.width=cv.width; tmp.height=cv.height; const c=tmp.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,tmp.width,tmp.height); c.drawImage(cv,0,0);
+  try{ const blob=await new Promise(r=>tmp.toBlob(r,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Grafic copiat ca imagine – lipiți în Word/Excel'); return; }catch(e){}
+  const url=tmp.toDataURL('image/png'); manualModal('Copiere grafic: '+(name||''), `<img src="${url}" style="max-width:100%"><p style="font:12px Arial">Clic dreapta pe imagine → „Copiere imagine”, apoi lipiți în Word.</p>`, true); }
+function wireCopy(scope){ $$('[data-copy]',scope).forEach(b=>{ if(b._w) return; b._w=1; b.addEventListener('click',()=>{ const tgt=$(b.dataset.target); const mode=b.dataset.copy;
+  if(mode==='excel') copyTableExcel(tgt._T); else if(mode==='word') copyTableWord(tgt._T, b.dataset.cap); else if(mode==='img') copyCanvas(tgt, b.dataset.cap); }); }); }
+function copyButtons(target, cap, img){ return img? `<button class="btn sm alt" data-copy="img" data-target="${target}" data-cap="${cap||''}">Copiază graficul</button>`
+  : `<button class="btn sm alt" data-copy="excel" data-target="${target}">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="${target}" data-cap="${cap||''}">Copiază pentru Word</button>`; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#modal')?.classList.remove('on'); });
+</script><script>/* ================= Lucrarea 1 — Indici de pulverizare ================= */
+const FUELS={ d:{n:'Motorină EN 590',rho:835,nu:3.0,sig:0.027}, b20:{n:'Amestec B20',rho:843,nu:3.4,sig:0.0275}, b100:{n:'Biodiesel B100 (FAME)',rho:880,nu:4.5,sig:0.030},
+  svo:{n:'Ulei vegetal brut (rapiță)',rho:915,nu:35,sig:0.033}, k:{n:'Kerosen / JP-8',rho:800,nu:1.6,sig:0.025} };
+const PRESETS={
+  pln4:{n:'Cu orificii, pompă–conductă–injector (4 × 0,30 mm)',nh:4,d0:.30,LD:4,Cd:.70,dsac:1.0,pinj:22,tinj:1.5,mode:'atm',pa:0.1,Ta:293,pdn:20},
+  pln5:{n:'Cu orificii, motor de autocamion (5 × 0,25 mm)',nh:5,d0:.25,LD:4.5,Cd:.72,dsac:1.0,pinj:28,tinj:1.5,mode:'atm',pa:0.1,Ta:293,pdn:25},
+  pint:{n:'Cu știft, cameră separată (echivalent 1 × 0,80 mm)',nh:1,d0:.80,LD:1.8,Cd:.65,dsac:1.4,pinj:13,tinj:1.8,mode:'atm',pa:0.1,Ta:293,pdn:12},
+  cr2:{n:'Common Rail generația a 2-a (7 × 0,14 mm)',nh:7,d0:.14,LD:6,Cd:.78,dsac:.8,pinj:160,tinj:1.0,mode:'ch',pa:3,Ta:293},
+  ui:{n:'Pompă-injector (8 × 0,16 mm)',nh:8,d0:.16,LD:5.5,Cd:.76,dsac:.8,pinj:200,tinj:1.0,mode:'ch',pa:3,Ta:293},
+  cr4:{n:'Common Rail generația a 4-a (8 × 0,11 mm)',nh:8,d0:.11,LD:7,Cd:.82,dsac:.7,pinj:250,tinj:0.8,mode:'ch',pa:3,Ta:293} };
+const P={}; let R=null;
+const ids=['nh','d0','LD','Cd','dsac','pinj','tinj','pa','Ta','q','fuel','mode','preset'];
+const unit={nh:v=>v, d0:v=>fmt(+v,2)+' mm', LD:v=>fmt(+v,1), Cd:v=>fmt(+v,2), dsac:v=>fmt(+v,2)+' mm', pinj:v=>v+' MPa', tinj:v=>fmt(+v,2)+' ms', pa:v=>fmt(+v,1)+' MPa', Ta:v=>v+' K', q:v=>fmt(+v,2)};
+
+function sutherland(T){ return 1.716e-5*Math.pow(T/273.15,1.5)*(273.15+110.4)/(T+110.4); }
+function compute(p){
+  const f=FUELS[p.fuel]; const rl=f.rho, mul=f.rho*f.nu*1e-6, sig=f.sig;
+  const pa = p.mode==='atm'? 0.1013 : p.pa, Ta = p.mode==='atm'? 293 : p.Ta;
+  const rhoa=pa*1e6/(287*Ta), mua=sutherland(Ta);
+  const dP=Math.max(0.5,(p.pinj-pa))*1e6, d0=p.d0*1e-3;
+  const Uth=Math.sqrt(2*dP/rl), U=p.Cd*Uth;
+  const Re=rl*U*d0/mul, We=rl*U*U*d0/sig, Weg=rhoa*U*U*d0/sig, Oh=mul/Math.sqrt(rl*sig*d0);
+  const tb=28.65*rl*d0/Math.sqrt(rhoa*dP);
+  const S=t=> t<=0?0 : (t<tb? 0.39*Math.sqrt(2*dP/rl)*t : 2.95*Math.pow(dP/rhoa,0.25)*Math.sqrt(d0*t));
+  const Lb=S(tb);
+  const theta=83.5*Math.pow(p.LD,-0.22)*Math.pow(p.d0/p.dsac,0.15)*Math.pow(rhoa/rl,0.26);
+  const f1=4.12*Math.pow(Re,0.12)*Math.pow(We,-0.75)*Math.pow(mul/mua,0.54)*Math.pow(rl/rhoa,0.18);
+  const f2=0.38*Math.pow(Re,0.25)*Math.pow(We,-0.32)*Math.pow(mul/mua,0.37)*Math.pow(rl/rhoa,-0.47);
+  const SMD=d0*Math.max(f1,f2)*1e6; // µm
+  const qa=1.8+1.4*(1-Math.exp(-dP/1e8)) - 0.25*Math.min(1,Math.log10(f.nu/3)+0) ;
+  const q = p.qauto? Math.max(1.4,qa) : p.q;
+  const X=SMD*gammaFn(1-1/q);
+  const dv=Q=>X*Math.pow(-Math.log(1-Q),1/q);
+  const A0=Math.PI*d0*d0/4, mdot=p.Cd*A0*Math.sqrt(2*rl*dP);
+  const Vinj=p.nh*mdot*p.tinj*1e-3/rl*1e9; // mm3
+  const regime= Weg<0.4?'Rayleigh':Weg<13?'primul regim aerodinamic':Weg<40.3?'al doilea regim aerodinamic':'atomizare';
+  return {f,rl,mul,sig,pa,Ta,rhoa,mua,dP,d0,Uth,U,Re,We,Weg,Oh,tb,S,Lb,theta,SMD,q,X,dv,dv10:dv(.1),dv50:dv(.5),dv90:dv(.9),span:(dv(.9)-dv(.1))/dv(.5),mdot,Vinj,regime,f1,f2};
+}
+
+/* ---------- eșantion de picături (distribuție numerică trunchiată) ---------- */
+function makeSample(R, N, dmin, res, seed){
+  const rng=mulberry32(seed*7919+13); const dmax=R.dv(0.9995); const M=1500; const xs=[], cdf=[]; let acc=0;
+  for(let i=0;i<=M;i++){ const d=dmin+(dmax-dmin)*i/M; const z=d/R.X; const fv=(R.q/R.X)*Math.pow(z,R.q-1)*Math.exp(-Math.pow(z,R.q)); const fn=fv/(d*d*d);
+    if(i>0) acc+=(fn+ (xs.length? xs[xs.length-1].fn:0))/2*(dmax-dmin)/M; xs.push({d,fn}); cdf.push(acc); }
+  const out=[]; for(let k=0;k<N;k++){ const u=rng()*acc; let lo=0,hi=M; while(hi-lo>1){const m=(lo+hi)>>1; if(cdf[m]<u) lo=m; else hi=m;}
+    const t=(u-cdf[lo])/Math.max(1e-30,cdf[hi]-cdf[lo]); const dtrue=xs[lo].d+t*(xs[hi].d-xs[lo].d);
+    let dm=Math.round((dtrue+0.25*res*gauss(rng))/res)*res; if(dm<dmin) dm=dmin; out.push({dt:dtrue, d:dm, x:rng(), y:rng()}); }
+  return out; }
+function sampleStats(arr, dd){
+  if(!arr.length) return null; const dmax=Math.max(...arr.map(a=>a.d)); const nc=Math.ceil((dmax+1e-9)/dd); const cls=[];
+  for(let i=0;i<nc;i++) cls.push({a:i*dd,b:(i+1)*dd,c:(i+0.5)*dd,n:0});
+  arr.forEach(a=>{ let i=Math.min(nc-1,Math.floor(a.d/dd)); cls[i].n++; });
+  while(cls.length && cls[0].n===0) cls.shift();
+  let S0=0,S1=0,S2=0,S3=0,S4=0; cls.forEach(c=>{ S0+=c.n; S1+=c.n*c.c; S2+=c.n*c.c**2; S3+=c.n*c.c**3; S4+=c.n*c.c**4; });
+  let cum=0, cumN=0; cls.forEach(c=>{ c.pn=c.n/S0*100; c.pv=c.n*c.c**3/S3*100; cum+=c.pv; cumN+=c.pn; c.Qv=cum; c.Qn=cumN; });
+  const dvq=Q=>{ let prev={b:cls[0].a,Qv:0}; for(const c of cls){ if(c.Qv>=Q*100){ return prev.b+(Q*100-prev.Qv)/(c.Qv-prev.Qv)*(c.b-prev.b); } prev=c; } return cls[cls.length-1].b; };
+  // regresie Rosin–Rammler
+  const lx=[],ly=[]; cls.forEach(c=>{ const Q=c.Qv/100; if(Q>0.02&&Q<0.985){ lx.push(Math.log(c.b)); ly.push(Math.log(-Math.log(1-Q))); } });
+  let rr=null; if(lx.length>=3){ const L=linreg(lx,ly); rr={q:L.b, X:Math.exp(-L.a/L.b), r2:L.r2, lx, ly, a:L.a}; }
+  const d10=S1/S0, d30=Math.cbrt(S3/S0), d32=S3/S2, d43=S4/S3;
+  const v10=dvq(.1), v50=dvq(.5), v90=dvq(.9);
+  return {cls,N:S0,S1,S2,S3,d10,d30,d32,d43,v10,v50,v90,span:(v90-v10)/v50,rr,dmax,dmin:Math.min(...arr.map(a=>a.d))}; }
+
+/* ---------- interfață parametri ---------- */
+function initInputs(){
+  const ps=$('#preset'); Object.entries(PRESETS).forEach(([k,v])=>ps.insertAdjacentHTML('beforeend',`<option value="${k}">${v.n}</option>`));
+  const fs=$('#fuel'); Object.entries(FUELS).forEach(([k,v])=>fs.insertAdjacentHTML('beforeend',`<option value="${k}">${v.n}</option>`));
+  ps.addEventListener('change',()=>applyPreset(ps.value));
+  ['nh','d0','LD','Cd','dsac','pinj','tinj','pa','Ta','q'].forEach(k=>$('#'+k).addEventListener('input',readInputs));
+  ['fuel','mode','qauto'].forEach(k=>$('#'+k).addEventListener('change',readInputs));
+}
+function applyPreset(k){ const s=PRESETS[k]; $('#preset').value=k; ['nh','d0','LD','Cd','dsac','pinj','tinj','pa','Ta'].forEach(x=>$('#'+x).value=s[x]); $('#mode').value=s.mode; if(s.pdn){ $('#pdn').value=s.pdn; } readInputs(); if(s.pdn) testerParams(); }
+function readInputs(){
+  ['nh','d0','LD','Cd','dsac','pinj','tinj','pa','Ta','q'].forEach(k=>{ P[k]=+$('#'+k).value; });
+  P.fuel=$('#fuel').value; P.mode=$('#mode').value; P.qauto=$('#qauto').checked;
+  if(P.mode==='atm' && P.pinj>60){ /* stand manual: limitează */ }
+  $('#pa').disabled=$('#Ta').disabled=(P.mode==='atm'); $('#q').disabled=P.qauto;
+  R=compute(P); if(P.qauto){ $('#q').value=R.q.toFixed(2); }
+  ['nh','d0','LD','Cd','dsac','pinj','tinj','pa','Ta'].forEach(k=>$('#v_'+k).textContent=unit[k](P[k]));
+  $('#v_q').textContent=fmt(R.q,2);
+  if(P.mode==='atm'){ $('#v_pa').textContent='0,1 MPa (atm.)'.replace(',',DEC); $('#v_Ta').textContent='293 K'; }
+  renderReadouts(); jetReset(); regenSample(true); scheduleResults();
+}
+function renderReadouts(){
+  const r=R; const rows=[
+    ['Densitatea aerului','ρ<sub>a</sub>',fmt(r.rhoa,2)+' kg/m³'],
+    ['Viteza la ieșirea din orificiu','U<sub>0</sub>',fmt(r.U,0)+' m/s'],
+    ['Numărul Reynolds','Re',fmt(r.Re,0)],
+    ['Weber lichid','We<sub>c</sub>',fmt(r.We/1000,1)+'·10³'],
+    ['Weber gaz','We<sub>g</sub>',fmt(r.Weg,1)],
+    ['Numărul Ohnesorge','Oh',fmt(r.Oh,4)],
+    ['Regim de dezintegrare','',`<span class="tag ${r.Weg>40.3?'ok':'bad'}">${r.regime}</span>`],
+    ['Timp de rupere','t<sub>b</sub>',fmt(r.tb*1e3,3)+' ms'],
+    ['Lungimea de rupere','L<sub>b</sub>',fmt(r.Lb*1e3,1)+' mm'],
+    ['Penetrația la 1 ms','S',fmt(r.S(1e-3)*1e3,1)+' mm'],
+    ['Unghiul conului','θ',fmt(r.theta,1)+'°'],
+    ['Diametrul Sauter (calcul)','d<sub>32</sub>',fmt(r.SMD,1)+' µm',1],
+    ['Diametrul median volumic','d<sub>V50</sub>',fmt(r.dv50,1)+' µm'],
+    ['Indice de omogenitate','q',fmt(r.q,2),1],
+    ['Lărgimea relativă','Δ',fmt(r.span,2)],
+    ['Debit masic pe orificiu','ṁ',fmt(r.mdot*1e3,2)+' g/s'],
+    ['Doza pe injecție','V<sub>inj</sub>',fmt(r.Vinj,1)+' mm³'] ];
+  $('#roJet').innerHTML=rows.map(x=>`<tr class="${x[3]?'hl':''}"><td>${x[0]} <span class="sym">${x[1]}</span></td><td>${x[2]}</td></tr>`).join('');
+}
+
+/* ================= ANIMAȚIE JET ================= */
+const J={t:0, play:false, parts:[], last:0, tEnd:1};
+function jetReset(){
+  const rng=mulberry32(4242); J.tEnd=P.tinj+0.6; J.parts=[]; const N=2200;
+  const smp=makeSample(R, 600, 1.5, 0.1, 99).map(a=>a.dt);
+  for(let i=0;i<N;i++){ const u=rng(); J.parts.push({tb:u*P.tinj, af:0.45+0.55*Math.pow(rng(),0.45), rr:Math.max(-1,Math.min(1,gauss(rng)*0.42)), d:smp[i%smp.length], ph:rng()*6.28}); }
+  J.t=Math.min(J.t,J.tEnd); $('#jt').value=Math.round(J.t/J.tEnd*1000); drawJet(); }
+function jetLoop(ts){ if(!J.play){ J.last=0; return; } if(J.last){ const dt=(ts-J.last)/1000; J.t+=dt*(+$('#jslow').value); if(J.t>=J.tEnd){ J.t=J.tEnd; J.play=false; $('#jPlay').textContent='Reia injecția'; } }
+  J.last=ts; $('#jt').value=Math.round(J.t/J.tEnd*1000); drawJet(); if(J.play) requestAnimationFrame(jetLoop); }
+function drawJet(){
+  const cv=$('#cvJet'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv, Math.max(340,Math.min(470,cv.clientWidth*0.56)));
+  const ink=css('--ink'), fuel=css('--fuel'), fdeep=css('--fuel-deep'), steel=css('--steel'), bg=css('--canvas-bg'), blue=css('--blue'), red=css('--alert'), grid=css('--grid'), ink2=css('--ink2');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  // fereastra camerei
+  const x0=78, yc=h*0.47, Smax=R.S(J.tEnd*1e-3); const avail=w-x0-44; const halfTan=Math.tan(R.theta*Math.PI/360);
+  let k=avail/Smax; const vlim=(h*0.40)/(Smax*halfTan*1.25); if(vlim<k) k=Math.max(vlim, avail/Smax*0.5);
+  c.fillStyle=P.mode==='atm'? 'rgba(120,150,170,0.06)':'rgba(47,108,168,0.08)'; c.fillRect(x0-6,18,w-x0-10,h-78);
+  c.strokeStyle=grid; c.lineWidth=1; c.strokeRect(x0-6,18,w-x0-10,h-78);
+  c.fillStyle=ink2; c.font='12px Barlow, sans-serif'; c.textAlign='left'; c.fillText(P.mode==='atm'?'Aer atmosferic, 0,1 MPa, 293 K'.replace(',',DEC):`Cameră: p_a = ${fmt(R.pa,1)} MPa, T_a = ${R.Ta} K, ρ_a = ${fmt(R.rhoa,1)} kg/m³`, x0+4, 32);
+  // grilă de fundal (reper vizual camera rapidă)
+  c.strokeStyle=grid; c.setLineDash([2,4]); for(let y=yc-120; y<=yc+120; y+=40){ if(y<24||y>h-64) continue; c.beginPath(); c.moveTo(x0,y); c.lineTo(w-20,y); c.stroke(); } c.setLineDash([]);
+  // injector
+  const g=c.createLinearGradient(0,yc-26,0,yc+26); g.addColorStop(0,steel); g.addColorStop(.5,css('--panel2')); g.addColorStop(1,steel);
+  c.fillStyle=g; c.strokeStyle=ink; c.lineWidth=1.2; c.beginPath(); c.moveTo(0,yc-30); c.lineTo(x0-26,yc-30); c.lineTo(x0-26,yc-14); c.lineTo(x0-4,yc-6); c.quadraticCurveTo(x0+2,yc,x0-4,yc+6); c.lineTo(x0-26,yc+14); c.lineTo(x0-26,yc+30); c.lineTo(0,yc+30); c.closePath(); c.fill(); c.stroke();
+  // acul (ridicare)
+  const tt=J.t, rate=injRate(tt); c.fillStyle=css('--steel-d'); c.beginPath(); const nl=rate*6; c.moveTo(0,yc-5); c.lineTo(x0-30-6+nl*0,yc-5); c.lineTo(x0-12-nl,yc); c.lineTo(x0-30,yc+5); c.lineTo(0,yc+5); c.closePath(); c.fill();
+  c.fillStyle=ink2; c.font='11px Barlow Condensed, sans-serif'; c.fillText('ac',8,yc-8);
+  // miez lichid
+  const S=R.S(tt*1e-3)*k; const Lb=Math.min(R.Lb*k, S);
+  if(tt>0){ const cs = tt>P.tinj? R.S((tt-P.tinj)*1e-3)*k : 0; if(cs<Lb){ c.fillStyle=fdeep; c.globalAlpha=.6; c.beginPath(); const wd=Math.max(1.5,R.d0*k*0.5);
+      c.moveTo(x0+cs,yc-wd- cs*halfTan*.1); c.lineTo(x0+Lb,yc-wd*0.4-Lb*halfTan*.1); c.lineTo(x0+Lb+4,yc); c.lineTo(x0+Lb,yc+wd*0.4+Lb*halfTan*.1); c.lineTo(x0+cs,yc+wd+cs*halfTan*.1); c.closePath(); c.fill(); c.globalAlpha=1; } }
+  // picături
+  c.fillStyle=fuel; for(const p of J.parts){ if(p.tb>tt) continue; const a=(tt-p.tb)*1e-3; let s=R.S(a)*p.af; if(s<=0) continue;
+    const core=s<R.Lb; let r=s*halfTan*p.rr*(core?0.55+0.45*s/R.Lb:1)+ (core?0:Math.sin(p.ph+a*9000)*s*halfTan*0.08);
+    const x=x0+s*k, y=yc+r*k; if(x>w-18) continue; const rad=Math.max(0.6,Math.min(3.2,p.d*0.07)); c.globalAlpha= tt>P.tinj+0.35? Math.max(0.25,1-(tt-P.tinj-0.35)*1.5):0.85; c.beginPath(); c.arc(x,y,rad,0,6.283); c.fill(); }
+  c.globalAlpha=1;
+  // contur con
+  if(S>4){ c.strokeStyle=blue; c.setLineDash([6,4]); c.lineWidth=1.3; c.beginPath(); c.moveTo(x0,yc); c.lineTo(x0+S,yc-S*halfTan); c.moveTo(x0,yc); c.lineTo(x0+S,yc+S*halfTan); c.stroke(); c.setLineDash([]);
+    const ra=Math.min(70,S*0.5); c.beginPath(); c.arc(x0,yc,ra,-R.theta*Math.PI/360,R.theta*Math.PI/360); c.stroke(); c.fillStyle=blue; c.font='600 13px Barlow, sans-serif'; c.fillText('θ = '+fmt(R.theta,1)+'°', x0+ra+6, yc-S*halfTan*ra/S-6<yc-12? yc-ra*halfTan-8 : yc-12);
+  }
+  // vârf și Lb
+  if(tt>0){ c.strokeStyle=red; c.lineWidth=2; c.beginPath(); c.moveTo(x0+S,yc-36); c.lineTo(x0+S,yc+36); c.stroke(); c.fillStyle=red; c.font='600 13px Barlow, sans-serif'; c.textAlign=x0+S>w-120?'right':'left';
+    c.fillText('S = '+fmt(R.S(tt*1e-3)*1e3,1)+' mm', x0+S+(c.textAlign==='right'?-6:6), yc+52); c.textAlign='left';
+    c.strokeStyle=fdeep; c.setLineDash([3,3]); c.lineWidth=1; c.beginPath(); c.moveTo(x0+R.Lb*k,yc+24); c.lineTo(x0+R.Lb*k,yc+64); c.stroke(); c.setLineDash([]); c.fillStyle=fdeep; c.font='12px Barlow Condensed, sans-serif'; c.fillText('L_b = '+fmt(R.Lb*1e3,1)+' mm', x0+R.Lb*k+3, yc+74); }
+  // riglă
+  const ry=h-50; c.strokeStyle=ink; c.fillStyle=ink; c.lineWidth=1; c.beginPath(); c.moveTo(x0,ry); c.lineTo(w-20,ry); c.stroke();
+  const mmMax=(w-20-x0)/k*1e3; const st=niceTicks(0,mmMax,10).step; c.font='11.5px Barlow Condensed, sans-serif'; c.textAlign='center';
+  for(let m=0;m<=mmMax;m+=st/5){ const x=x0+m/1e3*k; const major=Math.abs(m/st-Math.round(m/st))<1e-6; c.beginPath(); c.moveTo(x,ry); c.lineTo(x,ry+(major?8:4)); c.stroke(); if(major) c.fillText(fmtTick(m),x,ry+20); }
+  c.textAlign='left'; c.fillText('mm',w-40,ry+34);
+  // inset lege de injecție
+  const iw=Math.min(210,w*0.3), ih=64, ix=w-iw-16, iy=h-ih-78+ (h<400?0:0); c.fillStyle=bg; c.globalAlpha=.92; c.fillRect(ix-6,24,iw+12,ih+26); c.globalAlpha=1; c.strokeStyle=grid; c.strokeRect(ix-6,24,iw+12,ih+26);
+  const iy0=24+18; c.fillStyle=ink2; c.font='11.5px Barlow, sans-serif'; c.fillText('Legea de injecție (ridicarea acului)', ix, 36);
+  c.strokeStyle=fuel; c.lineWidth=2; c.beginPath(); for(let i=0;i<=100;i++){ const t=i/100*J.tEnd; const x=ix+i/100*iw, y=iy0+ih-injRate(t)*(ih-8); i?c.lineTo(x,y):c.moveTo(x,y);} c.stroke();
+  c.strokeStyle=red; c.lineWidth=1.2; const mx=ix+tt/J.tEnd*iw; c.beginPath(); c.moveTo(mx,iy0); c.lineTo(mx,iy0+ih); c.stroke();
+  c.fillStyle=ink; c.font='600 13px Barlow Condensed, sans-serif'; c.textAlign='right'; c.fillText('t = '+fmt(tt,3)+' ms', ix+iw, iy0+ih+12); c.textAlign='left';
+  $('#v_jt').textContent=fmt(tt,3)+' ms'; $('#jslowv').textContent=fmt(+$('#jslow').value,1)+' ms/s';
+  $('#jetState').textContent= tt===0?'pregătit': tt<P.tinj?'injecție în curs': tt<J.tEnd?'după închiderea acului':'final';
+  c.fillStyle=ink2; c.font='11px Barlow, sans-serif'; c.fillText('Picăturile sunt reprezentate mărit (nu la scară).', x0, h-8);
+}
+function injRate(t){ const r=0.12; if(t<=0||t>=P.tinj+r*0.5) return 0; if(t<r) return t/r; if(t>P.tinj-r*0.5) return Math.max(0,(P.tinj+r*0.5-t)/r); return 1; }
+
+/* ================= TESTER INJECTOR ================= */
+const T={p:0, pmax:0, mode:'idle', lever:0, open:0, trialP:0, rows:[], parts:[], hold:0, tStart:null, last:0, strokeT:0, openedThisStroke:false, trialN:0, rng:mulberry32(77), dripping:0, tight:{}};
+function testerParams(){ const pdn=+$('#pdn').value, sh=+$('#shim').value, wr=+$('#wear').value;
+  $('#v_pdn').textContent=fmt(pdn,1)+' MPa'; $('#v_shim').textContent=(sh>=0?'+':'')+fmt(sh,2)+' mm'; $('#v_wear').textContent=Math.round(wr*100)+' %'; $('#v_tsp').textContent='×'+$('#tsp').value;
+  T.pd=pdn+sh*10; T.wear=wr; T.pdn=pdn; T.pc=T.pd*(0.84-0.12*wr); T.tet=28*Math.pow(1-0.88*wr,2)+1; T.kleak=Math.log((T.pd-2)/(T.pd-7))/T.tet; drawTester(); }
+function nextTrialP(){ return T.pd+0.12*gauss(T.rng); }
+function testerStart(mode){ T.mode=mode; T.trialP=nextTrialP(); T.openedThisStroke=false; T.pmax=0; T.tight={}; if(mode==='tight'){ T.phase='pump'; } T.fastCount=0; $('#tsState').textContent={slow:'pompare lentă',fast:'pompare rapidă',tight:'test etanșeitate'}[mode]; if(!T.run){ T.run=true; T.last=0; requestAnimationFrame(testerLoop);} }
+function testerStop(){ T.mode='idle'; $('#tsState').textContent='repaus'; }
+function testerLoop(ts){ if(!T.run) return; let dt=T.last? Math.min(0.05,(ts-T.last)/1000):0; T.last=ts; const spd=+$('#tsp').value; for(let i=0;i<spd;i++) testerStep(dt); drawTester(); requestAnimationFrame(testerLoop); }
+function testerStep(dt){
+  const m=T.mode; // scurgeri prin scaun
+  T.p=Math.max(0,T.p-T.kleak*T.p*dt*(T.open?0:1));
+  let period= m==='fast'?0.32 : m==='slow'?1.3 : (m==='tight'&&T.phase==='pump')?0.5:0;
+  const target= m==='slow'? T.trialP+3 : m==='fast'? T.trialP+4 : T.pd-1.2;
+  if(period){ T.strokeT+=dt; const ph=(T.strokeT%period)/period; const prev=T.lever; T.lever= ph<0.55? ph/0.55 : 1-(ph-0.55)/0.45;
+    if(ph<0.55 && !T.open){ let rate;
+      if(m==='slow') rate = T.p<T.trialP-3 ? 25 : 1.5/(period*0.55);
+      else if(m==='fast') rate = 45; else rate = T.p<T.pd-6 ? 25 : 3;
+      T.p+=rate*dt; }
+  } else T.lever*=Math.pow(0.02,dt);
+  T.pmax=Math.max(T.pmax,T.p);
+  // deschidere
+  if(!T.open && T.p>=T.trialP && m!=='tight'){ T.open=1; T.openT=0; T.pOpenRec=T.trialP; emitSpray(m==='fast'?160:70);
+    if(m==='slow'){ addTrial('Presiune de deschidere', T.trialP); T.trialN++; T.slowDone=0.6; }
+    if(m==='fast'){ T.fastCount++; if(T.fastCount===6){ addTrial('Aspect jet (pompare rapidă)', null); } }
+    T.trialP=nextTrialP(); }
+  if(T.open){ T.openT+=dt; T.p=Math.max(T.pc, T.p-(T.p-T.pc)*Math.min(1,dt*60)); if(T.openT>0.05 && T.p<=T.pc+0.3){ T.open=0; if(T.wear>0.35) T.dripping=1.2*T.wear; } }
+  if(m==='slow' && T.slowDone!==undefined && T.slowDone>0){ T.slowDone-=dt; if(T.slowDone<=0){ T.slowDone=undefined; testerStop(); } }
+  if(m==='fast' && T.fastCount>=8){ testerStop(); }
+  if(m==='tight'){ if(T.phase==='pump' && T.p>=T.pd-1.2){ T.phase='hold'; T.lever=0; }
+    if(T.phase==='hold'){ if(T.tight.t0===undefined && T.p<=T.pd-2) T.tight.t0=0; if(T.tight.t0!==undefined) T.tight.t0+=dt;
+      if(T.tight.t0!==undefined && T.p<=T.pd-7){ addTrial('Etanșeitate', null, T.tight.t0); testerStop(); } } }
+  if(T.dripping>0) T.dripping-=dt;
+  // particule spray
+  T.parts.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=300*dt; p.life-=dt; }); T.parts=T.parts.filter(p=>p.life>0);
+  if(T.dripping>0 && Math.random()<dt*4) T.parts.push({x:0,y:0,vx:0,vy:20,life:1.4,drip:1});
+}
+function emitSpray(n){ const asym=T.wear>0.6; for(let i=0;i<n;i++){ const jet=Math.floor(Math.random()*3)-1; const ang=Math.PI/2+jet*0.45+(Math.random()-0.5)*0.12*(asym&&jet===1?3:1); const v=380+Math.random()*260;
+  T.parts.push({x:0,y:0,vx:Math.cos(ang)*v,vy:Math.sin(ang)*v,life:0.35+Math.random()*0.25}); } }
+function addTrial(kind, p, tt){ const i=T.rows.length+1; let asp='', ver='';
+  const aspect = T.wear>0.6? 'jet asimetric, picurare după injecție' : T.wear>0.35? 'jet corespunzător, ușoară picurare' : 'jet fin, simetric, fără picurare';
+  if(kind.startsWith('Presiune')){ const dv=p-T.pdn; ver=Math.abs(dv)<=0.5?'corespunzător':'reglaj necesar'; T.rows.push([i,kind,fmt(p,1),(dv>=0?'+':'')+fmt(dv,1),'–','–',ver]); $('#r_po').textContent=fmt(p,1)+' MPa'; }
+  else if(kind==='Etanșeitate'){ ver=tt>=10?'corespunzător':'neetanș – se recondiționează'; T.rows.push([i,kind,'–','–',fmt(tt,1),'–',ver]); $('#r_tt').textContent=fmt(tt,1)+' s'; }
+  else { ver=T.wear>0.6?'necorespunzător':'corespunzător'; T.rows.push([i,kind,'–','–','–',aspect,ver]); $('#r_asp').textContent=aspect; }
+  renderTesterTable(); }
+function renderTesterTable(){ const rowsP=T.rows.filter(r=>r[1].startsWith('Presiune')); const foot = rowsP.length? ['','Media p<sub>d</sub> ('+rowsP.length+' încercări)', fmt(rowsP.reduce((a,r)=>a+ +String(r[2]).replace(',','.'),0)/rowsP.length,2),'','','','']:null;
+  buildTable($('#tblTester'),{head:['Nr.','Încercarea','p<sub>d</sub> [MPa]','Abatere [MPa]','t<sub>etanș</sub> [s]','Aspectul jetului','Verdict'],rows:T.rows.length?T.rows:[['–','Nicio încercare efectuată','','','','','']],foot,left:[1,5,6]}); }
+function drawTester(){
+  const cv=$('#cvTester'); if(!cv.clientWidth){ $('#r_p').textContent=fmt(T.p,1)+' MPa'; return;} const {c,w,h}=fitCanvas(cv, Math.max(360,Math.min(480,cv.clientWidth*0.62)));
+  const ink=css('--ink'), fuel=css('--fuel'), steel=css('--steel'), sd=css('--steel-d'), bg=css('--canvas-bg'), red=css('--alert'), ink2=css('--ink2'), p2=css('--panel2');
+  c.fillStyle=bg; c.fillRect(0,0,w,h); c.lineWidth=1.3; c.strokeStyle=ink;
+  const s=Math.min(w/640,h/420); c.save(); c.translate((w-640*s)/2,(h-420*s)/2); c.scale(s,s);
+  // masa
+  c.fillStyle=sd; c.fillRect(20,380,600,12);
+  // rezervor
+  c.fillStyle=p2; c.fillRect(70,60,90,70); c.strokeRect(70,60,90,70); c.fillStyle=fuel; c.globalAlpha=.7; c.fillRect(71,85,88,44); c.globalAlpha=1; c.fillStyle=ink2; c.font='12px Barlow'; c.fillText('rezervor',86,55);
+  // corpul pompei
+  c.fillStyle=steel; c.fillRect(95,130,40,200); c.strokeRect(95,130,40,200);
+  c.fillStyle=fuel; c.globalAlpha=.35+Math.min(.6,T.p/40); c.fillRect(105,200,20,120); c.globalAlpha=1;
+  // piston (urmează pârghia)
+  const py=150+55*Math.sin(-0.35+T.lever*0.55)+2; c.fillStyle=sd; c.fillRect(108,py,14,50); c.strokeRect(108,py,14,50);
+  // pârghia
+  const pivot={x:60,y:150}; const ang=-0.35+T.lever*0.55; c.save(); c.translate(pivot.x,pivot.y); c.rotate(ang); c.fillStyle=sd; c.fillRect(-10,-7,210,14); c.strokeRect(-10,-7,210,14); c.fillStyle=ink; c.beginPath(); c.arc(200,0,12,0,6.3); c.fill(); c.restore();
+  c.beginPath(); c.arc(pivot.x,pivot.y,6,0,6.3); c.fillStyle=ink; c.fill(); c.fillStyle=ink2; c.fillText('pârghie',20,190);
+  // conductă spre manometru și injector
+  c.strokeStyle=T.p>1?fuel:steel; c.lineWidth=6; c.beginPath(); c.moveTo(135,300); c.lineTo(300,300); c.lineTo(300,210); c.moveTo(300,300); c.lineTo(470,300); c.lineTo(470,250); c.stroke(); c.lineWidth=1.3; c.strokeStyle=ink;
+  // manometru
+  const mx=300, my=130, mr=78; c.fillStyle=p2; c.beginPath(); c.arc(mx,my,mr,0,6.3); c.fill(); c.lineWidth=3; c.stroke(); c.lineWidth=1;
+  const a0=Math.PI*0.75, a1=Math.PI*2.25, pmaxS=40; c.font='11px Barlow Condensed'; c.textAlign='center'; c.fillStyle=ink;
+  for(let v=0; v<=pmaxS; v+=1){ const a=a0+(a1-a0)*v/pmaxS; const r1=mr-6, r2= v%5===0? mr-16 : mr-11; c.beginPath(); c.moveTo(mx+Math.cos(a)*r1,my+Math.sin(a)*r1); c.lineTo(mx+Math.cos(a)*r2,my+Math.sin(a)*r2); c.stroke(); if(v%5===0) c.fillText(v, mx+Math.cos(a)*(mr-27), my+Math.sin(a)*(mr-27)+4); }
+  // zona nominală
+  c.strokeStyle=css('--ok'); c.lineWidth=5; c.beginPath(); c.arc(mx,my,mr-3,a0+(a1-a0)*(T.pdn-0.5)/pmaxS,a0+(a1-a0)*(T.pdn+0.5)/pmaxS); c.stroke(); c.lineWidth=1;
+  c.fillStyle=ink2; c.fillText('MPa',mx,my+30);
+  const am=a0+(a1-a0)*Math.min(T.pmax,pmaxS)/pmaxS; c.strokeStyle=red; c.lineWidth=2; c.beginPath(); c.moveTo(mx,my); c.lineTo(mx+Math.cos(am)*(mr-12),my+Math.sin(am)*(mr-12)); c.stroke();
+  const ap=a0+(a1-a0)*Math.min(T.p,pmaxS)/pmaxS; c.strokeStyle=ink; c.lineWidth=3; c.beginPath(); c.moveTo(mx,my); c.lineTo(mx+Math.cos(ap)*(mr-10),my+Math.sin(ap)*(mr-10)); c.stroke(); c.lineWidth=1.3; c.beginPath(); c.arc(mx,my,6,0,6.3); c.fillStyle=ink; c.fill();
+  c.font='600 15px Barlow Condensed'; c.fillText(fmt(T.p,1)+' MPa',mx,my+50); c.textAlign='left';
+  // injector (vertical, cap în jos)
+  const ix=470; c.fillStyle=steel; c.fillRect(ix-22,170,44,80); c.strokeRect(ix-22,170,44,80); c.fillRect(ix-14,250,28,40); c.strokeRect(ix-14,250,28,40);
+  c.beginPath(); c.moveTo(ix-8,290); c.lineTo(ix-5,312); c.lineTo(ix+5,312); c.lineTo(ix+8,290); c.fill(); c.stroke();
+  // arc și ac (ridicare)
+  const lift=T.open?1:0; c.strokeStyle=sd; c.beginPath(); for(let i=0;i<=10;i++){ const y=178+i*6-lift*3*i/10; c.lineTo(ix+(i%2?8:-8), y);} c.stroke();
+  c.fillStyle=sd; c.fillRect(ix-3,238-lift*4,6,70); c.fillStyle=ink2; c.font='12px Barlow'; c.fillText('injector',ix+28,200); c.fillText('șaibe Δs',ix+28,178);
+  c.fillStyle=css('--fuel-deep'); c.fillRect(ix-18,172,36,4);
+  // vas colector (sticlă)
+  c.strokeStyle=ink2; c.lineWidth=2; c.beginPath(); c.moveTo(ix-70,320); c.lineTo(ix-70,378); c.lineTo(ix+70,378); c.lineTo(ix+70,320); c.stroke(); c.lineWidth=1;
+  c.fillStyle=fuel; c.globalAlpha=.4; const lvl=Math.min(30,T.rows.length*2+ (T.fastCount||0)); c.fillRect(ix-68,376-lvl,136,lvl); c.globalAlpha=1;
+  // particule
+  c.fillStyle=fuel; T.parts.forEach(p=>{ c.globalAlpha=p.drip?0.9:Math.max(0.1,p.life*2.2); c.beginPath(); c.arc(ix+p.x*0.14,312+p.y*(p.drip?0.5:0.14),p.drip?2.6:1.3,0,6.3); c.fill(); }); c.globalAlpha=1;
+  // etichete
+  c.fillStyle=ink; c.font='600 13px Barlow'; c.fillText(T.open? 'ACUL DESCHIS — injecție':'acul închis', ix-60, 150);
+  c.restore();
+  $('#r_p').textContent=fmt(T.p,1)+' MPa'; $('#r_lift').textContent=T.open?'deschis':'închis';
+}
+
+/* ================= MICROSCOP ================= */
+const M={sample:[], counted:0, anim:null, field:0};
+function microParams(){ $('#v_Nd').textContent=$('#Nd').value; $('#v_dd').textContent=fmt(+$('#dd').value,1)+' µm'; $('#v_dmin').textContent=fmt(+$('#dmin').value,1)+' µm'; $('#v_res').textContent=fmt(+$('#res').value,2)+' µm'; $('#v_seed').textContent='nr. '+$('#seed').value; }
+function regenSample(full){ microParams(); M.sample=makeSample(R, +$('#Nd').value, +$('#dmin').value, +$('#res').value, +$('#seed').value); M.counted= full? M.sample.length:0; M.field=Math.ceil(M.counted/40); M.anim=null; renderMicro(); scheduleResults(); }
+function fieldDrops(fi){ return M.sample.slice(fi*40, fi*40+40); }
+function measureNext(){ if(M.counted>=M.sample.length){ toast('Proba este măsurată complet'); return; } const fi=Math.floor(M.counted/40); M.anim={fi, k:0, t0:performance.now()}; requestAnimationFrame(microLoop); }
+function microLoop(ts){ if(!M.anim) return; const n=fieldDrops(M.anim.fi).length; M.anim.k=Math.min(n, Math.floor((ts-M.anim.t0)/45)); M.counted=M.anim.fi*40+M.anim.k; drawMicro(); renderMicroStats();
+  if(M.anim.k>=n){ M.field=M.anim.fi+1; M.anim=null; renderMicro(); scheduleResults(); return; } requestAnimationFrame(microLoop); }
+function drawMicro(){
+  const cv=$('#cvMicro'); if(!cv.clientWidth){ $('#mState').textContent=`${M.counted} / ${M.sample.length} picături măsurate`; return;} const {c,w,h}=fitCanvas(cv, Math.max(340,Math.min(460,cv.clientWidth*0.75)));
+  const ink=css('--ink'), bg=css('--canvas-bg'), fuel=css('--fuel'), red=css('--alert'), blue=css('--blue');
+  c.fillStyle=bg; c.fillRect(0,0,w,h); const cx=w/2, cy=h/2, rad=Math.min(w,h)/2-18; const FOV=320; const k=2*rad/FOV; // px/µm
+  c.save(); c.beginPath(); c.arc(cx,cy,rad,0,6.3); c.clip();
+  const gr=c.createRadialGradient(cx,cy,rad*0.1,cx,cy,rad); gr.addColorStop(0,'#FBF6E6'); gr.addColorStop(1,'#E7DDBF'); c.fillStyle=gr; c.fillRect(cx-rad,cy-rad,2*rad,2*rad);
+  const fi = M.anim? M.anim.fi : Math.max(0,Math.min(Math.floor((M.counted-1)/40), Math.ceil(M.sample.length/40)-1));
+  const drops=fieldDrops(fi); const rng=mulberry32(fi*31+ +$('#seed').value);
+  drops.forEach((d,i)=>{ const ang=rng()*6.283, rr=Math.sqrt(rng())*(rad-10); const x=cx+Math.cos(ang)*rr, y=cy+Math.sin(ang)*rr; d._x=x; d._y=y; const r=Math.max(1.2,d.dt/2*k);
+    const g=c.createRadialGradient(x-r*0.35,y-r*0.35,r*0.1,x,y,r); g.addColorStop(0,'rgba(255,255,255,0.95)'); g.addColorStop(0.55,'rgba(217,150,26,0.55)'); g.addColorStop(1,'rgba(120,80,10,0.9)');
+    c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,6.3); c.fill(); });
+  // reticul
+  c.strokeStyle='rgba(22,50,74,0.55)'; c.lineWidth=1; c.beginPath(); c.moveTo(cx-rad,cy); c.lineTo(cx+rad,cy); c.moveTo(cx,cy-rad); c.lineTo(cx,cy+rad); c.stroke();
+  // scara ocularului micrometric: 100 µm cu diviziuni de 10 µm
+  const sx=cx-50*k, sy=cy+rad*0.72; c.strokeStyle='#16324A'; c.lineWidth=1.4; c.beginPath(); c.moveTo(sx,sy); c.lineTo(sx+100*k,sy); for(let i=0;i<=20;i++){ const x=sx+i*5*k; c.moveTo(x,sy); c.lineTo(x,sy-(i%2?4:8)); } c.stroke();
+  c.fillStyle='#16324A'; c.font='12px Barlow Condensed'; c.textAlign='center'; c.fillText('100 µm (diviziune 5 µm)',cx,sy+14);
+  // măsurate
+  const done = M.anim? M.anim.k : (fi*40<M.counted? Math.min(40,M.counted-fi*40):0);
+  drops.slice(0,done).forEach((d,i)=>{ const r=Math.max(1.2,d.dt/2*k)+2.5; c.strokeStyle= i===done-1&&M.anim? red : 'rgba(47,108,168,0.9)'; c.lineWidth=i===done-1&&M.anim?2:1; c.beginPath(); c.arc(d._x,d._y,r,0,6.3); c.stroke(); });
+  if(M.anim && done>0){ const d=drops[done-1]; c.fillStyle=red; c.font='600 13px Barlow Condensed'; c.textAlign='left'; c.fillText(fmt(d.d,1)+' µm', d._x+8, d._y-8); }
+  c.restore(); c.strokeStyle=ink; c.lineWidth=6; c.beginPath(); c.arc(cx,cy,rad+3,0,6.3); c.stroke();
+  c.fillStyle=ink; c.font='600 13px Barlow'; c.textAlign='left'; c.fillText(`Câmpul ${fi+1} din ${Math.ceil(M.sample.length/40)}`, 10, 18); c.textAlign='right'; c.fillText(`Obiectiv 40×, câmp ${FOV} µm`, w-10, 18); c.textAlign='left';
+  $('#mState').textContent=`${M.counted} / ${M.sample.length} picături măsurate`;
+}
+function renderMicroStats(){ const st=sampleStats(M.sample.slice(0,M.counted), +$('#dd').value); M.st=st;
+  const rows= st? [['Picături măsurate','N',st.N],['Diametrul minim / maxim','',fmt(st.dmin,1)+' / '+fmt(st.dmax,1)+' µm'],['Diametrul mediu aritmetic','d<sub>10</sub>',fmt(st.d10,2)+' µm'],['Diametrul mediu volumic','d<sub>30</sub>',fmt(st.d30,2)+' µm'],
+    ['Diametrul Sauter (măsurat)','d<sub>32</sub>',fmt(st.d32,2)+' µm',1],['Diametrul De Brouckere','d<sub>43</sub>',fmt(st.d43,2)+' µm'],['Diametre volumice','d<sub>V10</sub>/d<sub>V50</sub>/d<sub>V90</sub>',fmt(st.v10,1)+' / '+fmt(st.v50,1)+' / '+fmt(st.v90,1)],
+    ['Lărgimea relativă','Δ',fmt(st.span,2)],['Indice omogenitate (regresie)','q',st.rr?fmt(st.rr.q,2):'–',1],['Diametru caracteristic','X',st.rr?fmt(st.rr.X,1)+' µm':'–'],['Coeficient de determinare','R²',st.rr?fmt(st.rr.r2,4):'–'],
+    ['Abatere d<sub>32</sub> față de calcul','',fmt((st.d32-R.SMD)/R.SMD*100,1)+' %']] : [['Nicio picătură măsurată','','–']];
+  $('#roMicro').innerHTML=rows.map(x=>`<tr class="${x[3]?'hl':''}"><td>${x[0]} <span class="sym">${x[1]}</span></td><td>${x[2]}</td></tr>`).join(''); return st; }
+function renderMicro(){ drawMicro(); const st=renderMicroStats();
+  if(!st){ buildTable($('#tblClass'),{head:['Clasa'],rows:[['Măsurați cel puțin un câmp']]}); return; }
+  const rows=st.cls.map((c,i)=>[i+1, `${fmt(c.a,1)} – ${fmt(c.b,1)}`, fmt(c.c,2), c.n, fmt(c.pn,2), fmt(c.n*c.c,1), fmt(c.n*c.c**2,0), fmt(c.n*c.c**3,0), fmt(c.pv,2), fmt(c.Qv,2)]);
+  buildTable($('#tblClass'),{head:['Clasa','Interval [µm]','d<sub>i</sub> [µm]','n<sub>i</sub>','n<sub>i</sub>/N [%]','n<sub>i</sub>·d<sub>i</sub>','n<sub>i</sub>·d<sub>i</sub><sup>2</sup>','n<sub>i</sub>·d<sub>i</sub><sup>3</sup>','V<sub>i</sub> [%]','ΣV<sub>i</sub> [%]'],rows,
+    foot:['Σ','','',st.N,'100',fmt(st.S1,1),fmt(st.S2,0),fmt(st.S3,0),'100',''],left:[1]}); }
+
+/* ================= REZULTATE ================= */
+let resT=null; function scheduleResults(){ clearTimeout(resT); resT=setTimeout(renderResults,120); }
+function penData(){ const fps=+$('#fps').value; const dt=1/fps; const rng=mulberry32(555); const tmax=(P.tinj+0.3)*1e-3; const n=Math.floor(tmax/dt); const step=Math.max(1,Math.ceil(n/40)); const out=[];
+  for(let i=1;i<=n;i+=step){ const t=i*dt; const Sm=R.S(t)*1e3; const px=0.12; const meas=Math.round(Sm*(1+0.025*gauss(rng))/px)*px; out.push({t:t*1e3,Sm,meas}); } return out; }
+function renderResults(){
+  if(!R) return; const st=M.st && M.st.N>=30? M.st : null;
+  // Tabel 3
+  const rows=[['Tipul injectorului','',PRESETS[$('#preset').value].n,'',''],['Combustibil','',R.f.n,'',''],
+   ['Număr de orificii','i',P.nh,'','–'],['Diametrul orificiului','d<sub>0</sub>',fmt(P.d0,3),'','mm'],['Raportul lungime/diametru','L/d<sub>0</sub>',fmt(P.LD,1),'','–'],['Coeficient de debit','C<sub>d</sub>',fmt(P.Cd,2),'','–'],
+   ['Presiunea de injecție','p<sub>inj</sub>',fmt(P.pinj,1),'','MPa'],['Presiunea aerului','p<sub>a</sub>',fmt(R.pa,2),'','MPa'],['Temperatura aerului','T<sub>a</sub>',fmt(R.Ta,0),'','K'],['Densitatea aerului','ρ<sub>a</sub>',fmt(R.rhoa,2),'','kg/m³'],
+   ['Densitatea combustibilului','ρ<sub>c</sub>',fmt(R.rl,0),'','kg/m³'],['Viscozitatea cinematică','ν',fmt(R.f.nu,1),'','mm²/s'],['Tensiunea superficială','σ',fmt(R.sig*1e3,1),'','mN/m'],
+   ['Viteza de ieșire','U<sub>0</sub>',fmt(R.U,1),'','m/s'],['Numărul Reynolds','Re',fmt(R.Re,0),'','–'],['Numărul Weber (gaz)','We<sub>g</sub>',fmt(R.Weg,1),'','–'],['Regimul de dezintegrare','',R.regime,'',''],
+   ['Timpul de rupere','t<sub>b</sub>',fmt(R.tb*1e3,4),'','ms'],['Lungimea de rupere','L<sub>b</sub>',fmt(R.Lb*1e3,2),'','mm'],['Penetrația la 1 ms','S<sub>1ms</sub>',fmt(R.S(1e-3)*1e3,1),'','mm'],['Unghiul conului','θ',fmt(R.theta,2),'','°'],
+   ['Diametrul mediu aritmetic','d<sub>10</sub>','–',st?fmt(st.d10,2):'–','µm'],['Diametrul Sauter','d<sub>32</sub>',fmt(R.SMD,2),st?fmt(st.d32,2):'–','µm'],['Diametrul median volumic','d<sub>V50</sub>',fmt(R.dv50,2),st?fmt(st.v50,2):'–','µm'],
+   ['Indicele de omogenitate','q',fmt(R.q,2),st&&st.rr?fmt(st.rr.q,2):'–','–'],['Diametrul caracteristic','X',fmt(R.X,2),st&&st.rr?fmt(st.rr.X,2):'–','µm'],['Lărgimea relativă','Δ',fmt(R.span,3),st?fmt(st.span,3):'–','–'],
+   ['Doza injectată','V<sub>inj</sub>',fmt(R.Vinj,2),'','mm³']];
+  buildTable($('#tblSum'),{head:['Mărimea','Simbol','Calcul (model)','Măsurat','U.M.'],rows,left:[0,1]});
+  // penetrație
+  const pd=penData(); buildTable($('#tblPen'),{head:['t [ms]','S model [mm]','S măsurat [mm]','Abatere [%]'],rows:pd.map(r=>[fmt(r.t,3),fmt(r.Sm,2),fmt(r.meas,2),fmt((r.meas-r.Sm)/r.Sm*100,1)]),left:[]});
+  const tt=[],ss=[]; for(let i=0;i<=200;i++){ const t=(P.tinj+0.3)*i/200; tt.push(t); ss.push(R.S(t*1e-3)*1e3); }
+  plot($('#ch1'),{height:300,xlabel:'Timpul t [ms]',ylabel:'Penetrația S [mm]',xmin:0,series:[{name:'Model Hiroyasu–Arai',x:tt,y:ss,color:'--fuel',lw:2.4},{name:'Măsurat (cameră rapidă)',x:pd.map(r=>r.t),y:pd.map(r=>r.meas),color:'--ink',pointsOnly:true,markers:'o'}],vlines:[{x:R.tb*1e3,label:'t_b',color:'--alert'},{x:P.tinj,label:'sfârșit injecție',color:'--blue',dy:14}],legendBR:true});
+  if(st){ const cx=st.cls.map(c=>c.c); const dd=+$('#dd').value;
+    plot($('#ch2'),{height:300,xlabel:'Diametrul picăturii d [µm]',ylabel:'Frecvența [%]',xmin:0,xmax:st.cls[st.cls.length-1].b,ymin:0,series:[{name:'Număr de picături n_i/N',x:cx,y:st.cls.map(c=>c.pn),color:'--blue',bars:true,bw:dd/2,shift:-0.5},{name:'Volum V_i',x:cx,y:st.cls.map(c=>c.pv),color:'--fuel',bars:true,bw:dd/2,shift:0.5}],vlines:[{x:st.d10,label:'d10',color:'--blue'},{x:st.d32,label:'d32',color:'--alert',dy:14}]});
+    const dm=[],qm=[],qf=[]; const dmx=st.cls[st.cls.length-1].b; for(let i=1;i<=200;i++){ const d=dmx*i/200; dm.push(d); qm.push((1-Math.exp(-Math.pow(d/R.X,R.q)))*100); qf.push(st.rr?(1-Math.exp(-Math.pow(d/st.rr.X,st.rr.q)))*100:NaN); }
+    plot($('#ch3'),{height:300,xlabel:'Diametrul d [µm]',ylabel:'Q(d) – volum cumulat [%]',xmin:0,ymin:0,ymax:100,series:[{name:'Rosin–Rammler (model)',x:dm,y:qm,color:'--fuel',lw:2.2},{name:'Rosin–Rammler (regresie)',x:dm,y:qf,color:'--ink',dash:[6,4],lw:1.6},{name:'Măsurat',x:st.cls.map(c=>c.b),y:st.cls.map(c=>c.Qv),color:'--blue',pointsOnly:true,markers:'sq'}],hlines:[{y:50,label:'d_V50'}],legendBR:true});
+    if(st.rr){ const x1=Math.min(...st.rr.lx)-0.2, x2=Math.max(...st.rr.lx)+0.2;
+      plot($('#ch4'),{height:300,xlabel:'ln d   (d în µm)',ylabel:'ln ln [1/(1−Q)]',series:[{name:'Puncte experimentale',x:st.rr.lx,y:st.rr.ly,color:'--blue',pointsOnly:true,markers:'o'},{name:`Dreapta: q = ${fmt(st.rr.q,3)}, R² = ${fmt(st.rr.r2,4)}`,x:[x1,x2],y:[st.rr.a+st.rr.q*x1,st.rr.a+st.rr.q*x2],color:'--alert',lw:2}],legendLeft:true}); }
+  } else { ['#ch2','#ch3','#ch4'].forEach(id=>{ const {c,w,h}=fitCanvas($(id),300); c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); c.fillStyle=css('--ink2'); c.font='14px Barlow'; c.textAlign='center'; c.fillText('Măsurați cel puțin 30 de picături în secțiunea 4.',w/2,h/2); }); }
+  renderSweep(); renderReport();
+}
+function renderSweep(){ const v=$('#swVar').value; let xs=[], lab='', cats=null; const base={...P};
+  if(v==='pinj'){ const lo=Math.max(8,P.mode==='atm'?8:20), hi=P.mode==='atm'?Math.max(60,P.pinj):300; for(let i=0;i<=10;i++) xs.push(Math.round(lo+(hi-lo)*i/10)); lab='p_inj [MPa]'; }
+  if(v==='d0'){ for(let i=0;i<=10;i++) xs.push(+(0.08+0.07*i).toFixed(2)); lab='d0 [mm]'; }
+  if(v==='pa'){ for(let i=0;i<=10;i++) xs.push(+(0.1+0.79*i).toFixed(2)); lab='p_a [MPa]'; }
+  if(v==='Ta'){ for(let i=0;i<=10;i++) xs.push(293+Math.round(60.7*i)); lab='T_a [K]'; }
+  if(v==='fuel'){ cats=Object.keys(FUELS); xs=cats.map((_,i)=>i+1); lab='Combustibil'; }
+  const rows=[], smd=[], pen=[], th=[];
+  xs.forEach((x,i)=>{ const q={...base}; if(v==='fuel') q.fuel=cats[i]; else q[v]=x; if((v==='pa'||v==='Ta')) q.mode='ch'; const r=compute(q);
+    smd.push(r.SMD); pen.push(r.S(1e-3)*1e3); th.push(r.theta);
+    rows.push([v==='fuel'?FUELS[cats[i]].n:fmtS(x,3), fmt(r.U,1), fmt(r.Weg,0), fmt(r.SMD,2), fmt(r.dv50,2), fmt(r.q,2), fmt(r.S(1e-3)*1e3,1), fmt(r.theta,2), fmt(r.Lb*1e3,2)]); });
+  buildTable($('#tblSw'),{head:[lab,'U<sub>0</sub> [m/s]','We<sub>g</sub>','d<sub>32</sub> [µm]','d<sub>V50</sub> [µm]','q','S<sub>1ms</sub> [mm]','θ [°]','L<sub>b</sub> [mm]'],rows,left:[0]});
+  plot($('#ch5'),{height:300,xlabel:lab,ylabel:'Diametrul Sauter d32 [µm]',y2:true,y2label:'Penetrația la 1 ms [mm]',xcats:cats?cats.map(k=>FUELS[k].n.split(' ')[0]):null,xmin:cats?0.5:undefined,xmax:cats?cats.length+0.5:undefined,
+    series:[{name:'d32',x:xs,y:smd,color:'--fuel',markers:'o',lw:2.2},{name:'S la 1 ms',x:xs,y:pen,color:'--blue',markers:'sq',axis:2,dash:[6,3]}],legendLeft:false});
+  if(v==='pa'||v==='Ta') $('#tblSw').insertAdjacentHTML('beforeend','<p class="small" style="padding:4px 8px">Pentru această variabilă calculul se face în cameră de presiune.</p>');
+}
+
+/* ================= REFERAT ================= */
+function refConclusions(){ const st=M.st; const L=[];
+  L.push(`Injectorul (${PRESETS[$('#preset').value].n}) a fost încercat cu ${R.f.n.toLowerCase()} la p<sub>inj</sub> = ${fmt(P.pinj,0)} MPa, în ${P.mode==='atm'?'aer atmosferic':'cameră de presiune la '+fmt(R.pa,1)+' MPa și '+R.Ta+' K'}. Viteza de ieșire a combustibilului este ${fmt(R.U,0)} m/s, iar We<sub>g</sub> = ${fmt(R.Weg,0)} indică regimul de ${R.regime}.`);
+  if(st) L.push(`Diametrul Sauter măsurat pe ${st.N} picături este d<sub>32</sub> = ${fmt(st.d32,2)} µm, față de ${fmt(R.SMD,2)} µm calculat cu corelația Hiroyasu (abatere ${fmt((st.d32-R.SMD)/R.SMD*100,1)} %). Diametrul mediu aritmetic d<sub>10</sub> = ${fmt(st.d10,2)} µm este mult mai mic decât d<sub>32</sub>, deoarece picăturile mici sunt numeroase, dar conțin o fracție redusă din volum.`);
+  if(st&&st.rr){ const q=st.rr.q; L.push(`Indicele de omogenitate determinat din diagrama Rosin–Rammler este q = ${fmt(q,2)} (R² = ${fmt(st.rr.r2,3)}), ceea ce corespunde unei pulverizări ${q>=3?'omogene':q>=2.2?'moderat omogene':'neomogene'}; lărgimea relativă Δ = ${fmt(st.span,2)}.`); }
+  L.push(`Penetrația jetului la 1 ms este ${fmt(R.S(1e-3)*1e3,1)} mm, cu lungimea de rupere L<sub>b</sub> = ${fmt(R.Lb*1e3,1)} mm și unghiul conului θ = ${fmt(R.theta,1)}°.`);
+  const rp=T.rows.filter(r=>r[1].startsWith('Presiune')); if(rp.length){ const m=rp.reduce((a,r)=>a+ +String(r[2]).replace(',','.'),0)/rp.length; L.push(`Presiunea medie de deschidere a injectorului, din ${rp.length} încercări, este ${fmt(m,2)} MPa (nominal ${fmt(T.pdn,1)} MPa), ${Math.abs(m-T.pdn)<=0.5?'în toleranța de ±0,5 MPa':'în afara toleranței — este necesară corectarea șaibelor de reglaj'}.`); }
+  return L; }
+function reportHTML(forWord){ const name=$('#stName').value||'…………………………', grp=$('#stGroup').value||'……', dt=$('#stDate').value||'…………';
+  const H=(t)=>forWord?`<h2 style="font:bold 13pt Calibri,Arial;color:#16324A;border-bottom:1.5pt solid #D9961A;margin:14pt 0 6pt">${t}</h2>`:`<h2>${t}</h2>`;
+  const Pp=(t)=>forWord?`<p style="font:11pt Calibri,Arial;text-align:justify;margin:0 0 6pt">${t}</p>`:`<p>${t}</p>`;
+  const tb=(el,cap)=> forWord? tableHTMLWord(el._T,cap) : `<p><b>${cap}</b></p><div class="tbl-wrap">${el.innerHTML}</div>`;
+  let h=forWord?`<p style="font:10pt Calibri,Arial;color:#4E6072">Universitatea Politehnica Timișoara, Facultatea de Inginerie Mecanică</p><h1 style="font:bold 16pt Calibri,Arial;color:#16324A;margin:4pt 0">Referat — Lucrarea nr. 1: Determinarea indicilor de pulverizare ai injectorului</h1><p style="font:11pt Calibri,Arial">Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`
+    :`<h1 style="font-size:22px;margin:0 0 4px">Referat — Lucrarea nr. 1: Determinarea indicilor de pulverizare ai injectorului</h1><p>Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`;
+  h+=H('1. Scopul lucrării')+Pp('Determinarea finețeii și omogenității pulverizării, a penetrației și unghiului conului jetului, precum și verificarea stării tehnice a injectorului (presiune de deschidere, etanșeitate, aspectul jetului).');
+  h+=H('2. Verificarea injectorului'); if(T.rows.length) h+=tb($('#tblTester'),'Tabelul 1. Verificarea injectorului'); else h+=Pp('Nu s-au efectuat încercări pe tester.');
+  h+=H('3. Parametrii încercării și indicii de pulverizare')+tb($('#tblSum'),'Tabelul 2. Parametrii încercării și indicii de pulverizare');
+  h+=H('4. Prelucrarea măsurătorilor la microscop')+tb($('#tblClass'),'Tabelul 3. Repartiția picăturilor pe clase de diametre');
+  h+=H('5. Studiu parametric')+tb($('#tblSw'),'Tabelul 4. Influența parametrului studiat');
+  h+=H('6. Concluzii')+refConclusions().map(Pp).join('')+Pp('<i>Concluzii personale ale studentului: …</i>');
+  return h; }
+function renderReport(){ $('#refBody').innerHTML=reportHTML(false); }
+
+/* ================= INIT ================= */
+window.addEventListener('DOMContentLoaded',()=>{
+  initTheme(); initInputs(); ['pdn','shim','wear','tsp'].forEach(k=>$('#'+k).addEventListener('input',testerParams)); testerParams(); renderTesterTable();
+  ['Nd','dd','dmin','res','seed'].forEach(k=>$('#'+k).addEventListener('input',()=>{ if(k==='dd'){ microParams(); renderMicro(); scheduleResults(); } else regenSample(true); }));
+  $('#mNext').onclick=measureNext; $('#mAll').onclick=()=>{ M.anim=null; M.counted=M.sample.length; renderMicro(); scheduleResults(); toast('Proba a fost măsurată complet'); }; $('#mReset').onclick=()=>{ M.anim=null; M.counted=0; renderMicro(); scheduleResults(); };
+  $('#bOpen').onclick=()=>testerStart('slow'); $('#bTight').onclick=()=>testerStart('tight'); $('#bFast').onclick=()=>testerStart('fast'); $('#bStop').onclick=testerStop; $('#bClrT1').onclick=()=>{ T.rows=[]; renderTesterTable(); renderReport(); };
+  $('#cbT1').innerHTML=copyButtons('#tblTester','Tabelul 1. Verificarea injectorului'); wireCopy(document);
+  $('#jPlay').onclick=()=>{ if(J.t>=J.tEnd) J.t=0; J.play=true; J.last=0; $('#jPlay').textContent='Pornește injecția'; requestAnimationFrame(jetLoop); };
+  $('#jPause').onclick=()=>{ J.play=false; }; $('#jStep').onclick=()=>{ J.play=false; J.t=Math.min(J.tEnd,J.t+0.02); drawJet(); $('#jt').value=Math.round(J.t/J.tEnd*1000); };
+  $('#jt').addEventListener('input',()=>{ J.play=false; J.t=+$('#jt').value/1000*J.tEnd; drawJet(); }); $('#jslow').addEventListener('input',drawJet);
+  $('#fps').addEventListener('change',renderResults); $('#swVar').addEventListener('change',renderSweep);
+  $$('[data-exp]').forEach(b=>b.addEventListener('click',()=>{ const e=b.dataset.exp; if(e==='A'){ applyPreset('cr2'); $('#pinj').value=40; } if(e==='B'){ applyPreset('cr2'); $('#pinj').value=120; $('#mode').value='ch'; $('#pa').value=2; }
+    if(e==='C'){ applyPreset('pln4'); $('#fuel').value='b100'; } readInputs(); if(e==='A'){ $('#swVar').value='pinj'; } if(e==='B'){ $('#swVar').value='pa'; } if(e==='C'){ $('#swVar').value='fuel'; } renderSweep();
+    $('nav.tabs button[data-tab="t-jet"]').click(); toast('Setările experimentului '+e+' au fost aplicate'); }));
+  $('#stDate').valueAsDate=new Date(); ['stName','stGroup','stDate'].forEach(k=>$('#'+k).addEventListener('input',renderReport));
+  $('#bRef').onclick=async()=>{ const h=reportHTML(true); if(await copyRich(h, $('#refBody').innerText)) toast('Referat copiat – lipiți în Word'); else manualModal('Referat pentru Word',h,true); };
+  $('#bRefTxt').onclick=async()=>{ const t=$('#refBody').innerText; if(await copyText(t)) toast('Referat copiat ca text'); else manualModal('Referat',t); };
+  initTabs(tab=>{ if(tab==='t-jet') drawJet(); if(tab==='t-tester') drawTester(); if(tab==='t-micro') drawMicro(); if(tab==='t-rez') renderResults(); });
+  applyPreset('pln4');
+  if(document.fonts) document.fonts.ready.then(()=>{ drawJet(); drawTester(); drawMicro(); renderResults(); });
+  let rz; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ drawJet(); drawTester(); drawMicro(); renderResults(); },150); });
+  ['themechange','decchange'].forEach(ev=>window.addEventListener(ev,()=>{ readInputs(); drawTester(); renderTesterTable(); }));
+});
+</script></body></html>
