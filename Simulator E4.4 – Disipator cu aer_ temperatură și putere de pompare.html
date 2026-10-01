@@ -1,0 +1,514 @@
+<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Problema E4.4 – Disipator cu aer: temperatură și putere de pompare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDF0F2; --panel:#FFFFFF; --panel2:#F6F8F9; --ink:#16324A; --ink2:#4E6072; --muted:#7B8A97;
+  --fuel:#D9961A; --fuel-soft:#F6E3B8; --fuel-deep:#A8680A; --steel:#8A99A6; --steel-d:#5E6E7B; --line:#CBD3DA;
+  --alert:#B3362B; --ok:#2E7D4F; --blue:#2F6CA8; --violet:#6B4FA0; --teal:#1F8A8A;
+  --canvas-bg:#FBFCFC; --grid:#E1E6EA; --shadow:0 1px 2px rgba(22,50,74,.08);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}}
+:root[data-theme="dark"]{
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow","Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5}
+.num,.ro{font-family:"Barlow Condensed","Arial Narrow","Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 10px;border-bottom:3px solid var(--ink)}
+header.top .lab{font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink2);letter-spacing:.02em}
+header.top h1{margin:0;font-size:26px;line-height:1.15;font-weight:700}
+header.top .inst{margin-left:auto;text-align:right;font-size:13px;color:var(--ink2)}
+.fuelbar{height:6px;background:linear-gradient(90deg,var(--fuel) 0 38%,transparent 38%)}
+nav.tabs{display:flex;gap:2px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+nav.tabs button{font:inherit;font-weight:600;border:0;background:none;color:var(--ink2);padding:12px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fuel)}
+nav.tabs .sp{flex:1}
+nav.tabs .tool{font-weight:500;font-size:13px}
+main{padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+section.tab{display:none} section.tab.on{display:block}
+.grid3{display:grid;grid-template-columns:300px minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:1150px){.grid3{grid-template-columns:280px minmax(0,1fr)} .grid3>.readouts{grid-column:1/-1}}
+@media (max-width:760px){.grid3{grid-template-columns:1fr} main{padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow)}
+.card>h3{margin:0;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card>.bd{padding:12px 14px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink2)}
+.ctrl label b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:600}
+.ctrl input[type=range]{width:100%;accent-color:var(--fuel)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text],.field{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink)}
+fieldset{border:0;border-top:1px solid var(--line);margin:12px 0 6px;padding:10px 0 0}
+fieldset legend{font-weight:700;font-size:13.5px;padding-right:8px;color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:4px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.fuel{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative}
+canvas{display:block;width:100%;background:var(--canvas-bg);border-radius:4px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px}
+.ro-table td{padding:4px 2px;border-bottom:1px dashed var(--line)}
+.ro-table td:first-child{width:56%}
+.ro-table td:last-child{text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:600}
+.ro-table tr.hl td:last-child{color:var(--fuel-deep)}
+.ro-table .sym{color:var(--muted);font-style:italic;font-family:"Times New Roman",serif}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--fuel-soft);color:var(--ink)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent)} .tag.bad{background:color-mix(in srgb,var(--alert) 22%,transparent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table.data{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+table.data th{background:var(--ink);color:var(--panel);font-weight:600;padding:6px 8px;text-align:center;white-space:nowrap}
+table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:15px;white-space:nowrap}
+table.data td.l{text-align:left;font-family:inherit;font-size:13.5px}
+table.data tr:nth-child(even) td{background:var(--panel2)}
+table.data tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.copybar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.copybar .t{font-weight:700;margin-right:auto}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.charts{grid-template-columns:1fr}}
+.prose{max-width:860px}
+.prose h2{font-size:21px;margin:26px 0 8px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.prose h3{font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{line-height:1.62}
+.eq{font-family:"Cambria Math","Times New Roman",serif;font-size:17px;background:var(--panel);border-left:4px solid var(--fuel);padding:8px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-size:14px;font-family:"Barlow",sans-serif}
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);padding:8px 12px;border-radius:4px;margin:10px 0}
+.warn{border-left-color:var(--alert)}
+ol.steps{counter-reset:s;list-style:none;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;margin:0 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700}
+ol.steps>li b.h{display:block;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);max-width:760px;width:100%;border-radius:8px;padding:16px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;height:260px;font-family:Consolas,monospace;font-size:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
+.toast.on{opacity:1}
+.legend-inline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend-inline i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.small{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{nav.tabs,.copybar,.btn{display:none!important} section.tab{display:block!important} body{background:#fff}}
+.info-h{margin:0 0 6px;font-size:18px;color:var(--ink)}
+.info-s{margin-top:10px;font-size:14px;line-height:1.45}
+.info-t{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fuel-deep);margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:3px 10px;cursor:pointer}
+.chips button.on{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-top:8px}
+.mcq{border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;background:var(--panel)}
+.mcq p{margin:0 0 6px}.mcq label{display:block;padding:2px 0;cursor:pointer;font-size:14.5px}
+.mcq.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.mcq.badq{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 7%,var(--panel))}
+.mcq .expl{font-size:13.5px;color:var(--ink2);margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:5px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:600;font-size:13.5px;border:0;background:transparent;color:var(--ink);padding:6px 11px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--panel)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.kpi div{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:6px 10px}
+.kpi small{display:block;color:var(--ink2);font-size:12px}.kpi b{font-family:"Barlow Condensed",sans-serif;font-size:19px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0}
+@media(max-width:1050px){.grid2{grid-template-columns:1fr}}
+.ctlbar{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end}
+.ctlbar .ctrl{margin:0;min-width:200px}
+.wraptbl td{white-space:normal!important;text-align:left!important;font-family:"Barlow",sans-serif!important;font-size:14px!important}
+.infobox{max-height:560px;overflow:auto}
+.nr{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:center}
+.nr input[type=number]{padding:4px 6px}
+.live{color:var(--fuel-deep);font-weight:700;background:color-mix(in srgb,var(--fuel) 14%,transparent);padding:0 3px;border-radius:3px;white-space:nowrap}
+.enunt{font-size:15.5px;line-height:1.65}
+.enunt ol{margin:6px 0 0;padding-left:22px}
+.errbar{display:none;background:color-mix(in srgb,var(--alert) 14%,var(--panel));border:1px solid var(--alert);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:14px}
+.step .eq,ol.steps .eq{white-space:normal;font-size:16.5px}
+ol.steps .eq b{color:var(--fuel-deep)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cap{font-size:13px;color:var(--ink2);margin:6px 0 0}
+.card canvas{touch-action:pan-y}
+@media print{.card{break-inside:avoid}}
+</style></head><body>
+<header class="top"><div><div class="lab">Culegere de probleme de transfer de căldură — Problema E4.4</div><h1>Disipator de căldură cu canale de aer pentru o componentă electronică - autor: S.L. dr. ing. Vetreș Ion</h1></div>
+<div class="inst">Universitatea Politehnica Timișoara<br>Facultatea de Mecanică, Departamentul MMUT</div></header>
+<div class="fuelbar"></div>
+<nav class="tabs" aria-label="Secțiuni">
+<button data-tab="t-teorie">1. Teorie</button><button data-tab="t-calc">2. Enunț și calcul</button><button data-tab="t-rez">3. Rezolvare detaliată</button><button data-tab="t-tab">4. Tabele și grafice</button><button data-tab="t-tut">5. Tutorial și test</button><button data-tab="t-ref">6. Referat</button><span class="sp"></span>
+<button class="tool" id="decBtn">Zecimale</button><button class="tool" id="themeBtn">Temă luminoasă / întunecată</button></nav>
+<main>
+<section class="tab prose" id="t-teorie"><h2>Scopul problemei</h2>
+<p>Se calculează temperatura unei componente electronice răcite cu un disipator cu canale rectangulare parcurse de aer și puterea necesară pentru pomparea aerului. Problema ilustrează compromisul dintre răcire (creșterea debitului) și consumul de energie al ventilatorului.</p>
+<h2>Curgerea turbulentă în canale</h2>
+<div class="eq">u<sub>m</sub> = V̇ / (N A<sub>c</sub>) ,&nbsp;&nbsp; D<sub>h</sub> = 4A<sub>c</sub>/P ,&nbsp;&nbsp; Re = u<sub>m</sub> D<sub>h</sub> ρ / μ<span class="n">(1)</span></div>
+<p>Pentru curgere turbulentă cu fluidul încălzit se folosește relația Dittus–Boelter:</p>
+<div class="eq">Nu = 0,023 · Re<sup>0,8</sup> · Pr<sup>0,4</sup> ,&nbsp;&nbsp; α = Nu λ / D<sub>h</sub><span class="n">(2)</span></div>
+<h2>Bilanțul termic al aerului și temperatura componentei</h2>
+<p>Aerul preia puterea componentei și se încălzește foarte puțin, deoarece debitul său termic este mare:</p>
+<div class="eq">T<sub>out</sub> = T<sub>in</sub> + Q̇ / (ṁ c<sub>p</sub>) ,&nbsp;&nbsp; ṁ = ρ V̇<span class="n">(3)</span></div>
+<p>Peretele disipatorului are temperatura T<sub>s</sub> (considerată constantă), iar temperatura aerului tinde exponențial către ea:</p>
+<div class="eq">(T<sub>s</sub> − T<sub>out</sub>) / (T<sub>s</sub> − T<sub>in</sub>) = exp(−A<sub>ex</sub> α / (ṁ c<sub>p</sub>)) = e<sup>−NTU</sup> ⇒ T<sub>s</sub> = (T<sub>out</sub> − e<sup>−NTU</sup> T<sub>in</sub>) / (1 − e<sup>−NTU</sup>)<span class="n">(4)</span></div>
+<h2>Căderea de presiune și puterea de pompare</h2>
+<div class="eq">f = 0,31 Re<sup>−0,25</sup> ,&nbsp;&nbsp; Δp = f (L/D<sub>h</sub>) ρ u<sub>m</sub>² / 2 ,&nbsp;&nbsp; Π = V̇ Δp<span class="n">(5)</span></div>
+<div class="note warn"><b>Atenție la rezolvarea din culegere.</b> Aria de schimb din exponentul relației (4) este a unui singur canal (P·L), deși debitul masic este total; dacă participă toate cele N canale, A<sub>ex</sub> = N·P·L și T<sub>s</sub> scade mult. În plus, în relația lui Δp din culegere lipsește factorul ½ al presiunii dinamice. Simulatorul permite alegerea modului „culegere” sau „riguros” și le compară în Tabelul 3.</div>
+</section>
+<section class="tab" id="t-calc"><div class="errbar" id="err" role="alert"></div>
+<div class="grid3">
+<div class="card"><h3>Date de intrare</h3><div class="bd" id="ctl"></div></div>
+<div>
+<div class="card"><h3>Enunțul problemei <span class="tag">se actualizează cu datele de intrare</span></h3><div class="bd enunt" id="enunt"></div></div>
+<div class="card" style="margin-top:16px"><h3>Figura E4.4.1. Disipatoare de căldură</h3><div class="bd"><canvas id="cvFig"></canvas><p class="cap">Figura se redesenează cu datele introduse: dimensiunile și numărul canalelor, debitul și temperaturile calculate.</p><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvFig" data-cap="Figura E4.4.1. Disipatoare de căldură">Copiază figura</button></div></div></div>
+<div class="card" style="margin-top:16px"><h3>Fig. 2. Temperatura aerului pe lungimea canalului</h3><div class="bd"><canvas id="cm"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cm" data-cap="Fig. 2. Temperatura aerului pe lungimea canalului">Copiază graficul</button></div></div></div>
+</div>
+<div class="card readouts"><h3>Rezultatele calculului</h3><div class="bd"><table class="ro-table" id="roCalc"></table>
+<div class="copybar"><button class="btn sm alt" data-copy="excel" data-target="#tblCalc">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblCalc" data-cap="Rezultatele calculului">Copiază pentru Word</button></div><div id="tblCalc" style="display:none"></div></div></div>
+</div></section>
+<section class="tab prose" id="t-rez"><h2>Enunț</h2><div class="enunt" id="enunt3"></div><h2>Rezolvare detaliată (valorile se actualizează cu datele de intrare)</h2><div id="stepsBox"></div></section>
+<section class="tab" id="t-tab"><div class="card"><h3>Tabele de calcul</h3><div class="bd" id="tbls"></div></div><div class="charts" style="margin-top:16px" id="chs"></div></section>
+<section class="tab prose" id="t-tut"><h2>Desfășurarea lucrării</h2>
+<ol class="steps">
+<li><b>Teorie.</b> Citiți secțiunea 1 și notați relațiile (1)–(5).</li>
+<li><b>Enunț și calcul.</b> Modificați datele în secțiunea 2: enunțul și figura E4.4.1 se actualizează (dimensiuni, numărul de canale, debit, temperaturi, putere).</li>
+<li><b>Rezolvarea.</b> Parcurgeți etapele din secțiunea 3 și verificați manual u<sub>m</sub>, D<sub>h</sub>, Re, Nu, α, T<sub>out</sub>, T<sub>s</sub>, Δp și Π.</li>
+<li><b>Moduri de calcul.</b> Comutați între „culegere” și „riguros” și comparați rezultatele în Tabelul 3.</li>
+<li><b>Debitul.</b> În Fig. 3 și Fig. 4 urmăriți cum scade T<sub>s</sub> și cum crește puterea de pompare cu debitul; alegeți un debit de compromis.</li>
+<li><b>Referat.</b> Completați datele și copiați referatul în Word; adăugați figurile.</li>
+</ol>
+<h2>Experimente dirijate</h2><div class="row" id="exps"></div><p class="small" id="expNote"></p><h2>Test grilă</h2><div id="mcq"></div></section>
+<section class="tab" id="t-ref"><div class="card"><h3>Date de identificare</h3><div class="bd"><div class="row">
+<input class="field" style="max-width:260px" id="stName" placeholder="Numele și prenumele studentului"><input class="field" style="max-width:140px" id="stGroup" placeholder="Grupa"><input class="field" style="max-width:170px" id="stDate" type="date">
+<button class="btn fuel" id="bRef">Copiază referatul pentru Word</button><button class="btn alt" id="bRefTxt">Copiază ca text</button></div>
+<p class="small">Referatul include enunțul cu datele introduse, rezolvarea, rezultatele, tabelele și concluziile. Diagramele și figurile se copiază separat.</p></div></div>
+<div class="card" style="margin-top:16px"><div class="bd prose" id="refBody" style="max-width:none"></div></div></section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box"><div class="row" style="justify-content:space-between"><b id="modalT"></b><button class="btn sm alt" onclick="document.getElementById('modal').classList.remove('on')">Închide</button></div><div id="modalB"></div></div></div>
+<script>/* ===== Utilitare comune simulatoare laborator ===== */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let DEC = ',';
+try { const d = localStorage.getItem('lab_dec'); if (d) DEC = d; } catch(e){}
+function fmt(x, d=2){ if (x===null||x===undefined||!isFinite(x)) return '–'; return x.toFixed(d).replace('.', DEC); }
+function fmtS(x, s=3){ if(!isFinite(x)) return '–'; if (x===0) return '0'; const d = Math.max(0, s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x, Math.min(d,6)); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaFn(z){ // Lanczos
+  if (z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gammaFn(1-z));
+  z-=1; const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0]; for(let i=1;i<g+2;i++) x+=c[i]/(z+i); const t=z+g+0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x; }
+function linreg(x,y){ const n=x.length; let sx=0,sy=0,sxx=0,sxy=0,syy=0; for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];syy+=y[i]*y[i];}
+  const b=(n*sxy-sx*sy)/(n*sxx-sx*sx), a=(sy-b*sx)/n; const r=(n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy)); return {a,b,r2:r*r}; }
+function toast(msg){ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---- Tab-uri ---- */
+function initTabs(onChange){
+  $$('nav.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    $$('nav.tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('section.tab').forEach(s=>s.classList.toggle('on', s.id===b.dataset.tab));
+    try{localStorage.setItem(document.title+'_tab', b.dataset.tab);}catch(e){}
+    onChange && onChange(b.dataset.tab); window.scrollTo({top:0});
+  }));
+  let t=null; try{t=localStorage.getItem(document.title+'_tab');}catch(e){}
+  const btn = t && $(`nav.tabs button[data-tab="${t}"]`); (btn||$('nav.tabs button[data-tab]')).click();
+}
+function initTheme(){
+  const b=$('#themeBtn'); if(!b) return; let th=null; try{th=localStorage.getItem('lab_theme');}catch(e){}
+  if(th) document.documentElement.dataset.theme=th;
+  b.addEventListener('click',()=>{ const cur=document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx; try{localStorage.setItem('lab_theme',nx);}catch(e){} window.dispatchEvent(new Event('themechange')); });
+  const d=$('#decBtn'); if(d){ d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct');
+    d.addEventListener('click',()=>{ DEC = DEC===','?'.':','; d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct'); try{localStorage.setItem('lab_dec',DEC);}catch(e){} window.dispatchEvent(new Event('decchange')); toast('Separator zecimal: '+(DEC===','?'virgulă (Excel RO)':'punct (Excel EN)')); }); }
+}
+
+/* ---- Canvas HiDPI ---- */
+function fitCanvas(cv, h){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=cv.clientWidth||cv.parentElement.clientWidth; const H=h||cv._h||Math.round(w*0.56);
+  cv._h=h||cv._h; cv.style.height=H+'px'; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(H*dpr);} const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h:H}; }
+
+/* ---- Grafic generic ---- */
+function niceTicks(min,max,n=6){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const t=[]; for(let v=Math.ceil(min/step-1e-9)*step; v<=max+step*1e-6; v+=step) t.push(+v.toFixed(12)); return {t,step}; }
+function plot(cv, o){
+  if(!cv.clientWidth) return null;
+  const {c,w,h}=fitCanvas(cv, o.height||300);
+  const ink=css('--ink'), ink2=css('--ink2'), grid=css('--grid'), bg=css('--canvas-bg');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const L=62,R=o.y2?60:18,T=o.title?30:14,B=46; const pw=w-L-R, ph=h-T-B;
+  let xs=[],ys=[],y2s=[]; o.series.forEach(s=>{ s.x.forEach((v,i)=>{ if(isFinite(v)&&isFinite(s.y[i])){ xs.push(v); (s.axis===2?y2s:ys).push(s.y[i]); } }); });
+  let xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs); if(!(xmax>xmin)){xmax=xmin+1;}
+  const lg=o.logx, lgy=o.logy;
+  const tx=v=>lg?Math.log10(v):v, ty=v=>lgy?Math.log10(v):v;
+  let ymin=o.ymin??Math.min(...ys), ymax=o.ymax??Math.max(...ys); if(!isFinite(ymin)){ymin=0;ymax=1;} if(ymax===ymin){ymax+=1;ymin-=lgy?0:1;}
+  if(o.ymax===undefined && o.ymin!==undefined && !lgy){ ymax+=(ymax-ymin)*0.08; }
+  if(o.ymin===undefined && !lgy){ const pad=(ymax-ymin)*0.08; ymax+=pad; if(ymin>0 && ymin<(ymax-ymin)*0.6) ymin=0; else ymin-=pad; }
+  let y2min=o.y2min??Math.min(...y2s), y2max=o.y2max??Math.max(...y2s); if(o.y2 && o.y2min===undefined){const p=(y2max-y2min)*0.08||1; y2max+=p; y2min=Math.max(0,y2min-p);}
+  const X=v=>L+(tx(v)-tx(xmin))/(tx(xmax)-tx(xmin))*pw, Y=v=>T+ph-(ty(v)-ty(ymin))/(ty(ymax)-ty(ymin))*ph, Y2=v=>T+ph-(v-y2min)/(y2max-y2min)*ph;
+  c.font='12px Barlow Condensed, Arial Narrow, sans-serif'; c.lineWidth=1;
+  // grid
+  const xt = o.xcats? o.xcats.map((_,i)=>i+1) : lg? logTicks(xmin,xmax) : niceTicks(xmin,xmax,o.xticks||7).t; const yt = lgy? logTicks(ymin,ymax): niceTicks(ymin,ymax,6).t;
+  c.strokeStyle=grid; c.fillStyle=ink2; c.textAlign='center'; c.textBaseline='top';
+  xt.forEach(v=>{ if(v<xmin-1e-12||v>xmax+1e-12) return; const x=X(v); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.fillText(o.xcats? o.xcats[v-1] : fmtTick(v), x, T+ph+5); });
+  c.textAlign='right'; c.textBaseline='middle';
+  yt.forEach(v=>{ if(v<ymin-1e-12||v>ymax+1e-12) return; const y=Y(v); c.beginPath(); c.moveTo(L,y); c.lineTo(L+pw,y); c.stroke(); c.fillText(fmtTick(v), L-6, y); });
+  if(o.y2){ c.textAlign='left'; niceTicks(y2min,y2max,6).t.forEach(v=>{ if(v<y2min||v>y2max) return; c.fillText(fmtTick(v), L+pw+6, Y2(v)); }); }
+  c.strokeStyle=ink; c.lineWidth=1.2; c.strokeRect(L,T,pw,ph);
+  c.fillStyle=ink; c.font='13px Barlow, Arial, sans-serif'; c.textAlign='center'; c.textBaseline='bottom'; c.fillText(o.xlabel||'', L+pw/2, h-4);
+  c.save(); c.translate(14, T+ph/2); c.rotate(-Math.PI/2); c.textBaseline='middle'; c.fillText(o.ylabel||'',0,0); c.restore();
+  if(o.y2){ c.save(); c.translate(w-10, T+ph/2); c.rotate(Math.PI/2); c.textBaseline='middle'; c.fillText(o.y2label||'',0,0); c.restore(); }
+  if(o.title){ c.font='600 14px Barlow, Arial, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(o.title, L, 8); }
+  // series
+  c.save(); c.beginPath(); c.rect(L,T,pw,ph); c.clip();
+  o.series.forEach(s=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const YY=s.axis===2?Y2:Y;
+    if(s.bars){ const n=s.x.length; const bw=s.bw? (X(s.x[0]+s.bw)-X(s.x[0])) : pw/n*0.8; c.fillStyle=col; c.globalAlpha=s.alpha??0.75;
+      s.x.forEach((v,i)=>{ const x=X(v)-bw/2+(s.shift||0)*bw; const y=YY(s.y[i]); c.fillRect(x+ (s.gap||1), y, bw*(s.wf||1)-2*(s.gap||1), YY(s.axis===2?y2min:Math.max(ymin,0))-y); }); c.globalAlpha=1; return; }
+    c.strokeStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+    if(!s.pointsOnly){ c.beginPath(); let st=false; s.x.forEach((v,i)=>{ if(!isFinite(v)||!isFinite(s.y[i])){st=false;return;} const x=X(v),y=YY(s.y[i]); st?c.lineTo(x,y):c.moveTo(x,y); st=true; }); c.stroke(); }
+    c.setLineDash([]);
+    if(s.markers){ c.fillStyle=css('--canvas-bg'); c.strokeStyle=col; c.lineWidth=1.8; s.x.forEach((v,i)=>{ if(!isFinite(s.y[i]))return; const x=X(v),y=YY(s.y[i]); c.beginPath();
+      if(s.markers==='sq') c.rect(x-3.5,y-3.5,7,7); else if(s.markers==='tri'){c.moveTo(x,y-4.5);c.lineTo(x+4.2,y+3.5);c.lineTo(x-4.2,y+3.5);c.closePath();} else c.arc(x,y,3.6,0,7); c.fill(); c.stroke(); }); }
+  });
+  (o.vlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(X(v.x),T); c.lineTo(X(v.x),T+ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(v.label||'', X(v.x)+4, T+4+(v.dy||0)); });
+  (o.hlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(L,Y(v.y)); c.lineTo(L+pw,Y(v.y)); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='right'; c.textBaseline='bottom'; c.fillText(v.label||'', L+pw-4, Y(v.y)-2); });
+  c.restore();
+  // legend
+  const named=o.series.filter(s=>s.name); if(named.length){ c.font='12.5px Barlow, Arial, sans-serif'; let lx=L+10, ly=o.legendBR? T+ph-named.length*18-4 : T+10; const lw=Math.max(...named.map(s=>c.measureText(s.name).width))+36;
+    let lxr = o.legendLeft? L+10 : L+pw-lw-8; c.fillStyle=css('--canvas-bg'); c.globalAlpha=.88; c.fillRect(lxr-6, ly-6, lw+4, named.length*18+8); c.globalAlpha=1;
+    named.forEach((s,i)=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const yy=ly+i*18+6; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+      if(s.bars){ c.globalAlpha=.75; c.fillRect(lxr,yy-5,22,10); c.globalAlpha=1;} else if(s.pointsOnly){ c.beginPath(); c.arc(lxr+11,yy,3.6,0,7); c.stroke(); } else { c.beginPath(); c.moveTo(lxr,yy); c.lineTo(lxr+22,yy); c.stroke(); }
+      c.setLineDash([]); c.fillStyle=ink; c.textAlign='left'; c.textBaseline='middle'; c.fillText(s.name, lxr+28, yy); }); }
+  cv._plot={o,X,Y,L,T,pw,ph};
+  return cv._plot;
+}
+function logTicks(a,b){ const t=[]; for(let e=Math.floor(Math.log10(a)); e<=Math.ceil(Math.log10(b)); e++){ [1,2,5].forEach(m=>{ const v=m*Math.pow(10,e); if(v>=a*0.999&&v<=b*1.001) t.push(v); }); } return t; }
+function fmtTick(v){ const a=Math.abs(v); if(a===0) return '0'; if(a>=1000) return String(Math.round(v)); if(a>=10) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=1) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=0.1) return fmt(v,2); return fmt(v,3); }
+
+/* ---- Tabele & copiere ---- */
+function buildTable(el, T){ // T={head:[..], rows:[[..]], foot:[..]?, left:[colIdx]}
+  const left=new Set(T.left||[0]);
+  let h='<table class="data"><thead><tr>'+T.head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  T.rows.forEach(r=>{ h+='<tr>'+r.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr>'; });
+  h+='</tbody>'; if(T.foot) h+='<tfoot><tr>'+T.foot.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr></tfoot>'; h+='</table>';
+  el.innerHTML=h; el._T=T; }
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,'$1').replace(/<sup>(.*?)<\/sup>/g,'^$1').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+function tableTSV(T){ const lines=[T.head.map(strip).join('\t')]; T.rows.forEach(r=>lines.push(r.map(strip).join('\t'))); if(T.foot) lines.push(T.foot.map(strip).join('\t')); return lines.join('\r\n'); }
+function tableHTMLWord(T, caption){
+  const th='border:1px solid #16324A;background:#16324A;color:#fff;padding:3pt 5pt;font:bold 9.5pt Calibri,Arial;text-align:center';
+  const td='border:1px solid #9AA8B4;padding:2pt 5pt;font:9.5pt Calibri,Arial;text-align:right'; const tdl=td.replace('right','left');
+  const left=new Set(T.left||[0]);
+  let h=(caption?`<p style="font:bold 10pt Calibri,Arial;color:#16324A;margin:6pt 0 3pt">${caption}</p>`:'')+'<table style="border-collapse:collapse;mso-table-lspace:0">';
+  h+='<tr>'+T.head.map(x=>`<th style="${th}">${x}</th>`).join('')+'</tr>';
+  T.rows.forEach((r,j)=>{ h+='<tr>'+r.map((x,i)=>`<td style="${left.has(i)?tdl:td};${j%2?'background:#F2F5F7':''}">${x}</td>`).join('')+'</tr>'; });
+  if(T.foot) h+='<tr>'+T.foot.map((x,i)=>`<td style="${left.has(i)?tdl:td};font-weight:bold;border-top:2px solid #16324A">${x}</td>`).join('')+'</tr>';
+  return h+'</table>'; }
+async function copyRich(html, text){
+  try{ if(navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  try{ const d=document.createElement('div'); d.contentEditable='true'; d.style.cssText='position:fixed;left:-9999px;top:0'; d.innerHTML=html; document.body.appendChild(d);
+    const r=document.createRange(); r.selectNodeContents(d); const s=getSelection(); s.removeAllRanges(); s.addRange(r); const ok=document.execCommand('copy'); s.removeAllRanges(); d.remove(); if(ok) return true; }catch(e){}
+  return false; }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) return true; }catch(e){}
+  return false; }
+function manualModal(title, content, isHTML){ const m=$('#modal'); $('#modalT').textContent=title;
+  const b=$('#modalB'); b.innerHTML=''; if(isHTML){ const d=document.createElement('div'); d.innerHTML=content; d.style.cssText='border:1px solid var(--line);padding:8px;background:#fff;color:#000;overflow:auto'; b.appendChild(d);
+    b.insertAdjacentHTML('afterbegin','<p class="small">Selectați conținutul de mai jos (Ctrl+A în chenar nu funcționează – trageți cu mouse-ul) și apăsați Ctrl+C.</p>'); }
+  else { const t=document.createElement('textarea'); t.value=content; b.appendChild(t); setTimeout(()=>{t.focus();t.select();},50); b.insertAdjacentHTML('afterbegin','<p class="small">Copierea automată a fost blocată de browser. Textul este selectat – apăsați Ctrl+C (Cmd+C).</p>'); }
+  m.classList.add('on'); }
+async function copyTableExcel(T){ const txt=tableTSV(T); if(await copyText(txt)) toast('Tabel copiat – lipiți în Excel (Ctrl+V)'); else manualModal('Copiere pentru Excel', txt); }
+async function copyTableWord(T, cap){ const html=tableHTMLWord(T,cap); if(await copyRich(html, tableTSV(T))) toast('Tabel copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere pentru Word', html, true); }
+async function copyCanvas(cv, name){
+  // exportă pe fundal alb pentru documente
+  const tmp=document.createElement('canvas'); tmp.width=cv.width; tmp.height=cv.height; const c=tmp.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,tmp.width,tmp.height); c.drawImage(cv,0,0);
+  try{ const blob=await new Promise(r=>tmp.toBlob(r,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Grafic copiat ca imagine – lipiți în Word/Excel'); return; }catch(e){}
+  const url=tmp.toDataURL('image/png'); manualModal('Copiere grafic: '+(name||''), `<img src="${url}" style="max-width:100%"><p style="font:12px Arial">Clic dreapta pe imagine → „Copiere imagine”, apoi lipiți în Word.</p>`, true); }
+function wireCopy(scope){ $$('[data-copy]',scope).forEach(b=>{ if(b._w) return; b._w=1; b.addEventListener('click',()=>{ const tgt=$(b.dataset.target); const mode=b.dataset.copy;
+  if(mode==='excel') copyTableExcel(tgt._T); else if(mode==='word') copyTableWord(tgt._T, b.dataset.cap); else if(mode==='img') copyCanvas(tgt, b.dataset.cap); }); }); }
+function copyButtons(target, cap, img){ return img? `<button class="btn sm alt" data-copy="img" data-target="${target}" data-cap="${cap||''}">Copiază graficul</button>`
+  : `<button class="btn sm alt" data-copy="excel" data-target="${target}">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="${target}" data-cap="${cap||''}">Copiază pentru Word</button>`; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#modal')?.classList.remove('on'); });
+</script><script>function quizRender(el,Q,onDone){ el.innerHTML=Q.map((q,i)=>`<div class="mcq" data-i="${i}"><p><b>${i+1}.</b> ${q.q}</p>${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}<div class="expl"></div></div>`).join('')+'<div class="row"><button class="btn fuel" id="mcqCheck">Verifică răspunsurile</button><span id="mcqScore" class="tag"></span></div>';
+  $('#mcqCheck',el).onclick=()=>{ let ok=0; Q.forEach((q,i)=>{ const d=$(`.mcq[data-i="${i}"]`,el), s=$(`input[name=q${i}]:checked`,el); const g=s&&+s.value===q.a; if(g) ok++;
+    d.classList.remove('good','badq'); d.classList.add(g?'good':'badq'); $('.expl',d).innerHTML=(g?'<b>Corect.</b> ':'<b>'+(s?'Greșit':'Fără răspuns')+'.</b> Răspuns corect: '+q.o[q.a]+'. ')+q.e; });
+    $('#mcqScore',el).textContent=`Scor: ${ok} / ${Q.length} (nota ${fmt(1+9*ok/Q.length,1)})`; onDone&&onDone(ok,Q.length); }; }
+</script><script>function core3(p,mode){ const a=p.a/1e3,b=p.b/1e3,L=p.L/1e3,Ac=a*b,P=2*(a+b),Dh=4*Ac/P,u=p.V/(p.N*Ac),m=p.V*p.rho;
+ const Re=u*Dh*p.rho/p.mu,Nu=0.023*Math.pow(Re,0.8)*Math.pow(p.Pr,0.4),al=Nu*p.lam/Dh,Tout=p.Tin+p.Q/(m*p.cp),Nt=mode==='book'?1:p.N,Aex=Nt*P*L,NTU=Aex*al/(m*p.cp),e=Math.exp(-NTU),Ts=(Tout-e*p.Tin)/(1-e),f=0.31*Math.pow(Re,-0.25),half=mode==='book'?1:0.5,dp=f*(L/Dh)*p.rho*u*u*half;
+ return{a:a,b:b,L:L,Ac:Ac,P:P,Dh:Dh,u:u,m:m,Re:Re,Nu:Nu,al:al,Tout:Tout,Nt:Nt,Aex:Aex,NTU:NTU,e:e,Ts:Ts,f:f,dp:dp,pump:p.V*dp,half:half}; }
+const SPEC={ short:'E4.4', docTitle:'Problema E4.4 – Disipator cu aer: temperatură și putere de pompare',
+ title:'Disipator de căldură cu canale de aer pentru o componentă electronică',
+ scop:'Calculul temperaturii componentei electronice răcite cu un disipator cu canale rectangulare parcurse de aer (convecție forțată turbulentă) și al puterii de pompare a aerului, cu analiza comparativă a modului de calcul din culegere și a variantei riguroase.',
+ resNo:'2',
+ groups:[
+ {t:'Disipatorul',f:[
+  {id:'L',l:'Lungimea dispozitivului, L',u:'mm',def:150,min:50,max:300,step:5},
+  {id:'N',l:'Numărul de canale, N',u:'',def:24,min:2,max:48,step:2},
+  {id:'a',l:'Lățimea canalului, a',u:'mm',def:6,min:2,max:15,step:0.5},
+  {id:'b',l:'Înălțimea canalului, b',u:'mm',def:25,min:5,max:50,step:1}]},
+ {t:'Condiții de funcționare',f:[
+  {id:'V',l:'Debitul volumic de aer, V̇',u:'m³/s',def:0.06,min:0.02,max:0.12,step:0.005},
+  {id:'Tin',l:'Temperatura aerului la intrare, T<sub>in</sub>',u:'°C',def:27,min:0,max:50,step:1,pos:false},
+  {id:'Q',l:'Puterea componentei, Q̇',u:'W',def:50,min:5,max:150,step:5}]},
+ {t:'Proprietățile aerului (300 K)',f:[
+  {id:'rho',l:'Densitatea, ρ',u:'kg/m³',def:1.1281},
+  {id:'cp',l:'Căldura specifică, c<sub>p</sub>',u:'J/kg·K',def:1008},
+  {id:'mu',l:'Vâscozitatea dinamică, μ',u:'Pa·s',def:0.00001905},
+  {id:'lam',l:'Conductivitatea termică, λ',u:'W/m·K',def:0.027},
+  {id:'Pr',l:'Numărul Prandtl, Pr',u:'',def:0.706}]},
+ {t:'Modul de calcul',f:[{id:'mode',l:'Modul',def:'book',opts:[['book','Conform rezolvării din culegere'],['corr','Variantă riguroasă (aria N·P·L, factorul ½ în Δp)']]}]}],
+ buttons:[{id:'bAir',l:'Proprietăți aer 300 K',fn:()=>{ setVal('rho',1.1281); setVal('cp',1008); setVal('mu',0.00001905); setVal('lam',0.027); setVal('Pr',0.706); }}],
+ validate:p=>p.N<1?'Numărul de canale trebuie să fie cel puțin 1.':'',
+ chartMeta:[
+  {id:'ch1',title:'Fig. 2. Temperatura aerului pe lungimea canalului',note:'Aerul se încălzește cu doar ≈ 0,7 K; temperatura componentei T_s este mult mai mare.'},
+  {id:'ch2',title:'Fig. 3. Temperatura componentei în funcție de debit',note:'Comparație între modul din culegere și varianta riguroasă.'},
+  {id:'ch3',title:'Fig. 4. Puterea de pompare în funcție de debit',note:'Π crește aproximativ cu V̇³ (Δp ∝ u^1,75).'},
+  {id:'ch4',title:'Fig. 5. Temperatura componentei în funcție de numărul de canale',note:'Pentru același debit total; mai multe canale înseamnă viteză mai mică în fiecare.'}],
+ figTitle:'Figura E4.4.1. Disipatoare de căldură',
+ exps:{A:{l:'Debit redus (0,03 m³/s)',set:{V:0.03},n:'T_s crește, iar puterea de pompare scade mult.'},
+  B:{l:'Putere 100 W',set:{Q:100,V:0.06},n:'T_s crește proporțional cu Q̇ (supratemperatura se dublează).'},
+  C:{l:'Mod riguros, 24 canale',set:{mode:'corr',V:0.06},n:'comparați T_s și Π cu valorile din culegere.'},
+  D:{l:'12 canale',set:{N:12,V:0.06,mode:'book'},n:'viteza în canal se dublează: urmăriți Re, α, Δp și Π.'}},
+ mcq:[
+ {q:'De ce se folosește relația Dittus–Boelter?',o:['Pentru curgere turbulentă în canale (Re > ≈ 10⁴), cu fluidul încălzit (exponent 0,4 la Pr)','Pentru curgere laminară','Pentru condensare','Pentru radiație'],a:0,e:'Nu = 0,023·Re^0,8·Pr^0,4; în problemă Re ≈ 9,5·10³, la limita de valabilitate.'},
+ {q:'Cum se determină temperatura aerului la ieșire?',o:['Din bilanțul Q̇ = ṁ c_p (T_out − T_in)','Din Re','Din Nu','Este egală cu T_s'],a:0,e:'T_out = T_in + Q̇/(ṁ c_p) ≈ 27,7 °C.'},
+ {q:'Ce reprezintă exponentul NTU = A·α/(ṁ·c_p)?',o:['Numărul de unități de transfer: raportul dintre capacitatea de transfer și capacitatea termică a debitului','Numărul de canale','Numărul Nusselt total','Randamentul ventilatorului'],a:0,e:'Pentru perete izoterm: (T_s − T_out)/(T_s − T_in) = exp(−NTU).'},
+ {q:'De ce rezultă T_s mult mai mic dacă toate canalele participă la schimb?',o:['Aria de schimb crește de N ori, deci NTU crește','Debitul scade','α scade','Q̇ scade'],a:0,e:'Cu A = N·P·L, NTU ≈ 0,28 și T_s ≈ 30 °C.'},
+ {q:'Cum se exprimă corect căderea de presiune în canal?',o:['Δp = f·(L/D_h)·ρ·u²/2 (Darcy–Weisbach)','Δp = f·ρ·u²·L','Δp = ρ·g·L','Δp = Q̇/V̇'],a:0,e:'Factorul ½ (presiunea dinamică) este necesar; fără el Δp rezultă dublu.'},
+ {q:'Cum variază puterea de pompare cu debitul?',o:['Aproximativ cu V̇³, deoarece Π = V̇·Δp și Δp ∝ V̇^1,75','Liniar','Rămâne constantă','Scade'],a:0,e:'Dublarea debitului crește Π de ≈ 10 ori; de aceea creșterea debitului este costisitoare.'}],
+ calc:p=>{
+  const r=core3(p,p.mode); r.bk=core3(p,'book'); r.cr=core3(p,'corr');
+  r.ro=[['Viteza în canal, u<sub>m</sub>',fmt(r.u,2)+' m/s'],['Diametrul hidraulic, D<sub>h</sub>',fmt(r.Dh*1e3,2)+' mm'],['Debitul masic, ṁ',fmt(r.m,4)+' kg/s'],['Numărul Reynolds, Re',fmt(r.Re,0)],['Numărul Nusselt, Nu',fmt(r.Nu,2)],['Coeficientul de convecție, α',fmt(r.al,2)+' W/m²K'],['Temperatura aerului la ieșire',fmt(r.Tout,2)+' °C'],['NTU',fmt(r.NTU,4)],['Temperatura componentei, T<sub>s</sub>',fmt(r.Ts,1)+' °C',1],['Factorul de frecare, f',fmt(r.f,4)],['Căderea de presiune, Δp',fmt(r.dp,1)+' Pa'],['Puterea de pompare, Π',fmt(r.pump,2)+' W',1]];
+  return r; },
+ enunt:(p,r)=>'<p>Pentru răcirea componentei electronice cu circuite integrate se folosește un disipator de căldură cu două rânduri de canale de curgere ale aerului. Lungimea dispozitivului de răcire este de '+LV(p.L,0,'mm')+' și conține '+LV(p.N,0)+' de canale rectangulare cu dimensiuni '+LV(p.a,1,'mm')+' × '+LV(p.b,1,'mm')+'. În secțiunea de intrare, temperatura și debitul volumic al aerului sunt '+LV(p.Tin,0,'°C')+', respectiv '+LV(p.V,3,'m³/s')+'. Puterea componentei electronice este de '+LV(p.Q,0,'W')+'. Să se calculeze temperatura componentei electronice și puterea de pompare a aerului.</p><p class="small">Proprietățile aerului: ρ = '+fmt(p.rho,4)+' kg/m³; c<sub>p</sub> = '+fmt(p.cp,0)+' J/kg·K; μ = '+fmt(p.mu,7)+' Pa·s; λ = '+fmt(p.lam,3)+' W/m·K; Pr = '+fmt(p.Pr,3)+'. Mod de calcul: '+(p.mode==='book'?'conform culegerii':'varianta riguroasă')+'.</p>',
+ steps:(p,r)=>{ const bk=p.mode==='book'; return[
+  {t:'Proprietățile aerului',e:['ρ = '+fmt(p.rho,4)+' kg/m³; c<sub>p</sub> = '+fmt(p.cp,0)+' J/kg·K; μ = '+fmt(p.mu,7)+' Pa·s; λ = '+fmt(p.lam,3)+' W/m·K; Pr = '+fmt(p.Pr,3)]},
+  {t:'Viteza de curgere în canal',e:['u<sub>m</sub> = V̇/(N·A<sub>c</sub>) = '+fmt(p.V,3)+' / ('+fmt(p.N,0)+' · '+fmt(p.a/1e3,3)+' · '+fmt(p.b/1e3,3)+') = <b>'+fmt(r.u,2)+' m/s</b>']},
+  {t:'Diametrul hidraulic',e:['D<sub>h</sub> = 4·A<sub>c</sub>/P = 4 · '+fmt(p.a/1e3,3)+' · '+fmt(p.b/1e3,3)+' / (2·('+fmt(p.a/1e3,3)+' + '+fmt(p.b/1e3,3)+')) = <b>'+fmt(r.Dh,5)+' m</b>']},
+  {t:'Debitul masic',e:['ṁ = V̇·ρ = '+fmt(p.V,3)+' · '+fmt(p.rho,4)+' = <b>'+fmt(r.m,4)+' kg/s</b>']},
+  {t:'Numărul Reynolds',e:['Re = u<sub>m</sub>·D<sub>h</sub>·ρ/μ = '+fmt(r.u,2)+' · '+fmt(r.Dh,5)+' · '+fmt(p.rho,4)+' / '+fmt(p.mu,7)+' = <b>'+fmt(r.Re,0)+'</b> (regim turbulent)']},
+  {t:'Numărul Nusselt (Dittus–Boelter)',e:['Nu = 0,023·Re<sup>0,8</sup>·Pr<sup>0,4</sup> = 0,023 · '+fmt(r.Re,0)+'<sup>0,8</sup> · '+fmt(p.Pr,3)+'<sup>0,4</sup> = <b>'+fmt(r.Nu,2)+'</b>']},
+  {t:'Coeficientul de convecție',e:['α = Nu·λ/D<sub>h</sub> = '+fmt(r.Nu,2)+' · '+fmt(p.lam,3)+' / '+fmt(r.Dh,5)+' = <b>'+fmt(r.al,2)+' W/m²K</b>']},
+  {t:'Temperatura aerului la ieșire (bilanț termic)',e:['Q̇ = ṁ·c<sub>p</sub>·(T<sub>out</sub> − T<sub>in</sub>) ⇒ T<sub>out</sub> = T<sub>in</sub> + Q̇/(ṁ·c<sub>p</sub>) = '+fmt(p.Tin,0)+' + '+fmt(p.Q,0)+' / ('+fmt(r.m,4)+' · '+fmt(p.cp,0)+') = <b>'+fmt(r.Tout,2)+' °C</b>']},
+  {t:'Temperatura componentei electronice',e:['(T<sub>s</sub> − T<sub>out</sub>)/(T<sub>s</sub> − T<sub>in</sub>) = exp(−A<sub>ex</sub>·α/(ṁ·c<sub>p</sub>)), cu A<sub>ex</sub> = '+(bk?'P·L (un canal, ca în culegere)':'N·P·L (toate canalele)')+' = '+fmt(r.Aex,4)+' m²','NTU = '+fmt(r.NTU,5)+' ⇒ e = exp(−NTU) = '+fmt(r.e,5),'T<sub>s</sub> = (T<sub>out</sub> − e·T<sub>in</sub>)/(1 − e) = <b>'+fmt(r.Ts,1)+' °C</b>']},
+  {t:'Căderea de presiune',e:['f = 0,31·Re<sup>−0,25</sup> = 0,31 · '+fmt(r.Re,0)+'<sup>−0,25</sup> = '+fmt(r.f,4),bk?'Δp = f·ρ·u<sub>m</sub>²·L/D<sub>h</sub> (ca în culegere) = <b>'+fmt(r.dp,1)+' Pa</b>':'Δp = f·(L/D<sub>h</sub>)·ρ·u<sub>m</sub>²/2 = <b>'+fmt(r.dp,1)+' Pa</b>']},
+  {t:'Puterea de pompare',e:['Π = V̇·Δp = '+fmt(p.V,3)+' · '+fmt(r.dp,1)+' = <b>'+fmt(r.pump,2)+' W</b>']}]; },
+ tables:(p,r)=>{ const vs=[]; for(let i=0;i<10;i++)vs.push(+(0.02+(0.12-0.02)*i/9).toFixed(4));
+  return[
+  {title:'Tabelul 1. Datele de intrare',T:{head:['Mărimea','Simbol','Valoarea','UM'],left:[0,1,3],rows:[['Lungimea dispozitivului','L',fmt(p.L,0),'mm'],['Numărul de canale','N',fmt(p.N,0),'–'],['Dimensiunile canalului','a × b',fmt(p.a,1)+' × '+fmt(p.b,1),'mm'],['Debitul volumic','V̇',fmt(p.V,3),'m³/s'],['Temperatura aerului la intrare','T_in',fmt(p.Tin,1),'°C'],['Puterea componentei','Q̇',fmt(p.Q,1),'W'],['Densitatea','ρ',fmt(p.rho,4),'kg/m³'],['Căldura specifică','c_p',fmt(p.cp,0),'J/kg·K'],['Vâscozitatea dinamică','μ',fmt(p.mu,7),'Pa·s'],['Conductivitatea termică','λ',fmt(p.lam,3),'W/m·K'],['Numărul Prandtl','Pr',fmt(p.Pr,3),'–']]}},
+  {title:'Tabelul 2. Mărimi intermediare și rezultate (mod: '+(p.mode==='book'?'culegere':'riguros')+')',T:{head:['Mărimea','Simbol','Valoarea','UM'],left:[0,1,3],rows:[['Aria secțiunii canalului','A_c',fmt(r.Ac*1e6,0),'mm²'],['Perimetrul','P',fmt(r.P*1e3,0),'mm'],['Diametrul hidraulic','D_h',fmt(r.Dh*1e3,2),'mm'],['Viteza în canal','u_m',fmt(r.u,2),'m/s'],['Debitul masic','ṁ',fmt(r.m,4),'kg/s'],['Numărul Reynolds','Re',fmt(r.Re,0),'–'],['Numărul Nusselt','Nu',fmt(r.Nu,2),'–'],['Coeficientul de convecție','α',fmt(r.al,2),'W/m²K'],['Temperatura aerului la ieșire','T_out',fmt(r.Tout,2),'°C'],['Aria de schimb considerată','A_ex',fmt(r.Aex*1e4,1),'cm²'],['NTU','NTU',fmt(r.NTU,4),'–'],['Temperatura componentei','T_s',fmt(r.Ts,1),'°C'],['Factorul de frecare','f',fmt(r.f,4),'–'],['Căderea de presiune','Δp',fmt(r.dp,1),'Pa'],['Puterea de pompare','Π',fmt(r.pump,2),'W']]}},
+  {title:'Tabelul 3. Comparație între modul din culegere și varianta riguroasă',T:{head:['Mărime','Culegere','Riguros'],rows:[['Aria de schimb considerată','P·L (un canal)','N·P·L (toate canalele)'],['NTU',fmt(r.bk.NTU,4),fmt(r.cr.NTU,4)],['T_s [°C]',fmt(r.bk.Ts,1),fmt(r.cr.Ts,1)],['Relația pentru Δp','f·ρ·u²·L/D_h','f·(L/D_h)·ρ·u²/2'],['Δp [Pa]',fmt(r.bk.dp,1),fmt(r.cr.dp,1)],['Π [W]',fmt(r.bk.pump,2),fmt(r.cr.pump,2)]]}},
+  {title:'Tabelul 4. Rezultate în funcție de debit',T:{head:['V̇ [m³/s]','u_m [m/s]','Re','α [W/m²K]','T_s culegere [°C]','T_s riguros [°C]','Π culegere [W]','Π riguros [W]'],rows:vs.map(v=>{ const q=Object.assign({},p,{V:v}),x=core3(q,'book'),y=core3(q,'corr'); return[fmt(v,3),fmt(x.u,2),fmt(x.Re,0),fmt(x.al,1),fmt(x.Ts,1),fmt(y.Ts,1),fmt(x.pump,2),fmt(y.pump,2)]; })}}]; },
+ charts:(p,r)=>{ const n=100,xs=[],t1=[],t2=[]; for(let i=0;i<=n;i++){ const x=p.L*i/n; xs.push(x); t1.push(r.bk.Ts-(r.bk.Ts-p.Tin)*Math.exp(-r.bk.NTU*i/n)); t2.push(r.cr.Ts-(r.cr.Ts-p.Tin)*Math.exp(-r.cr.NTU*i/n)); }
+  const c1={xlabel:'Poziția în canal, x [mm]',ylabel:'Temperatura aerului [°C]',xmin:0,xmax:p.L,ymin:Math.floor(p.Tin*2)/2,ymax:Math.ceil((r.bk.Tout+0.2)*2)/2,series:[{name:'Culegere',x:xs,y:t1,color:'--alert',lw:2.6},{name:'Riguros',x:xs,y:t2,color:'--blue',dash:[7,4],lw:2.6},{x:[p.L],y:[r.bk.Tout],color:'--ink',pointsOnly:true,markers:'circle'}],legendBR:true};
+  const v0=Math.min(0.02,p.V*0.8),v1=Math.max(0.12,p.V*1.3),vv=[],a1=[],a2=[],b1=[],b2=[]; for(let i=0;i<=60;i++){ const v=v0+(v1-v0)*i/60,q=Object.assign({},p,{V:v}),x=core3(q,'book'),y=core3(q,'corr'); vv.push(v); a1.push(x.Ts); a2.push(y.Ts); b1.push(x.pump); b2.push(y.pump); }
+  const c2={xlabel:'Debitul volumic, V̇ [m³/s]',ylabel:'Temperatura componentei, T_s [°C]',xmin:v0,xmax:v1,ymin:0,series:[{name:'Culegere',x:vv,y:a1,color:'--alert',lw:2.6},{name:'Riguros',x:vv,y:a2,color:'--blue',dash:[7,4],lw:2.6},{x:[p.V],y:[r.Ts],color:'--ink',pointsOnly:true,markers:'circle'}],vlines:[{x:p.V,label:'V̇ = '+fmt(p.V,3)}]};
+  const c3={xlabel:'Debitul volumic, V̇ [m³/s]',ylabel:'Puterea de pompare, Π [W]',xmin:v0,xmax:v1,ymin:0,series:[{name:'Culegere',x:vv,y:b1,color:'--alert',lw:2.6},{name:'Riguros',x:vv,y:b2,color:'--blue',dash:[7,4],lw:2.6},{x:[p.V],y:[r.pump],color:'--ink',pointsOnly:true,markers:'circle'}],vlines:[{x:p.V,label:'V̇ = '+fmt(p.V,3)}],legendLeft:true};
+  const nn=[],s1=[],s2=[]; for(let k=2;k<=48;k+=2){ const q=Object.assign({},p,{N:k}); nn.push(k); s1.push(core3(q,'book').Ts); s2.push(core3(q,'corr').Ts); }
+  const c4={xlabel:'Numărul de canale, N',ylabel:'Temperatura componentei, T_s [°C]',xmin:2,xmax:48,ymin:0,series:[{name:'Culegere',x:nn,y:s1,color:'--alert',lw:2.6,markers:'sq'},{name:'Riguros',x:nn,y:s2,color:'--blue',dash:[7,4],lw:2.6,markers:'circle'}],vlines:[{x:p.N,label:'N = '+fmt(p.N,0)}]};
+  return[c1,c2,c3,c4]; },
+ concl:(p,r)=>['Aerul parcurge '+fmt(p.N,0)+' canale cu viteza u_m = '+fmt(r.u,2)+' m/s (Re = '+fmt(r.Re,0)+', regim turbulent), cu α = '+fmt(r.al,1)+' W/m²K.',
+  'Aerul se încălzește de la '+fmt(p.Tin,0)+' °C la '+fmt(r.Tout,2)+' °C; temperatura componentei este T_s = '+fmt(r.Ts,1)+' °C în modul „'+(p.mode==='book'?'culegere':'riguros')+'”.',
+  'Căderea de presiune este '+fmt(r.dp,1)+' Pa, iar puterea de pompare Π = '+fmt(r.pump,2)+' W.',
+  'Dacă toate canalele participă la schimbul de căldură, T_s = '+fmt(r.cr.Ts,1)+' °C, iar cu factorul ½ din relația Darcy–Weisbach Π = '+fmt(r.cr.pump,2)+' W (față de '+fmt(r.bk.Ts,1)+' °C și '+fmt(r.bk.pump,2)+' W în culegere).'],
+ fig:(cv,p,r)=>{ const w0=cv.clientWidth,{c,w,h}=fitCanvas(cv,Math.max(320,Math.min(440,w0*0.5)));
+  const ink=css('--ink'),ink2=css('--ink2'),alert=css('--alert'),blue=css('--blue'),bg=css('--canvas-bg'),panel=css('--panel2'); c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const sw=Math.min(w*0.52,w-250),X0=24; const yP=h-70;
+  c.fillStyle=css('--fuel-soft'); c.strokeStyle=ink; c.lineWidth=1.5; c.fillRect(X0,yP,sw,14); c.strokeRect(X0,yP,sw,14); rich(c,'Placa electronică cu circuite integrate',X0+2,yP+32,{size:12.5,col:ink});
+  const cw=sw*0.34,cx=X0+sw*0.33; c.fillStyle=tcol(Math.min(1,Math.max(0,(r.Ts-p.Tin)/Math.max(40,r.Ts-p.Tin)))); c.fillRect(cx,yP-24,cw,24); c.strokeRect(cx,yP-24,cw,24); rich(c,'T_s = '+fmt(r.Ts,1)+' °C',cx+cw/2,yP-8,{align:'center',size:12.5,weight:'700',col:'#fff'});
+  const bx=cx-12,bw=cw+24,by=yP-24-96; c.fillStyle=css('--steel'); c.fillRect(bx,by,bw,96); c.strokeRect(bx,by,bw,96);
+  const hs=34,gp=(96-2*hs)/3; [0,1].forEach(i=>{ c.fillStyle=css('--canvas-bg'); c.fillRect(bx,by+gp+i*(hs+gp),bw,hs); c.strokeRect(bx,by+gp+i*(hs+gp),bw,hs); });
+  rich(c,'Disipator de căldură',bx+bw/2,by-38,{align:'center',size:13,weight:'600',col:ink}); dimH(c,bx,bx+bw,by-12,'L = '+fmt(p.L,0)+' mm',ink,true);
+  [0,1].forEach(i=>{ const y=by+gp+i*(hs+gp)+hs/2; arrow(c,X0,y,bx-4,y,blue,2.2,8); arrow(c,bx+bw+4,y,X0+sw,y,alert,2.2,8); });
+  rich(c,'intrare aer',X0,by-44,{size:13,weight:'600',col:ink}); rich(c,'V̇ = '+fmt(p.V,3)+' m³/s',X0,by-28,{size:12.5,col:blue}); rich(c,'T_in = '+fmt(p.Tin,0)+' °C',X0,by-12,{size:12.5,col:blue});
+  rich(c,'ieșire',X0+sw,by-44,{size:13,weight:'600',align:'right',col:ink}); rich(c,'T_out = '+fmt(r.Tout,2)+' °C',X0+sw,by-28,{size:12.5,align:'right',col:alert});
+  arrow(c,cx+cw/2,yP+44,cx+cw/2,yP-2,alert,1.8,7); rich(c,'Q̇ = '+fmt(p.Q,0)+' W',cx+cw/2+10,yP+52,{size:12.5,weight:'600',col:alert});
+  // vedere frontală
+  const fx0=X0+sw+40,fw=w-fx0-20; rich(c,'Vedere frontală: '+fmt(p.N,0)+' canale, 2 rânduri',fx0+fw/2,22,{align:'center',size:13,weight:'600',col:ink});
+  const rows=2,per=Math.ceil(p.N/rows),wall=0.6*p.a,Wm=per*(p.a+wall)+wall,Hm=rows*(p.b+wall)+wall,k=Math.min((fw-40)/Wm,(h-150)/Hm),ccw=p.a*k,cch=p.b*k,ww=wall*k,BW=Wm*k,BH=Hm*k,fx=fx0+(fw-BW)/2+10,fy=60;
+  c.fillStyle=css('--steel'); c.fillRect(fx,fy,BW,BH); c.strokeStyle=ink; c.lineWidth=1.5; c.strokeRect(fx,fy,BW,BH);
+  c.fillStyle=css('--canvas-bg'); for(let rr=0;rr<rows;rr++)for(let q=0;q<per;q++){ if(rr*per+q>=p.N)break; c.fillRect(fx+ww+q*(ccw+ww),fy+ww+rr*(cch+ww),ccw,cch); }
+  dimH(c,fx+ww,fx+ww+ccw,fy-8,fmt(p.a,0),ink,true); dimV(c,fx-12,fy+ww,fy+ww+cch,fmt(p.b,0)+' mm',ink,true);
+  let ty=fy+BH+26; [['u_m = '+fmt(r.u,2)+' m/s',ink2],['Re = '+fmt(r.Re,0),ink2],['α = '+fmt(r.al,1)+' W/m²K',ink2],['Δp = '+fmt(r.dp,1)+' Pa',ink2],['Π = '+fmt(r.pump,2)+' W',alert]].forEach(t=>{ rich(c,t[0],fx0,ty,{size:12.5,weight:t[1]===alert?'700':'',col:t[1]}); ty+=16; });
+ }
+};
+</script><script>/* ===== Motor comun pentru simulatoarele de probleme (structură ca la lucrările de laborator) ===== */
+const sci=(x,d=2)=>{ if(!isFinite(x))return '–'; if(x===0)return '0'; const e=Math.floor(Math.log10(Math.abs(x))); return fmt(x/Math.pow(10,e),d)+'·10<sup>'+e+'</sup>'; };
+const LV=(x,d,u)=>'<b class="live">'+fmt(x,d)+(u?'&nbsp;'+u:'')+'</b>';
+function rich(c,s,x,y,o){ o=o||{}; const sz=o.size||13, fam='Barlow, Arial, sans-serif', wt=o.weight?o.weight+' ':'';
+  const parts=[]; const re=/_\{([^}]*)\}|_([A-Za-z0-9]+)/g; let last=0,m; while((m=re.exec(s))){ if(m.index>last)parts.push([s.slice(last,m.index),0]); parts.push([m[1]!==undefined?m[1]:m[2],1]); last=re.lastIndex; } if(last<s.length)parts.push([s.slice(last),0]);
+  let w=0; parts.forEach(pt=>{ c.font=wt+(pt[1]?sz*0.72:sz)+'px '+fam; w+=c.measureText(pt[0]).width; });
+  let x0=o.align==='center'?x-w/2:o.align==='right'?x-w:x; c.textAlign='left'; c.textBaseline='alphabetic';
+  if(o.col)c.fillStyle=o.col; parts.forEach(pt=>{ c.font=wt+(pt[1]?sz*0.72:sz)+'px '+fam; c.fillText(pt[0],x0,y+(pt[1]?sz*0.24:0)); x0+=c.measureText(pt[0]).width; }); return w; }
+function arrow(c,x1,y1,x2,y2,col,lw,hs,both){ lw=lw||1.6; hs=hs||7; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=lw; c.setLineDash([]); c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  const head=(x,y,a)=>{ c.beginPath(); c.moveTo(x,y); c.lineTo(x-hs*Math.cos(a-0.4),y-hs*Math.sin(a-0.4)); c.lineTo(x-hs*Math.cos(a+0.4),y-hs*Math.sin(a+0.4)); c.closePath(); c.fill(); };
+  const a=Math.atan2(y2-y1,x2-x1); head(x2,y2,a); if(both)head(x1,y1,a+Math.PI); }
+function dimH(c,x1,x2,y,label,col,up){ arrow(c,x1,y,x2,y,col,1.2,6,true); c.strokeStyle=col; c.lineWidth=1; c.beginPath(); c.moveTo(x1,y-5); c.lineTo(x1,y+5); c.moveTo(x2,y-5); c.lineTo(x2,y+5); c.stroke(); rich(c,label,(x1+x2)/2,up?y-7:y+16,{align:'center',size:12.5,col:col}); }
+function dimV(c,x,y1,y2,label,col,left){ arrow(c,x,y1,x,y2,col,1.2,6,true); c.strokeStyle=col; c.lineWidth=1; c.beginPath(); c.moveTo(x-5,y1); c.lineTo(x+5,y1); c.moveTo(x-5,y2); c.lineTo(x+5,y2); c.stroke(); rich(c,label,left?x-8:x+8,(y1+y2)/2+4,{align:left?'right':'left',size:12.5,col:col}); }
+const tcol=f=>'hsl('+Math.round(212-212*Math.max(0,Math.min(1,f)))+',68%,'+(48)+'%)';
+const SUBU={a:'ₐ',e:'ₑ',h:'ₕ',i:'ᵢ',j:'ⱼ',k:'ₖ',l:'ₗ',m:'ₘ',n:'ₙ',o:'ₒ',p:'ₚ',r:'ᵣ',s:'ₛ',t:'ₜ',u:'ᵤ',v:'ᵥ',x:'ₓ','0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const subU=s=>typeof s==='string'?s.replace(/_([A-Za-z0-9]+)/g,(m,t)=>t.split('').map(ch=>SUBU[ch]||ch).join('')):s;
+const subH=s=>typeof s==='string'?s.replace(/_([A-Za-z0-9]+)/g,'<sub>$1</sub>'):s;
+function subOpts(o){ const q=Object.assign({},o); ['xlabel','ylabel','y2label','title'].forEach(k=>{ if(q[k])q[k]=subU(q[k]); }); q.series=(o.series||[]).map(s=>Object.assign({},s,{name:subU(s.name)})); q.vlines=(o.vlines||[]).map(v=>Object.assign({},v,{label:subU(v.label)})); q.hlines=(o.hlines||[]).map(v=>Object.assign({},v,{label:subU(v.label)})); return q; }
+function subT(T){ const f=r=>r.map(subH); const o=Object.assign({},T,{head:f(T.head),rows:T.rows.map(f)}); if(T.foot)o.foot=f(T.foot); return o; }
+let LAST=null, ERRMSG='';
+function readP(){ const p={_bad:[]}; SPEC.groups.forEach(g=>g.f.forEach(f=>{ const e=document.getElementById(f.id); if(!e){p[f.id]=f.def;return;}
+  if(f.opts)p[f.id]=e.value; else if(f.chk)p[f.id]=e.checked; else { let v=parseFloat(e.value); if(!isFinite(v)){ p._bad.push(f.l.replace(/<[^>]+>/g,'')); v=f.def; } else if(f.pos!==false&&v<=0)p._bad.push(f.l.replace(/<[^>]+>/g,'')); p[f.id]=v; } })); return p; }
+function setVal(id,v){ const e=document.getElementById(id); if(!e)return; if(e.type==='checkbox')e.checked=!!v; else e.value=v; const r=document.getElementById(id+'_r'); if(r)r.value=v; }
+function buildControls(){ let h=''; SPEC.groups.forEach(g=>{ h+='<fieldset><legend>'+g.t+'</legend>';
+  g.f.forEach(f=>{ if(f.opts)h+='<div class="ctrl"><label><span>'+f.l+'</span></label><select id="'+f.id+'">'+f.opts.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select></div>';
+   else if(f.chk)h+='<div class="ctrl"><label><span><input type="checkbox" id="'+f.id+'"> '+f.l+'</span></label></div>';
+   else h+='<div class="ctrl"><label><span>'+f.l+'</span><b id="v_'+f.id+'"></b></label><div class="nr"><input type="number" id="'+f.id+'" step="any" value="'+f.def+'" aria-label="'+f.l.replace(/<[^>]+>/g,'')+'">'+(f.min!==undefined?'<input type="range" id="'+f.id+'_r" min="'+f.min+'" max="'+f.max+'" step="'+(f.step||0.1)+'" value="'+f.def+'" aria-label="cursor">':'')+'</div></div>'; });
+  h+='</fieldset>'; });
+  h+='<div class="btnrow"><button class="btn alt" id="bReset">Revenire la datele din enunț</button>'+(SPEC.buttons||[]).map(b=>'<button class="btn alt" id="'+b.id+'">'+b.l+'</button>').join('')+'</div>';
+  $('#ctl').innerHTML=h;
+  SPEC.groups.forEach(g=>g.f.forEach(f=>{ const e=document.getElementById(f.id); if(f.opts)e.value=f.def; else if(f.chk)e.checked=!!f.def;
+    e.addEventListener('input',()=>{ const r=document.getElementById(f.id+'_r'); if(r&&isFinite(parseFloat(e.value)))r.value=e.value; renderAll(); }); e.addEventListener('change',renderAll);
+    const r=document.getElementById(f.id+'_r'); if(r)r.addEventListener('input',()=>{ e.value=r.value; renderAll(); }); }));
+  $('#bReset').onclick=()=>{ SPEC.groups.forEach(g=>g.f.forEach(f=>setVal(f.id,f.def))); renderAll(); toast('Datele din enunț au fost reîncărcate'); };
+  (SPEC.buttons||[]).forEach(b=>{ document.getElementById(b.id).onclick=()=>{ b.fn(readP()); renderAll(); }; }); }
+function labels(p){ SPEC.groups.forEach(g=>g.f.forEach(f=>{ const e=document.getElementById('v_'+f.id); if(e)e.textContent=fmtS(p[f.id],4)+(f.u?' '+f.u:''); })); }
+function steps(list){ return '<ol class="steps">'+list.map(s=>'<li><b class="h">'+s.t+'</b>'+s.e.map(e=>'<div class="eq">'+e+'</div>').join('')+'</li>').join('')+'</ol>'; }
+function renderAll(){ const p=readP(); labels(p); const err=$('#err'); let msg=p._bad.length?'Valori invalide (trebuie să fie numere pozitive): '+p._bad.join(', ')+'.':''; if(!msg&&SPEC.validate)msg=SPEC.validate(p)||'';
+  err.style.display=msg?'block':'none'; err.textContent=msg; if(msg)return;
+  const r=SPEC.calc(p); LAST={p:p,r:r}; $('#enunt').innerHTML=SPEC.enunt(p,r); $('#enunt3').innerHTML=SPEC.enunt(p,r);
+  $('#roCalc').innerHTML=r.ro.map(x=>'<tr'+(x[2]?' class="hl"':'')+'><td>'+x[0]+'</td><td>'+x[1]+'</td></tr>').join('');
+  buildTable($('#tblCalc'),{head:['Mărimea','Valoarea'],rows:r.ro.map(x=>[x[0],x[1]]),left:[0,1]});
+  $('#stepsBox').innerHTML=steps(SPEC.steps(p,r));
+  const L=SPEC.tables(p,r); const host=$('#tbls'); host.innerHTML=L.map((t,i)=>'<div class="copybar" style="margin-top:14px"><span class="t">'+t.title+'</span>'+copyButtons('#tb'+i,t.title)+'</div><div class="tbl-wrap'+(t.wrap?' wraptbl':'')+'" id="tb'+i+'"></div>').join('');
+  L.forEach((t,i)=>buildTable($('#tb'+i),subT(t.T))); wireCopy(host); wireCopy($('#t-calc'));
+  if($('#t-ref').classList.contains('on'))renderReport(); drawAll(); }
+function drawAll(){ if(!LAST)return; const p=LAST.p,r=LAST.r; const cv=$('#cvFig'); if(cv&&cv.clientWidth)SPEC.fig(cv,p,r);
+  const ch=SPEC.charts(p,r); const cm=$('#cm'); if(cm&&cm.clientWidth)plot(cm,Object.assign({height:340},subOpts(ch[0])));
+  SPEC.chartMeta.forEach((m,i)=>{ const c=document.getElementById(m.id); if(c&&c.clientWidth)plot(c,Object.assign({height:320},subOpts(ch[i]))); }); }
+function reportHTML(forWord){ const p=LAST.p,r=LAST.r; const name=$('#stName').value||'…………………………',grp=$('#stGroup').value||'……',dt=$('#stDate').value||'…………';
+  const H=t=>forWord?'<h2 style="font:bold 13pt Calibri,Arial;color:#16324A;border-bottom:1.5pt solid #D9961A;margin:14pt 0 6pt">'+t+'</h2>':'<h2>'+t+'</h2>';
+  const Pp=t=>forWord?'<p style="font:11pt Calibri,Arial;text-align:justify;margin:0 0 6pt">'+t+'</p>':'<p>'+t+'</p>';
+  const tb=(T0,cap)=>{ const T=subT(T0); return forWord?tableHTMLWord(T,cap):'<p><b>'+cap+'</b></p><div class="tbl-wrap">'+(()=>{const d=document.createElement('div');buildTable(d,T);return d.innerHTML;})()+'</div>'; };
+  const title='Referat — Problema '+SPEC.short+': '+SPEC.title;
+  let h=forWord?'<p style="font:10pt Calibri,Arial;color:#4E6072">Universitatea Politehnica Timișoara, Facultatea de Inginerie Mecanică</p><h1 style="font:bold 16pt Calibri,Arial;color:#16324A;margin:4pt 0">'+title+'</h1><p style="font:11pt Calibri,Arial">Student: <b>'+name+'</b> &nbsp; Grupa: <b>'+grp+'</b> &nbsp; Data: <b>'+dt+'</b></p>':'<h1 style="font-size:22px;margin:0 0 4px">'+title+'</h1><p>Student: <b>'+name+'</b> &nbsp; Grupa: <b>'+grp+'</b> &nbsp; Data: <b>'+dt+'</b></p>';
+  h+=H('1. Scopul problemei')+Pp(SPEC.scop)+H('2. Enunțul (cu datele introduse)')+'<div'+(forWord?' style="font:11pt Calibri,Arial"':'')+'>'+SPEC.enunt(p,r).replace(/<b class="live">/g,'<b>')+'</div>';
+  const T=SPEC.tables(p,r); h+=H('3. Date de intrare')+tb(T[0].T,T[0].title);
+  h+=H('4. Rezolvare')+SPEC.steps(p,r).map(s=>(forWord?'<p style="font:bold 11pt Calibri,Arial;color:#16324A;margin:6pt 0 2pt">':'<p><b>')+s.t+(forWord?'</p>':'</b></p>')+s.e.map(e=>(forWord?'<p style="font:11pt Cambria,Times New Roman;margin:0 0 3pt 14pt">':'<p style="margin-left:14px">')+e.replace(/<b>/g,'<b>')+'</p>').join('')).join('');
+  h+=H('5. Rezultate')+tb({head:['Mărimea','Valoarea'],rows:r.ro.map(x=>[x[0],x[1]]),left:[0,1]},'Tabelul '+(SPEC.resNo||'R')+'. Rezultatele calculului');
+  h+=H('6. Tabele și diagrame')+T.slice(1).map(t=>tb(t.T,t.title)).join('')+Pp('Diagramele (Fig. 1–'+(SPEC.chartMeta.length+1)+') se copiază separat din secțiunea 4 a simulatorului și se inserează în referat.');
+  h+=H('7. Concluzii')+'<ul>'+SPEC.concl(p,r).map(t=>'<li'+(forWord?' style="font:11pt Calibri,Arial"':'')+'>'+t+'</li>').join('')+'</ul>'; return h; }
+function renderReport(){ if(LAST)$('#refBody').innerHTML=reportHTML(false); }
+function initReport(){ $('#bRef').onclick=async()=>{ const html=reportHTML(true); const txt=strip(html.replace(/<\/(p|h1|h2|li|tr)>/g,'\n').replace(/<\/t[dh]>/g,'\t')); if(await copyRich(html,txt))toast('Referat copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere referat',html,true); };
+  $('#bRefTxt').onclick=async()=>{ const txt=strip(reportHTML(false).replace(/<\/(p|h1|h2|li|tr)>/g,'\n').replace(/<\/t[dh]>/g,'\t')); if(await copyText(txt))toast('Referat copiat ca text'); else manualModal('Copiere referat',txt); };
+  ['stName','stGroup','stDate'].forEach(id=>$('#'+id).addEventListener('input',renderReport)); }
+window.addEventListener('DOMContentLoaded',()=>{ initTheme(); document.title=SPEC.docTitle;
+  buildControls();
+  $('#chs').innerHTML=SPEC.chartMeta.map(m=>'<div class="card"><h3><span>'+m.title+'</span></h3><div class="bd"><canvas id="'+m.id+'"></canvas>'+(m.note?'<p class="cap">'+m.note+'</p>':'')+'<div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#'+m.id+'" data-cap="'+m.title.replace(/"/g,'')+'">Copiază graficul</button></div></div></div>').join('');
+  wireCopy(document);
+  $('#exps').innerHTML=Object.keys(SPEC.exps).map(k=>'<button class="btn alt" data-exp="'+k+'">'+k+' — '+SPEC.exps[k].l+'</button>').join('');
+  $('#expNote').innerHTML=Object.keys(SPEC.exps).map(k=>'<b>'+k+':</b> '+SPEC.exps[k].n).join(' ');
+  $$('[data-exp]').forEach(b=>b.onclick=()=>{ const E=SPEC.exps[b.dataset.exp]; Object.keys(E.set).forEach(k=>setVal(k,E.set[k])); renderAll(); toast('Experiment '+b.dataset.exp+' încărcat'); $$('nav.tabs button[data-tab="t-calc"]')[0].click(); });
+  quizRender($('#mcq'),SPEC.mcq); initReport();
+  initTabs(()=>{ if($('#t-ref').classList.contains('on'))renderReport(); requestAnimationFrame(drawAll); });
+  renderAll(); });
+window.addEventListener('resize',()=>{ clearTimeout(window._rz); window._rz=setTimeout(drawAll,80); });
+window.addEventListener('themechange',()=>{ drawAll(); renderReport(); }); window.addEventListener('decchange',renderAll);
+</script>
+</body></html>
