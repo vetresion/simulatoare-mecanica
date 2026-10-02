@@ -1,0 +1,1239 @@
+<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulator – Măsurarea temperaturii și etalonarea termometrelor</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDF0F2; --panel:#FFFFFF; --panel2:#F6F8F9; --ink:#16324A; --ink2:#4E6072; --muted:#7B8A97;
+  --fuel:#D9961A; --fuel-soft:#F6E3B8; --fuel-deep:#A8680A; --steel:#8A99A6; --steel-d:#5E6E7B; --line:#CBD3DA;
+  --alert:#B3362B; --ok:#2E7D4F; --blue:#2F6CA8; --violet:#6B4FA0; --teal:#1F8A8A;
+  --canvas-bg:#FBFCFC; --grid:#E1E6EA; --shadow:0 1px 2px rgba(22,50,74,.08);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}}
+:root[data-theme="dark"]{
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow","Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5}
+.num,.ro{font-family:"Barlow Condensed","Arial Narrow","Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 10px;border-bottom:3px solid var(--ink)}
+header.top .lab{font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink2);letter-spacing:.02em}
+header.top h1{margin:0;font-size:26px;line-height:1.15;font-weight:700}
+header.top .inst{margin-left:auto;text-align:right;font-size:13px;color:var(--ink2)}
+.fuelbar{height:6px;background:linear-gradient(90deg,var(--fuel) 0 38%,transparent 38%)}
+nav.tabs{display:flex;gap:2px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+nav.tabs button{font:inherit;font-weight:600;border:0;background:none;color:var(--ink2);padding:12px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fuel)}
+nav.tabs .sp{flex:1}
+nav.tabs .tool{font-weight:500;font-size:13px}
+main{padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+section.tab{display:none} section.tab.on{display:block}
+.grid3{display:grid;grid-template-columns:300px minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:1150px){.grid3{grid-template-columns:280px minmax(0,1fr)} .grid3>.readouts{grid-column:1/-1}}
+@media (max-width:760px){.grid3{grid-template-columns:1fr} main{padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow)}
+.card>h3{margin:0;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card>.bd{padding:12px 14px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink2)}
+.ctrl label b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:600}
+.ctrl input[type=range]{width:100%;accent-color:var(--fuel)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text],.field{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink)}
+fieldset{border:0;border-top:1px solid var(--line);margin:12px 0 6px;padding:10px 0 0}
+fieldset legend{font-weight:700;font-size:13.5px;padding-right:8px;color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:4px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.fuel{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative}
+canvas{display:block;width:100%;background:var(--canvas-bg);border-radius:4px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px}
+.ro-table td{padding:4px 2px;border-bottom:1px dashed var(--line)}
+.ro-table td:first-child{width:56%}
+.ro-table td:last-child{text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:600}
+.ro-table tr.hl td:last-child{color:var(--fuel-deep)}
+.ro-table .sym{color:var(--muted);font-style:italic;font-family:"Times New Roman",serif}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--fuel-soft);color:var(--ink)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent)} .tag.bad{background:color-mix(in srgb,var(--alert) 22%,transparent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table.data{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+table.data th{background:var(--ink);color:var(--panel);font-weight:600;padding:6px 8px;text-align:center;white-space:nowrap}
+table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:15px;white-space:nowrap}
+table.data td.l{text-align:left;font-family:inherit;font-size:13.5px}
+table.data tr:nth-child(even) td{background:var(--panel2)}
+table.data tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.copybar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.copybar .t{font-weight:700;margin-right:auto}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.charts{grid-template-columns:1fr}}
+.prose{max-width:860px}
+.prose h2{font-size:21px;margin:26px 0 8px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.prose h3{font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{line-height:1.62}
+.eq{font-family:"Cambria Math","Times New Roman",serif;font-size:17px;background:var(--panel);border-left:4px solid var(--fuel);padding:8px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-size:14px;font-family:"Barlow",sans-serif}
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);padding:8px 12px;border-radius:4px;margin:10px 0}
+.warn{border-left-color:var(--alert)}
+ol.steps{counter-reset:s;list-style:none;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;margin:0 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700}
+ol.steps>li b.h{display:block;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);max-width:760px;width:100%;border-radius:8px;padding:16px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;height:260px;font-family:Consolas,monospace;font-size:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
+.toast.on{opacity:1}
+.legend-inline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend-inline i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.small{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{nav.tabs,.copybar,.btn{display:none!important} section.tab{display:block!important} body{background:#fff}}
+.info-h{margin:0 0 6px;font-size:18px;color:var(--ink)}
+.info-s{margin-top:10px;font-size:14px;line-height:1.45}
+.info-t{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fuel-deep);margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:3px 10px;cursor:pointer}
+.chips button.on{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-top:8px}
+.mcq{border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;background:var(--panel)}
+.mcq p{margin:0 0 6px}.mcq label{display:block;padding:2px 0;cursor:pointer;font-size:14.5px}
+.mcq.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.mcq.badq{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 7%,var(--panel))}
+.mcq .expl{font-size:13.5px;color:var(--ink2);margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:5px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:600;font-size:13.5px;border:0;background:transparent;color:var(--ink);padding:6px 11px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--panel)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.kpi div{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:6px 10px}
+.kpi small{display:block;color:var(--ink2);font-size:12px}.kpi b{font-family:"Barlow Condensed",sans-serif;font-size:19px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0}
+@media(max-width:1050px){.grid2{grid-template-columns:1fr}}
+.ctlbar{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end}
+.ctlbar .ctrl{margin:0;min-width:200px}
+.wraptbl td{white-space:normal!important;text-align:left!important;font-family:"Barlow",sans-serif!important;font-size:14px!important}
+.infobox{max-height:560px;overflow:auto}
+.lcd{background:#0f1c14;color:#7CFC9A;font-family:"Barlow Condensed",sans-serif;font-size:28px;font-weight:600;padding:2px 12px;border-radius:4px;text-align:right;border:1px solid #1f3a2a;letter-spacing:.04em;white-space:nowrap}
+.lcd small{font-size:13px;color:#4fae6d;margin-left:6px;font-weight:500}
+.led{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);vertical-align:-1px;margin-right:6px}
+.led.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.led.warn{background:var(--fuel);box-shadow:0 0 6px var(--fuel)}
+.led.bad{background:var(--alert);box-shadow:0 0 6px var(--alert)}
+.eqbox{font-family:"Cambria Math","Times New Roman",serif;font-size:16px;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--fuel);padding:8px 12px;border-radius:4px;margin:8px 0;overflow-x:auto;line-height:1.55}
+.eqbox.live{font-size:15px;white-space:nowrap}
+.warnbar{border-left:4px solid var(--alert);background:color-mix(in srgb,var(--alert) 8%,var(--panel));padding:6px 10px;border-radius:4px;font-size:13.5px;margin-top:8px}
+.okbar{border-left:4px solid var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel));padding:6px 10px;border-radius:4px;font-size:13.5px;margin-top:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.ctrl .hint{font-size:12px;color:var(--muted);margin-top:2px}
+.chips button small{color:var(--muted);margin-left:4px}
+.kv2{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px;margin-top:8px}
+.kv2 span:nth-child(odd){color:var(--ink2);font-weight:600}
+table.data td.c{text-align:center}
+.sub-h{margin:14px 0 6px;font-size:15px}
+</style></head><body><header class="top">
+  <div>
+    <div class="lab">Laborator Măsurări termice — Termometrie și etalonare</div>
+    <h1>Măsurarea temperaturii și etalonarea termometrelor - autor: S.L. dr. ing. Vetreș Ion</h1>
+  </div>
+  <div class="inst">Universitatea Politehnica Timișoara<br>Facultatea de Mecanică, Departamentul MMUT</div>
+</header>
+<div class="fuelbar"></div>
+<nav class="tabs" aria-label="Secțiuni">
+  <button data-tab="t-teorie">1. Teorie</button>
+  <button data-tab="t-ins">2. Instrumente de măsurare</button>
+  <button data-tab="t-etT">3. Etalonarea unui termometru</button>
+  <button data-tab="t-etTC">4. Etalonarea unui termocuplu</button>
+  <button data-tab="t-th">5. Termistorul</button>
+  <button data-tab="t-ir">6. Termometrul cu infraroșu</button>
+  <button data-tab="t-pir">7. Pirometrul de radiație</button>
+  <button data-tab="t-tut">8. Tutorial și test</button>
+  <button data-tab="t-ref">9. Referat</button>
+  <span class="sp"></span>
+  <button class="tool" id="decBtn">Zecimale</button>
+  <button class="tool" id="themeBtn">Temă luminoasă / întunecată</button>
+</nav>
+<main>
+
+<!-- ============ 1. TEORIE ============ -->
+<section class="tab prose" id="t-teorie">
+  <h2>Scopul lucrării</h2>
+  <p>Lucrarea urmărește cunoașterea principiilor de funcționare, a construcției și a caracteristicilor instrumentelor folosite pentru măsurarea temperaturii (cu contact și fără contact), efectuarea <b>etalonării unui termometru prin comparare cu un termometru etalon</b>, ridicarea <b>curbei de etalonare E = f(t) a unui termocuplu</b> (cu ecuația ei) și studiul termistorului, al termometrului cu infraroșu și al pirometrului de radiație.</p>
+
+  <h2>Scări de temperatură</h2>
+  <p>Temperatura termodinamică T se exprimă în kelvin (K); în practică se folosește Scara Internațională de Temperatură ITS-90, definită prin puncte fixe (punctul triplu al apei 273,16 K, solidificarea staniului, zincului, aluminiului, argintului, aurului, cuprului) și prin instrumente de interpolare (termometrul cu rezistență de platină între punctele fixe, pirometrul de radiație peste punctul de solidificare al argintului).</p>
+  <div class="eq">T [K] = t [°C] + 273,15<span class="n">(1)</span></div>
+
+  <h2>Clasificarea metodelor de măsurare</h2>
+  <p><b>Metode cu contact</b> (senzorul ajunge în echilibru termic cu corpul măsurat): termometre cu dilatare (lichid în sticlă, bimetalice, manometrice), termometre electrice (termorezistențe metalice, termistoare, termocupluri, senzori semiconductori), senzori cu fibră optică, termometre cu cristale lichide. <b>Metode fără contact</b> (se măsoară radiația termică emisă de corp): termometre cu infraroșu, pirometre de radiație totală, optice și bicolore, camere termografice.</p>
+
+  <h2>Termometre cu dilatare</h2>
+  <p>La termometrul cu lichid în sticlă, variația de volum a lichidului din rezervor urcă în capilarul de secțiune A; la mercur β ≈ 1,82·10<sup>-4</sup> K<sup>-1</sup>. Termometrul bimetalic folosește curbarea unei lame din două metale cu coeficienți de dilatare diferiți. Termometrul manometric (cu gaz, la volum constant) măsoară presiunea gazului din rezervorul termometric.</p>
+  <div class="eq">V = V<sub>0</sub>[1 + β(t − t<sub>0</sub>)] ,&nbsp; Δh = β·V<sub>0</sub>·Δt / A<span class="n">(2)</span></div>
+  <div class="eq">κ = 3(α<sub>2</sub> − α<sub>1</sub>)·Δt / (2h)<span class="n">(3)</span></div>
+  <div class="eq">p = p<sub>0</sub> · T / T<sub>0</sub> &nbsp;(gaz ideal, V = const.)<span class="n">(4)</span></div>
+
+  <h2>Termorezistențe metalice și termistoare</h2>
+  <p>Rezistența electrică a metalelor crește aproape liniar cu temperatura. Pentru platină (Pt100, R<sub>0</sub> = 100 Ω la 0 °C) se folosește relația Callendar–Van Dusen (STAS/IEC 60751):</p>
+  <div class="eq">R(t) = R<sub>0</sub>(1 + A·t + B·t²) , t ≥ 0 °C ;&nbsp; A = 3,9083·10<sup>-3</sup> °C<sup>-1</sup>, B = −5,775·10<sup>-7</sup> °C<sup>-2</sup><span class="n">(5)</span></div>
+  <div class="eq">R(t) = R<sub>0</sub>[1 + A·t + B·t² + C(t − 100)t³] , t &lt; 0 °C ;&nbsp; C = −4,183·10<sup>-12</sup> °C<sup>-4</sup><span class="n">(6)</span></div>
+  <p>Termistorul NTC (semiconductor ceramic) are rezistența care scade puternic cu temperatura; modelul cu un parametru β și relația Steinhart–Hart, mult mai exactă, sunt:</p>
+  <div class="eq">R(T) = R<sub>25</sub>·exp[β(1/T − 1/T<sub>25</sub>)] ,&nbsp; α = (1/R)(dR/dT) = −β / T²<span class="n">(7)</span></div>
+  <div class="eq">1/T = A + B·ln R + C·(ln R)³<span class="n">(8)</span></div>
+  <p>Termistoarele PTC pot fi de tip silistor (creștere aproape liniară, tip KTY) sau ceramice de comutare (BaTiO<sub>3</sub>), a căror rezistență crește brusc peste temperatura Curie.</p>
+
+  <h2>Termocuplul</h2>
+  <p>Efectul Seebeck: într-un circuit format din doi conductori diferiți A și B, ale căror joncțiuni se află la temperaturi diferite, apare o tensiune electromotoare care depinde numai de natura conductorilor și de temperaturile joncțiunilor.</p>
+  <div class="eq">E<sub>AB</sub>(T, T<sub>r</sub>) = ∫<sub>T<sub>r</sub></sub><sup>T</sup> [S<sub>A</sub>(T) − S<sub>B</sub>(T)] dT = e<sub>AB</sub>(T) − e<sub>AB</sub>(T<sub>r</sub>)<span class="n">(9)</span></div>
+  <div class="eq">E(t, 0) = E(t, t<sub>j</sub>) + E(t<sub>j</sub>, 0) &nbsp;(legea temperaturilor intermediare — compensarea joncțiunii de referință)<span class="n">(10)</span></div>
+  <p>Tabelele standardizate (IEC 60584-1 / ITS-90) dau tensiunea față de o joncțiune de referință la 0 °C, sub forma unor polinoame de gradul 8…14:</p>
+  <div class="eq">E(t) = Σ c<sub>i</sub>·t<sup>i</sup> &nbsp;[mV, t în °C] (la tipul K se adaugă termenul a<sub>0</sub>·exp[a<sub>1</sub>(t − a<sub>2</sub>)²])<span class="n">(11)</span></div>
+  <p>Prin etalonare se determină, pe baza punctelor măsurate, o curbă proprie a termocuplului, de regulă un polinom de gradul 1…4, precum și ecuația inversă t = f(E), folosită de aparatul indicator.</p>
+
+  <h2>Radiația termică și termometria fără contact</h2>
+  <div class="eq">M<sub>λ</sub>(T) = c<sub>1</sub> / { λ<sup>5</sup> [exp(c<sub>2</sub>/λT) − 1] } ,&nbsp; c<sub>1</sub> = 3,742·10<sup>8</sup> W·µm<sup>4</sup>/m², c<sub>2</sub> = 14388 µm·K<span class="n">(12)</span></div>
+  <div class="eq">λ<sub>max</sub>·T = 2897,8 µm·K ,&nbsp;&nbsp; M = ε·σ·T<sup>4</sup> ,&nbsp; σ = 5,670·10<sup>-8</sup> W/(m²K<sup>4</sup>)<span class="n">(13)</span></div>
+  <p>Un corp real emite ε·M<sub>λ</sub> (ε &lt; 1, emisivitate) și reflectă radiația mediului. Detectorul termometrului cu infraroșu primește:</p>
+  <div class="eq">S = f·[ε·M(T<sub>obj</sub>) + (1 − ε)·M(T<sub>refl</sub>)] + (1 − f)·M(T<sub>fond</sub>)<span class="n">(14)</span></div>
+  <p>unde f este factorul de umplere al câmpului vizual (raportul dintre aria ținței și aria spotului, f ≤ 1). Aparatul calculează temperatura presupunând emisivitatea ε<sub>reglat</sub>; dacă aceasta diferă de cea reală, apare o eroare sistematică. Pirometrul optic cu filament dispărând indică <b>temperatura de luminanță</b> T<sub>b</sub>, iar pirometrul bicolor folosește raportul a două radiații spectrale:</p>
+  <div class="eq">1/T = 1/T<sub>b</sub> + (λ/c<sub>2</sub>)·ln ε<sub>λ</sub><span class="n">(15)</span></div>
+  <div class="eq">R = ε<sub>1</sub>M<sub>λ1</sub>/(ε<sub>2</sub>M<sub>λ2</sub>) ≈ (ε<sub>1</sub>/ε<sub>2</sub>)(λ<sub>2</sub>/λ<sub>1</sub>)<sup>5</sup>·exp[(c<sub>2</sub>/T)(1/λ<sub>2</sub> − 1/λ<sub>1</sub>)]<span class="n">(16)</span></div>
+
+  <h2>Etalonarea prin comparare</h2>
+  <p>Termometrul de etalonat și termometrul etalon se introduc în același mediu termostatat, la puncte de temperatură stabilizate. Se determină <b>corecția</b> C, iar rezultatul se exprimă împreună cu <b>incertitudinea extinsă</b> U, calculată conform GUM din incertitudinea etalonului, uniformitatea și stabilitatea băii, rezoluția, repetabilitatea și histerezisul:</p>
+  <div class="eq">C = t<sub>etalon</sub> − t<sub>indicat</sub> ,&nbsp; C(t) = c<sub>0</sub> + c<sub>1</sub>·t<span class="n">(17)</span></div>
+  <div class="eq">u<sub>c</sub> = √(u<sub>et</sub>² + u<sub>baie</sub>² + u<sub>rez</sub>² + u<sub>rep</sub>² + u<sub>hist</sub>²) ,&nbsp; U = k·u<sub>c</sub> , k = 2 (≈ 95 %)<span class="n">(18)</span></div>
+  <div class="note warn"><b>Protecția muncii.</b> Băile cu ulei siliconic și cu săruri topite și cuptoarele de etalonare funcționează la temperaturi care produc arsuri grave. Termometrele cu mercur se manipulează cu atenție (vapori toxici). Sondele se introduc și se scot încet, iar vasele cu lichide fierbinți nu se ating. Săruri topite pe bază de nitrați: evitarea contactului cu materiale organice și cu apa.</div>
+</section>
+
+<!-- ============ 2. INSTRUMENTE ============ -->
+<section class="tab" id="t-ins">
+  <div class="grid3">
+    <div class="card"><h3>Instrumentul de măsurare</h3><div class="bd">
+      <div class="chips" id="insChips" style="margin-top:0"></div>
+      <div class="ctrl" style="margin-top:14px"><label><span>Temperatura măsurată t</span> <b id="v_insT"></b></label><input type="range" id="insT"></div>
+      <div class="ctrl"><label><span><input type="checkbox" id="insAnim" checked> Animație</span></label></div>
+      <div class="row"><button class="btn fuel sm" id="insGo" style="display:none">Deschide simulatorul detaliat</button></div>
+    </div></div>
+    <div class="card stage"><h3><span id="insTitle"></span> <span class="tag" id="insCat"></span></h3><div class="bd"><canvas id="cvIns"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvIns" data-cap="Instrument de măsurare a temperaturii">Copiază schema</button></div></div></div>
+    <div class="card readouts"><h3>Indicația și datele instrumentului</h3><div class="bd"><table class="ro-table" id="roIns"></table><div class="eqbox" id="insEq"></div><div class="info-s" id="insInfo"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Compararea instrumentelor de măsurare a temperaturii</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 1. Instrumente de măsurare a temperaturii</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblIns">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblIns" data-cap="Tabelul 1. Instrumente de măsurare a temperaturii">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblIns"></div>
+  </div></div>
+</section>
+
+<!-- ============ 3. ETALONARE TERMOMETRU ============ -->
+<section class="tab" id="t-etT">
+  <div class="grid3">
+    <div class="card"><h3>Montajul de etalonare</h3><div class="bd">
+      <div class="ctrl"><label><span>Mediul termostatat</span></label><select id="ctMed"></select></div>
+      <div class="ctrl"><label><span>Termometrul de etalonat</span></label><select id="ctDut"></select></div>
+      <div class="ctrl"><label><span>Termometrul etalon</span></label><select id="ctRef"></select></div>
+      <div id="ctlCT"></div>
+      <div class="row"><button class="btn fuel" id="ctRec">Înregistrează punct (5 citiri)</button><button class="btn alt" id="ctAuto">Secvență automată</button><button class="btn alt" id="ctClr">Șterge</button></div>
+      <p class="small" id="ctMsg"></p>
+    </div></div>
+    <div class="card stage"><h3>Baia termostatată, etalonul și termometrul etalonat <span class="tag" id="ctTag"></span></h3><div class="bd"><canvas id="cvCT"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvCT" data-cap="Montajul de etalonare a termometrului">Copiază schema</button></div></div></div>
+    <div class="card readouts"><h3>Citiri curente</h3><div class="bd"><table class="ro-table" id="roCT"></table>
+      <div class="eqbox" id="ctEq"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabele de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 2. Rezultatele etalonării termometrului</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblCT">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblCT" data-cap="Tabelul 2. Rezultatele etalonării termometrului">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblCT"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 3. Bugetul incertitudinii pentru ultimul punct înregistrat</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblBud">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblBud" data-cap="Tabelul 3. Bugetul incertitudinii">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblBud"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 1. Curba de corecție C = f(t) cu incertitudinea extinsă</span></h3><div class="bd"><canvas id="chCT1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chCT1" data-cap="Fig. 1">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 2. Indicația termometrului în funcție de temperatura etalon</span></h3><div class="bd"><canvas id="chCT2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chCT2" data-cap="Fig. 2">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 4. ETALONARE TERMOCUPLU ============ -->
+<section class="tab" id="t-etTC">
+  <div class="grid3">
+    <div class="card"><h3>Termocuplul și mediul de etalonare</h3><div class="bd">
+      <div class="ctrl"><label><span>Tipul termocuplului</span></label><div class="seg" id="tcTypes" style="display:flex"></div></div>
+      <div class="ctrl"><label><span>Mediul de etalonare</span></label><select id="tcMed"></select></div>
+      <div class="ctrl"><label><span>Clasa de toleranță (IEC 60584-1)</span></label><select id="tcCls"><option value="1">Clasa 1</option><option value="2" selected>Clasa 2</option></select></div>
+      <div class="ctrl"><label><span>Joncțiunea de referință</span></label><select id="tcCJ"><option value="ice">0 °C — baie de gheață</option><option value="unc">Temperatura ambiantă, necompensată</option><option value="cjc">Temperatura ambiantă, cu compensare</option></select></div>
+      <div id="ctlTC"></div>
+      <div class="row"><button class="btn fuel" id="tcRec">Înregistrează punct (5 citiri)</button><button class="btn alt" id="tcAuto">Secvență automată</button><button class="btn alt" id="tcClr">Șterge</button></div>
+      <p class="small" id="tcMsg"></p>
+    </div></div>
+    <div class="card stage"><h3>Baia termostatată, termocuplul, joncțiunea rece și milivoltmetrul <span class="tag" id="tcTag"></span></h3><div class="bd"><canvas id="cvTC"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvTC" data-cap="Montajul de etalonare a termocuplului">Copiază schema</button></div></div></div>
+    <div class="card readouts"><h3>Tensiunea la borne</h3><div class="bd"><table class="ro-table" id="roTC"></table>
+      <div class="eqbox" id="tcEq"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabele de măsurători și curba de etalonare</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 4. Etalonarea termocuplului — tensiunea la borne în funcție de temperatură</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblTC">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblTC" data-cap="Tabelul 4. Etalonarea termocuplului">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblTC"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 5. Ecuația curbei de etalonare și coeficienții ei</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblFit">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblFit" data-cap="Tabelul 5. Coeficienții curbei de etalonare">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblFit"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 6. Tensiunea termoelectrică de referință (ITS-90) pentru tipul ales</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblRefTC">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblRefTC" data-cap="Tabelul 6. Tensiunea de referință ITS-90">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblRefTC"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 3. Curba de etalonare E = f(t)</span></h3><div class="bd"><canvas id="chTC1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTC1" data-cap="Fig. 3">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 4. Abaterea față de ITS-90 în °C și toleranțele</span></h3><div class="bd"><canvas id="chTC2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTC2" data-cap="Fig. 4">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 5. Coeficientul Seebeck S = dE/dt</span></h3><div class="bd"><canvas id="chTC3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTC3" data-cap="Fig. 5">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 6. Caracteristicile E = f(t) ale tipurilor standardizate</span></h3><div class="bd"><canvas id="chTC4"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTC4" data-cap="Fig. 6">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 5. TERMISTOR ============ -->
+<section class="tab" id="t-th">
+  <div class="grid3">
+    <div class="card"><h3>Termistorul și circuitul de măsurare</h3><div class="bd">
+      <div class="ctrl"><label><span>Tipul termistorului</span></label><select id="thType"></select></div>
+      <div id="ctlTh"></div>
+      <fieldset><legend>Etalonare Steinhart–Hart (3 puncte)</legend>
+        <div class="ctrl"><label><span>Punctele de etalonare</span></label><select id="thSH"><option value="0,25,100">0 / 25 / 100 °C</option><option value="-20,25,85">−20 / 25 / 85 °C</option><option value="25,60,100">25 / 60 / 100 °C</option></select></div>
+      </fieldset>
+    </div></div>
+    <div class="card stage"><h3>Termistorul în divizorul de tensiune <span class="tag" id="thTag"></span></h3><div class="bd"><canvas id="cvTh"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvTh" data-cap="Termistorul în divizorul de tensiune">Copiază schema</button></div></div></div>
+    <div class="card readouts"><h3>Rezultate</h3><div class="bd"><table class="ro-table" id="roTh"></table><div class="eqbox" id="thEq"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabel de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 7. Caracteristica termistorului și erorile de conversie</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblTh">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblTh" data-cap="Tabelul 7. Caracteristica termistorului">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblTh"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 7. Caracteristica rezistență–temperatură R = f(t)</span></h3><div class="bd"><canvas id="chTh1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTh1" data-cap="Fig. 7">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 8. Tensiunea de ieșire a divizorului și sensibilitatea</span></h3><div class="bd"><canvas id="chTh2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTh2" data-cap="Fig. 8">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 9. Liniarizarea ln R = f(1/T) și parametrul β</span></h3><div class="bd"><canvas id="chTh3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTh3" data-cap="Fig. 9">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 10. Eroarea de conversie: model β față de Steinhart–Hart</span></h3><div class="bd"><canvas id="chTh4"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTh4" data-cap="Fig. 10">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 11. Autoîncălzirea termistorului</span></h3><div class="bd"><canvas id="chTh5"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chTh5" data-cap="Fig. 11">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 6. TERMOMETRU IR ============ -->
+<section class="tab" id="t-ir">
+  <div class="grid3">
+    <div class="card"><h3>Termometrul cu infraroșu</h3><div class="bd">
+      <div class="ctrl"><label><span>Materialul ținței (emisivitate)</span></label><select id="irMat"></select></div>
+      <div class="ctrl"><label><span>Raportul distanță : spot (D:S)</span></label><select id="irRatio"><option value="8">8 : 1</option><option value="12" selected>12 : 1</option><option value="30">30 : 1</option><option value="50">50 : 1</option></select></div>
+      <div class="ctrl"><label><span>Banda spectrală a detectorului</span></label><select id="irBand"><option value="8,14">8 … 14 µm (universal)</option><option value="2,2.5">2,0 … 2,5 µm (metale, temperaturi mari)</option><option value="7.7,8.3">7,7 … 8,3 µm (folii subțiri de plastic)</option></select></div>
+      <div id="ctlIR"></div>
+    </div></div>
+    <div class="card stage"><h3>Măsurarea fără contact <span class="tag" id="irTag"></span></h3><div class="bd"><canvas id="cvIR"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvIR" data-cap="Termometrul cu infraroșu">Copiază schema</button></div></div></div>
+    <div class="card readouts"><h3>Indicația aparatului</h3><div class="bd"><table class="ro-table" id="roIR"></table><div class="eqbox" id="irEq"></div><div id="irWarn"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabel de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 8. Indicația termometrului IR pe diferite materiale (aceleași condiții, ε<sub>reglat</sub> = valoarea curentă)</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblIR">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblIR" data-cap="Tabelul 8. Indicația termometrului IR pe diferite materiale">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblIR"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 12. Radiația spectrală (legea lui Planck) și banda detectorului</span></h3><div class="bd"><canvas id="chIR1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chIR1" data-cap="Fig. 12">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 13. Eroarea de indicație în funcție de emisivitatea reglată</span></h3><div class="bd"><canvas id="chIR2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chIR2" data-cap="Fig. 13">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 14. Indicația în funcție de distanța până la ținta măsurată</span></h3><div class="bd"><canvas id="chIR3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chIR3" data-cap="Fig. 14">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 7. PIROMETRU ============ -->
+<section class="tab" id="t-pir">
+  <div class="grid3">
+    <div class="card"><h3>Pirometrul de radiație</h3><div class="bd">
+      <div class="ctrl"><label><span>Tipul pirometrului</span></label>
+        <div class="seg" id="pMode" style="display:flex;flex-wrap:wrap"><button data-m="tot" class="on">Radiație totală</button><button data-m="opt">Optic (filament)</button><button data-m="bic">Bicolor</button></div></div>
+      <div id="ctlPir"></div>
+      <div class="row" id="pOptBtn" style="display:none"><button class="btn fuel sm" id="pAuto">Egalizează luminanțele</button></div>
+    </div></div>
+    <div class="card stage"><h3><span id="pTitle">Pirometrul de radiație totală</span> <span class="tag" id="pTag"></span></h3><div class="bd"><canvas id="cvPir"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvPir" data-cap="Pirometrul de radiație">Copiază schema</button></div></div></div>
+    <div class="card readouts"><h3>Indicația pirometrului</h3><div class="bd"><table class="ro-table" id="roPir"></table><div class="eqbox" id="pirEq"></div><div id="pirWarn"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabel de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 9. Compararea celor trei tipuri de pirometre (condițiile curente)</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblPir">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblPir" data-cap="Tabelul 9. Compararea pirometrelor">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblPir"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 15. Radiația spectrală a corpului negru la diferite temperaturi</span></h3><div class="bd"><canvas id="chPir1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chPir1" data-cap="Fig. 15">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 16. Eroarea de măsurare în funcție de emisivitatea reală</span></h3><div class="bd"><canvas id="chPir2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chPir2" data-cap="Fig. 16">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 17. Semnalul pirometrului de radiație totală V = f(t)</span></h3><div class="bd"><canvas id="chPir3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#chPir3" data-cap="Fig. 17">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 8. TUTORIAL ============ -->
+<section class="tab prose" id="t-tut">
+  <h2>Desfășurarea lucrării</h2>
+  <ol class="steps">
+    <li><b>Teorie.</b> Citiți secțiunea 1 și notați relațiile (1)–(18).</li>
+    <li><b>Instrumente.</b> În secțiunea 2 parcurgeți cele 12 instrumente: variați temperatura și urmăriți animația și indicația. Completați Tabelul 1 cu domeniul și exactitatea fiecărui tip.</li>
+    <li><b>Etalonarea unui termometru.</b> Alegeți mediul, termometrul de etalonat și etalonul. Așteptați stabilizarea băii (LED verde), înregistrați cel puțin 5 puncte repartizate pe domeniu și notați corecția C și incertitudinea U în Tabelul 2. Verificați dacă termometrul se încadrează în EMA.</li>
+    <li><b>Etalonarea unui termocuplu.</b> Alegeți tipul (K, J, T, E, N, R, S, B), mediul și joncțiunea de referință. Înregistrați cel puțin 6 puncte, alegeți gradul polinomului și notați ecuația curbei E = f(t) și a curbei inverse.</li>
+    <li><b>Termistorul.</b> Citiți R(t) și U<sub>ies</sub>(t); determinați parametrul β din panta dreptei ln R = f(1/T) și comparați erorile modelului β și ale relației Steinhart–Hart.</li>
+    <li><b>Termometrul cu infraroșu.</b> Măsurați aceeași țintă cu emisivități diferite și la distanțe diferite; observați eroarea cauzată de emisivitate și de dimensiunea spotului.</li>
+    <li><b>Pirometrul de radiație.</b> Comparați indicația pirometrului de radiație totală, optic și bicolor pentru același material și aceeași atenuare a mediului.</li>
+    <li><b>Referat.</b> Copiați referatul în Word și adăugați figurile.</li>
+  </ol>
+  <h2>Experimente dirijate</h2>
+  <div class="row"><button class="btn alt" data-exp="A">A — Termocuplu K, baie de ulei, 6 puncte</button><button class="btn alt" data-exp="B">B — Joncțiune de referință necompensată</button><button class="btn alt" data-exp="C">C — Emisivitate greșită la termometrul IR</button><button class="btn alt" data-exp="D">D — Pirometru cu fum pe traseu</button></div>
+  <p class="small">A: ridicați curba E = f(t) a unui termocuplu K cu secvența automată. B: arată eroarea cauzată de temperatura ambiantă a joncțiunii de referință. C: aluminiu lustruit măsurat cu ε = 0,95 — indicația este mult prea mică. D: pirometrul de radiație totală indică prea puțin, cel bicolor nu este afectat.</p>
+  <h2>Test grilă</h2>
+  <div id="mcq"></div>
+</section>
+
+<!-- ============ 9. REFERAT ============ -->
+<section class="tab" id="t-ref">
+  <div class="card"><h3>Date de identificare</h3><div class="bd"><div class="row">
+    <input class="field" style="max-width:260px" id="stName" placeholder="Numele și prenumele studentului">
+    <input class="field" style="max-width:140px" id="stGroup" placeholder="Grupa">
+    <input class="field" style="max-width:170px" id="stDate" type="date">
+    <button class="btn fuel" id="bRef">Copiază referatul pentru Word</button><button class="btn alt" id="bRefTxt">Copiază ca text</button></div>
+    <p class="small">Referatul include comparația instrumentelor, rezultatele etalonării termometrului și a termocuplului cu ecuațiile curbelor, datele termistorului, ale termometrului IR și ale pirometrului și concluziile.</p></div></div>
+  <div class="card" style="margin-top:16px"><div class="bd prose" id="refBody" style="max-width:none"></div></div>
+</section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box"><div class="row" style="justify-content:space-between"><b id="modalT"></b><button class="btn sm alt" onclick="document.getElementById('modal').classList.remove('on')">Închide</button></div><div id="modalB"></div></div></div>
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let DEC = ',';
+try { const d = localStorage.getItem('lab_dec'); if (d) DEC = d; } catch(e){}
+function fmt(x, d=2){ if (x===null||x===undefined||!isFinite(x)) return '–'; return x.toFixed(d).replace('.', DEC); }
+function fmtS(x, s=3){ if(!isFinite(x)) return '–'; if (x===0) return '0'; const d = Math.max(0, s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x, Math.min(d,6)); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaFn(z){ // Lanczos
+  if (z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gammaFn(1-z));
+  z-=1; const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0]; for(let i=1;i<g+2;i++) x+=c[i]/(z+i); const t=z+g+0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x; }
+function linreg(x,y){ const n=x.length; let sx=0,sy=0,sxx=0,sxy=0,syy=0; for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];syy+=y[i]*y[i];}
+  const b=(n*sxy-sx*sy)/(n*sxx-sx*sx), a=(sy-b*sx)/n; const r=(n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy)); return {a,b,r2:r*r}; }
+function toast(msg){ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---- Tab-uri ---- */
+function initTabs(onChange){
+  $$('nav.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    $$('nav.tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('section.tab').forEach(s=>s.classList.toggle('on', s.id===b.dataset.tab));
+    try{localStorage.setItem(document.title+'_tab', b.dataset.tab);}catch(e){}
+    onChange && onChange(b.dataset.tab); window.scrollTo({top:0});
+  }));
+  let t=null; try{t=localStorage.getItem(document.title+'_tab');}catch(e){}
+  const btn = t && $(`nav.tabs button[data-tab="${t}"]`); (btn||$('nav.tabs button[data-tab]')).click();
+}
+function initTheme(){
+  const b=$('#themeBtn'); if(!b) return; let th=null; try{th=localStorage.getItem('lab_theme');}catch(e){}
+  if(th) document.documentElement.dataset.theme=th;
+  b.addEventListener('click',()=>{ const cur=document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx; try{localStorage.setItem('lab_theme',nx);}catch(e){} window.dispatchEvent(new Event('themechange')); });
+  const d=$('#decBtn'); if(d){ d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct');
+    d.addEventListener('click',()=>{ DEC = DEC===','?'.':','; d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct'); try{localStorage.setItem('lab_dec',DEC);}catch(e){} window.dispatchEvent(new Event('decchange')); toast('Separator zecimal: '+(DEC===','?'virgulă (Excel RO)':'punct (Excel EN)')); }); }
+}
+
+/* ---- Canvas HiDPI ---- */
+function fitCanvas(cv, h){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=cv.clientWidth||cv.parentElement.clientWidth; const H=h||cv._h||Math.round(w*0.56);
+  cv._h=h||cv._h; cv.style.height=H+'px'; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(H*dpr);} const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h:H}; }
+
+/* ---- Grafic generic ---- */
+function niceTicks(min,max,n=6){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const t=[]; for(let v=Math.ceil(min/step-1e-9)*step; v<=max+step*1e-6; v+=step) t.push(+v.toFixed(12)); return {t,step}; }
+function plot(cv, o){
+  if(!cv.clientWidth) return null;
+  const {c,w,h}=fitCanvas(cv, o.height||300);
+  const ink=css('--ink'), ink2=css('--ink2'), grid=css('--grid'), bg=css('--canvas-bg');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const L=62,R=o.y2?60:18,T=o.title?30:14,B=46; const pw=w-L-R, ph=h-T-B;
+  let xs=[],ys=[],y2s=[]; o.series.forEach(s=>{ s.x.forEach((v,i)=>{ if(isFinite(v)&&isFinite(s.y[i])){ xs.push(v); (s.axis===2?y2s:ys).push(s.y[i]); } }); });
+  let xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs); if(!(xmax>xmin)){xmax=xmin+1;}
+  const lg=o.logx, lgy=o.logy;
+  const tx=v=>lg?Math.log10(v):v, ty=v=>lgy?Math.log10(v):v;
+  let ymin=o.ymin??Math.min(...ys), ymax=o.ymax??Math.max(...ys); if(!isFinite(ymin)){ymin=0;ymax=1;} if(ymax===ymin){ymax+=1;ymin-=lgy?0:1;}
+  if(o.ymax===undefined && o.ymin!==undefined && !lgy){ ymax+=(ymax-ymin)*0.08; }
+  if(o.ymin===undefined && !lgy){ const pad=(ymax-ymin)*0.08; ymax+=pad; if(ymin>0 && ymin<(ymax-ymin)*0.6) ymin=0; else ymin-=pad; }
+  let y2min=o.y2min??Math.min(...y2s), y2max=o.y2max??Math.max(...y2s); if(o.y2 && o.y2min===undefined){const p=(y2max-y2min)*0.08||1; y2max+=p; y2min=Math.max(0,y2min-p);}
+  const X=v=>L+(tx(v)-tx(xmin))/(tx(xmax)-tx(xmin))*pw, Y=v=>T+ph-(ty(v)-ty(ymin))/(ty(ymax)-ty(ymin))*ph, Y2=v=>T+ph-(v-y2min)/(y2max-y2min)*ph;
+  c.font='12px Barlow Condensed, Arial Narrow, sans-serif'; c.lineWidth=1;
+  // grid
+  const xt = o.xcats? o.xcats.map((_,i)=>i+1) : lg? logTicks(xmin,xmax) : niceTicks(xmin,xmax,o.xticks||7).t; const yt = lgy? logTicks(ymin,ymax): niceTicks(ymin,ymax,6).t;
+  c.strokeStyle=grid; c.fillStyle=ink2; c.textAlign='center'; c.textBaseline='top';
+  xt.forEach(v=>{ if(v<xmin-1e-12||v>xmax+1e-12) return; const x=X(v); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.fillText(o.xcats? o.xcats[v-1] : fmtTick(v), x, T+ph+5); });
+  c.textAlign='right'; c.textBaseline='middle';
+  yt.forEach(v=>{ if(v<ymin-1e-12||v>ymax+1e-12) return; const y=Y(v); c.beginPath(); c.moveTo(L,y); c.lineTo(L+pw,y); c.stroke(); c.fillText(fmtTick(v), L-6, y); });
+  if(o.y2){ c.textAlign='left'; niceTicks(y2min,y2max,6).t.forEach(v=>{ if(v<y2min||v>y2max) return; c.fillText(fmtTick(v), L+pw+6, Y2(v)); }); }
+  c.strokeStyle=ink; c.lineWidth=1.2; c.strokeRect(L,T,pw,ph);
+  c.fillStyle=ink; c.font='13px Barlow, Arial, sans-serif'; c.textAlign='center'; c.textBaseline='bottom'; c.fillText(o.xlabel||'', L+pw/2, h-4);
+  c.save(); c.translate(14, T+ph/2); c.rotate(-Math.PI/2); c.textBaseline='middle'; c.fillText(o.ylabel||'',0,0); c.restore();
+  if(o.y2){ c.save(); c.translate(w-10, T+ph/2); c.rotate(Math.PI/2); c.textBaseline='middle'; c.fillText(o.y2label||'',0,0); c.restore(); }
+  if(o.title){ c.font='600 14px Barlow, Arial, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(o.title, L, 8); }
+  // series
+  c.save(); c.beginPath(); c.rect(L,T,pw,ph); c.clip();
+  o.series.forEach(s=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const YY=s.axis===2?Y2:Y;
+    if(s.bars){ const n=s.x.length; const bw=s.bw? (X(s.x[0]+s.bw)-X(s.x[0])) : pw/n*0.8; c.fillStyle=col; c.globalAlpha=s.alpha??0.75;
+      s.x.forEach((v,i)=>{ const x=X(v)-bw/2+(s.shift||0)*bw; const y=YY(s.y[i]); c.fillRect(x+ (s.gap||1), y, bw*(s.wf||1)-2*(s.gap||1), YY(s.axis===2?y2min:Math.max(ymin,0))-y); }); c.globalAlpha=1; return; }
+    c.strokeStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+    if(!s.pointsOnly){ c.beginPath(); let st=false; s.x.forEach((v,i)=>{ if(!isFinite(v)||!isFinite(s.y[i])){st=false;return;} const x=X(v),y=YY(s.y[i]); st?c.lineTo(x,y):c.moveTo(x,y); st=true; }); c.stroke(); }
+    c.setLineDash([]);
+    if(s.markers){ c.fillStyle=css('--canvas-bg'); c.strokeStyle=col; c.lineWidth=1.8; s.x.forEach((v,i)=>{ if(!isFinite(s.y[i]))return; const x=X(v),y=YY(s.y[i]); c.beginPath();
+      if(s.markers==='sq') c.rect(x-3.5,y-3.5,7,7); else if(s.markers==='tri'){c.moveTo(x,y-4.5);c.lineTo(x+4.2,y+3.5);c.lineTo(x-4.2,y+3.5);c.closePath();} else c.arc(x,y,3.6,0,7); c.fill(); c.stroke(); }); }
+  });
+  (o.vlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(X(v.x),T); c.lineTo(X(v.x),T+ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(v.label||'', X(v.x)+4, T+4+(v.dy||0)); });
+  (o.hlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(L,Y(v.y)); c.lineTo(L+pw,Y(v.y)); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='right'; c.textBaseline='bottom'; c.fillText(v.label||'', L+pw-4, Y(v.y)-2); });
+  c.restore();
+  // legend
+  const named=o.series.filter(s=>s.name); if(named.length){ c.font='12.5px Barlow, Arial, sans-serif'; let lx=L+10, ly=o.legendBR? T+ph-named.length*18-4 : T+10; const lw=Math.max(...named.map(s=>c.measureText(s.name).width))+36;
+    let lxr = o.legendLeft? L+10 : L+pw-lw-8; c.fillStyle=css('--canvas-bg'); c.globalAlpha=.88; c.fillRect(lxr-6, ly-6, lw+4, named.length*18+8); c.globalAlpha=1;
+    named.forEach((s,i)=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const yy=ly+i*18+6; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+      if(s.bars){ c.globalAlpha=.75; c.fillRect(lxr,yy-5,22,10); c.globalAlpha=1;} else if(s.pointsOnly){ c.beginPath(); c.arc(lxr+11,yy,3.6,0,7); c.stroke(); } else { c.beginPath(); c.moveTo(lxr,yy); c.lineTo(lxr+22,yy); c.stroke(); }
+      c.setLineDash([]); c.fillStyle=ink; c.textAlign='left'; c.textBaseline='middle'; c.fillText(s.name, lxr+28, yy); }); }
+  cv._plot={o,X,Y,L,T,pw,ph};
+  return cv._plot;
+}
+function logTicks(a,b){ const t=[]; for(let e=Math.floor(Math.log10(a)); e<=Math.ceil(Math.log10(b)); e++){ [1,2,5].forEach(m=>{ const v=m*Math.pow(10,e); if(v>=a*0.999&&v<=b*1.001) t.push(v); }); } return t; }
+function fmtTick(v){ const a=Math.abs(v); if(a===0) return '0'; if(a>=1000) return String(Math.round(v)); if(a>=10) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=1) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=0.1) return fmt(v,2); return fmt(v,3); }
+
+/* ---- Tabele & copiere ---- */
+function buildTable(el, T){ // T={head:[..], rows:[[..]], foot:[..]?, left:[colIdx]}
+  const left=new Set(T.left||[0]);
+  let h='<table class="data"><thead><tr>'+T.head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  T.rows.forEach(r=>{ h+='<tr>'+r.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr>'; });
+  h+='</tbody>'; if(T.foot) h+='<tfoot><tr>'+T.foot.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr></tfoot>'; h+='</table>';
+  el.innerHTML=h; el._T=T; }
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,'$1').replace(/<sup>(.*?)<\/sup>/g,'^$1').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+function tableTSV(T){ const lines=[T.head.map(strip).join('\t')]; T.rows.forEach(r=>lines.push(r.map(strip).join('\t'))); if(T.foot) lines.push(T.foot.map(strip).join('\t')); return lines.join('\r\n'); }
+function tableHTMLWord(T, caption){
+  const th='border:1px solid #16324A;background:#16324A;color:#fff;padding:3pt 5pt;font:bold 9.5pt Calibri,Arial;text-align:center';
+  const td='border:1px solid #9AA8B4;padding:2pt 5pt;font:9.5pt Calibri,Arial;text-align:right'; const tdl=td.replace('right','left');
+  const left=new Set(T.left||[0]);
+  let h=(caption?`<p style="font:bold 10pt Calibri,Arial;color:#16324A;margin:6pt 0 3pt">${caption}</p>`:'')+'<table style="border-collapse:collapse;mso-table-lspace:0">';
+  h+='<tr>'+T.head.map(x=>`<th style="${th}">${x}</th>`).join('')+'</tr>';
+  T.rows.forEach((r,j)=>{ h+='<tr>'+r.map((x,i)=>`<td style="${left.has(i)?tdl:td};${j%2?'background:#F2F5F7':''}">${x}</td>`).join('')+'</tr>'; });
+  if(T.foot) h+='<tr>'+T.foot.map((x,i)=>`<td style="${left.has(i)?tdl:td};font-weight:bold;border-top:2px solid #16324A">${x}</td>`).join('')+'</tr>';
+  return h+'</table>'; }
+async function copyRich(html, text){
+  try{ if(navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  try{ const d=document.createElement('div'); d.contentEditable='true'; d.style.cssText='position:fixed;left:-9999px;top:0'; d.innerHTML=html; document.body.appendChild(d);
+    const r=document.createRange(); r.selectNodeContents(d); const s=getSelection(); s.removeAllRanges(); s.addRange(r); const ok=document.execCommand('copy'); s.removeAllRanges(); d.remove(); if(ok) return true; }catch(e){}
+  return false; }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) return true; }catch(e){}
+  return false; }
+function manualModal(title, content, isHTML){ const m=$('#modal'); $('#modalT').textContent=title;
+  const b=$('#modalB'); b.innerHTML=''; if(isHTML){ const d=document.createElement('div'); d.innerHTML=content; d.style.cssText='border:1px solid var(--line);padding:8px;background:#fff;color:#000;overflow:auto'; b.appendChild(d);
+    b.insertAdjacentHTML('afterbegin','<p class="small">Selectați conținutul de mai jos (Ctrl+A în chenar nu funcționează – trageți cu mouse-ul) și apăsați Ctrl+C.</p>'); }
+  else { const t=document.createElement('textarea'); t.value=content; b.appendChild(t); setTimeout(()=>{t.focus();t.select();},50); b.insertAdjacentHTML('afterbegin','<p class="small">Copierea automată a fost blocată de browser. Textul este selectat – apăsați Ctrl+C (Cmd+C).</p>'); }
+  m.classList.add('on'); }
+async function copyTableExcel(T){ const txt=tableTSV(T); if(await copyText(txt)) toast('Tabel copiat – lipiți în Excel (Ctrl+V)'); else manualModal('Copiere pentru Excel', txt); }
+async function copyTableWord(T, cap){ const html=tableHTMLWord(T,cap); if(await copyRich(html, tableTSV(T))) toast('Tabel copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere pentru Word', html, true); }
+async function copyCanvas(cv, name){
+  // exportă pe fundal alb pentru documente
+  const tmp=document.createElement('canvas'); tmp.width=cv.width; tmp.height=cv.height; const c=tmp.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,tmp.width,tmp.height); c.drawImage(cv,0,0);
+  try{ const blob=await new Promise(r=>tmp.toBlob(r,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Grafic copiat ca imagine – lipiți în Word/Excel'); return; }catch(e){}
+  const url=tmp.toDataURL('image/png'); manualModal('Copiere grafic: '+(name||''), `<img src="${url}" style="max-width:100%"><p style="font:12px Arial">Clic dreapta pe imagine → „Copiere imagine”, apoi lipiți în Word.</p>`, true); }
+function wireCopy(scope){ $$('[data-copy]',scope).forEach(b=>{ if(b._w) return; b._w=1; b.addEventListener('click',()=>{ const tgt=$(b.dataset.target); const mode=b.dataset.copy;
+  if(mode==='excel') copyTableExcel(tgt._T); else if(mode==='word') copyTableWord(tgt._T, b.dataset.cap); else if(mode==='img') copyCanvas(tgt, b.dataset.cap); }); }); }
+function copyButtons(target, cap, img){ return img? `<button class="btn sm alt" data-copy="img" data-target="${target}" data-cap="${cap||''}">Copiază graficul</button>`
+  : `<button class="btn sm alt" data-copy="excel" data-target="${target}">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="${target}" data-cap="${cap||''}">Copiază pentru Word</button>`; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#modal')?.classList.remove('on'); });
+
+/* ======================================================================
+   Simulator termometrie — nucleu: fizică, termocupluri, baie, regresie
+   ====================================================================== */
+const K0=273.15, SIG=5.670374e-8, PC1=3.741771852e8, PC2=14387.77;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+const stdev=a=>{ if(a.length<2) return 0; const m=mean(a); return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/(a.length-1)); };
+const lin=(a,b,n)=>Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1));
+function rrect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+/* ---- paleta curentă (actualizată la fiecare cadru) ---- */
+const P={};
+function pal(){ ['--ink','--ink2','--muted','--panel','--panel2','--line','--steel','--steel-d','--fuel','--fuel-deep','--fuel-soft','--blue','--teal','--violet','--alert','--ok','--canvas-bg','--grid'].forEach(k=>P[k.slice(2).replace('-','')]=css(k)); }
+function tx(c,s,x,y,sz=13,col,al='left',wt=500,fam='Barlow'){ c.font=`${wt} ${sz}px ${fam}, Arial, sans-serif`; c.fillStyle=col||P.ink; c.textAlign=al; c.textBaseline='middle'; c.fillText(s,x,y); }
+const txc=(c,s,x,y,sz=14,col,al='left',wt=600)=>tx(c,s,x,y,sz,col,al,wt,'Barlow Condensed');
+
+/* ---- culoare de incandescență și paletă termografică ---- */
+const GL=[[500,[70,8,4]],[700,[150,25,8]],[900,[225,70,15]],[1100,[255,125,30]],[1300,[255,175,70]],[1500,[255,215,130]],[1800,[255,245,215]]];
+function glow(Tc){ if(Tc<GL[0][0]) return null; for(let i=1;i<GL.length;i++){ if(Tc<=GL[i][0]){ const a=GL[i-1][1],b=GL[i][1],f=(Tc-GL[i-1][0])/(GL[i][0]-GL[i-1][0]); return a.map((v,k)=>Math.round(v+(b[k]-v)*f)); } } return GL[GL.length-1][1]; }
+const rgb=(a,al=1)=>`rgba(${a[0]},${a[1]},${a[2]},${al})`;
+const IRP=[[0,[10,10,40]],[.22,[70,20,120]],[.45,[190,35,70]],[.68,[245,130,25]],[.88,[255,220,70]],[1,[255,255,225]]];
+function irPal(f){ f=clamp(f,0,1); for(let i=1;i<IRP.length;i++){ if(f<=IRP[i][0]){ const a=IRP[i-1][1],b=IRP[i][1],g=(f-IRP[i-1][0])/(IRP[i][0]-IRP[i-1][0]); return a.map((v,k)=>Math.round(v+(b[k]-v)*g)); } } return IRP[IRP.length-1][1]; }
+const liqCol=(T,al=.55)=>`hsla(${Math.round(212-195*clamp(T/300,0,1))},70%,52%,${al})`;
+
+/* ---- Planck, bandă, inversări ---- */
+const planck=(l,T)=>{ const x=PC2/(l*T); return x>700?0:PC1/(Math.pow(l,5)*(Math.exp(x)-1)); }; // W/(m²·µm)
+function band(l1,l2,T,n=40){ const h=(l2-l1)/n; let s=planck(l1,T)+planck(l2,T); for(let i=1;i<n;i++) s+=planck(l1+i*h,T)*(i%2?4:2); return s*h/3; }
+function bisect(f,a,b,it=70){ let fa=f(a); for(let i=0;i<it;i++){ const m=(a+b)/2, fm=f(m); if((fa<=0&&fm<=0)||(fa>=0&&fm>=0)){ a=m; fa=fm; } else b=m; } return (a+b)/2; }
+const invMono=(F,target,lo=150,hi=3600)=>bisect(T=>F(T)-target,lo,hi); // F crescătoare în T
+
+/* ---- regresie polinomială ---- */
+function polyfit(x,y,d){ const n=x.length, m=d+1; const xs=Math.max(1e-9,...x.map(Math.abs)); const u=x.map(v=>v/xs);
+  const A=Array.from({length:m},()=>Array(m+1).fill(0));
+  for(let i=0;i<n;i++){ const p=[1]; for(let k=1;k<2*m;k++) p[k]=p[k-1]*u[i]; for(let r=0;r<m;r++){ for(let q=0;q<m;q++) A[r][q]+=p[r+q]; A[r][m]+=p[r]*y[i]; } }
+  for(let i=0;i<m;i++){ let pv=i; for(let r=i+1;r<m;r++) if(Math.abs(A[r][i])>Math.abs(A[pv][i])) pv=r; const t=A[i]; A[i]=A[pv]; A[pv]=t; const dv=A[i][i]||1e-30; for(let q=i;q<=m;q++) A[i][q]/=dv; for(let r=0;r<m;r++){ if(r!==i){ const f=A[r][i]; for(let q=i;q<=m;q++) A[r][q]-=f*A[i][q]; } } }
+  const a=A.map((r,i)=>r[m]/Math.pow(xs,i)); const yh=x.map(v=>pv_(a,v)); const ym=mean(y); let ssr=0,sst=0; y.forEach((v,i)=>{ ssr+=(v-yh[i])**2; sst+=(v-ym)**2; });
+  return {a,r2:sst>0?1-ssr/sst:1,rms:n>m?Math.sqrt(ssr/(n-m)):0,res:y.map((v,i)=>v-yh[i]),n,deg:d}; }
+function pv_(a,x){ let s=0; for(let i=a.length-1;i>=0;i--) s=s*x+a[i]; return s; }
+const dpv_=(a,x)=>{ let s=0; for(let i=a.length-1;i>=1;i--) s=s*x+i*a[i]; return s; };
+function sci(v,d=4){ if(v===0||!isFinite(v)) return '0'; const e=Math.floor(Math.log10(Math.abs(v))); const m=v/Math.pow(10,e); return fmt(m,d-1)+'·10<sup>'+e+'</sup>'; }
+function polyStr(a,v,u){ let s=''; a.forEach((c,i)=>{ const sg=c<0?'−':'+'; const t=sci(Math.abs(c)); const term=i===0?t:t+'·'+v+(i>1?'<sup>'+i+'</sup>':''); s+=(i===0?(c<0?'−':''):' '+sg+' ')+term; }); return s; }
+
+/* ======================  TERMOCUPLURI — polinoame ITS-90  ====================== */
+const TCD={
+ K:{nm:'K (NiCr–NiAl)',pos:'cromel (NiCr)',neg:'alumel (NiAl)',lo:-200,hi:1372,col:'#D9961A',seg:[
+   [0,[0,3.9450128025E-02,2.3622373598E-05,-3.2858906784E-07,-4.9904828777E-09,-6.7509059173E-11,-5.7410327428E-13,-3.1088872894E-15,-1.0451609365E-17,-1.9889266878E-20,-1.6322697486E-23]],
+   [1372.0001,[-1.7600413686E-02,3.8921204975E-02,1.8558770032E-05,-9.9457592874E-08,3.1840945719E-10,-5.6072844889E-13,5.6075059059E-16,-3.2020720003E-19,9.7151147152E-23,-1.2104721275E-26],[1.185976E-01,-1.183432E-04,1.269686E+02]]]},
+ J:{nm:'J (Fe–CuNi)',pos:'fier (Fe)',neg:'constantan (CuNi)',lo:-200,hi:1200,col:'--blue',seg:[
+   [760,[0,5.0381187815E-02,3.0475836930E-05,-8.5681065720E-08,1.3322919440E-10,-1.7022405966E-13,2.0954753460E-16,-1.2538395300E-19,1.5631725690E-23]],
+   [1200.0001,[2.9645625681E+02,-1.4976127786E+00,3.1787103924E-03,-3.1847686701E-06,1.5720819004E-09,-3.0691369056E-13]]]},
+ T:{nm:'T (Cu–CuNi)',pos:'cupru (Cu)',neg:'constantan (CuNi)',lo:0,hi:400,col:'--teal',seg:[
+   [400.0001,[0,3.8748106364E-02,3.3292227880E-05,2.0618243404E-07,-2.1882256846E-09,1.0996880928E-11,-3.0815758772E-14,4.5479135290E-17,-2.7512901673E-20]]]},
+ E:{nm:'E (NiCr–CuNi)',pos:'cromel (NiCr)',neg:'constantan (CuNi)',lo:0,hi:1000,col:'--violet',seg:[
+   [1000.0001,[0,5.8665508710E-02,4.5032275582E-05,2.8908407212E-08,-3.3056896652E-10,6.5024403270E-13,-1.9197495504E-16,-1.2536600497E-18,2.1489217569E-21,-1.4388041782E-24,3.5960899481E-28]]]},
+ N:{nm:'N (NiCrSi–NiSi)',pos:'nicrosil (NiCrSi)',neg:'nisil (NiSi)',lo:0,hi:1300,col:'--ok',seg:[
+   [1300.0001,[0,2.5929394601E-02,1.5710141880E-05,4.3825627237E-08,-2.5261169794E-10,6.4311819339E-13,-1.0063471519E-15,9.9745338992E-19,-6.0863245607E-22,2.0849229339E-25,-3.0682196151E-29]]]},
+ R:{nm:'R (Pt13Rh–Pt)',pos:'Pt–13 % Rh',neg:'platină (Pt)',lo:0,hi:1700,col:'--alert',seg:[
+   [1064.18,[0,5.28961729765E-03,1.39166589782E-05,-2.38855693017E-08,3.56916001063E-11,-4.62347666298E-14,5.00777441034E-17,-3.73105886191E-20,1.57716482367E-23,-2.81038625251E-27]],
+   [1664.5,[2.95157925316E+00,-2.52061251332E-03,1.59564501865E-05,-7.64085947576E-09,2.05305291024E-12,-2.93359668173E-16]],
+   [1768.1,[1.52232118209E+02,-2.68819888545E-01,1.71280280471E-04,-3.45895706453E-08,-9.34633971046E-15]]]},
+ S:{nm:'S (Pt10Rh–Pt)',pos:'Pt–10 % Rh',neg:'platină (Pt)',lo:0,hi:1700,col:'#C2185B',seg:[
+   [1064.18,[0,5.40313308631E-03,1.25934289740E-05,-2.32477968689E-08,3.22028823036E-11,-3.31465196389E-14,2.55744251786E-17,-1.25068871393E-20,2.71443176145E-24]],
+   [1664.5,[1.32900444085E+00,3.34509311344E-03,6.54805192818E-06,-1.64856259209E-09,1.29989605174E-14]],
+   [1768.1,[1.46628232636E+02,-2.58430516752E-01,1.63693574641E-04,-3.30439046987E-08,-9.43223690612E-15]]]},
+ B:{nm:'B (Pt30Rh–Pt6Rh)',pos:'Pt–30 % Rh',neg:'Pt–6 % Rh',lo:100,hi:1700,col:'--steel-d',seg:[
+   [630.615,[0,-2.4650818346E-04,5.9040421171E-06,-1.3257931636E-09,1.5668291901E-12,-1.6944529240E-15,6.2990306703E-19]],
+   [1820.0001,[-3.8938168621E+00,2.8571747470E-02,-8.4885104785E-05,1.5785280164E-07,-1.6835344864E-10,1.1109794013E-13,-4.4515431033E-17,9.8975640821E-21,-9.3791330289E-25]]]}
+};
+const TCK=Object.keys(TCD);
+const tcCol=k=>TCD[k].col.startsWith('--')?css(TCD[k].col):TCD[k].col;
+function emf(k,t){ const d=TCD[k]; let s=d.seg[d.seg.length-1]; for(const g of d.seg){ if(t<=g[0]){ s=g; break; } }
+  let e=pv_(s[1],t); if(s[2]) e+=s[2][0]*Math.exp(s[2][1]*(t-s[2][2])*(t-s[2][2])); return e; }       // mV, referință 0 °C
+const seeb=(k,t)=>(emf(k,t+0.5)-emf(k,t-0.5))*1000;                                                    // µV/°C
+function emfInv(k,E){ const d=TCD[k]; return bisect(t=>emf(k,t)-E,d.lo-30,d.hi+30); }
+/* toleranța IEC 60584-1 [°C] */
+function tolC(k,cls,t){ const a=Math.abs(t);
+  if(k==='B') return Math.max(0.0025*a,0.5);
+  if(k==='R'||k==='S') return cls===1?(t<=1100?1.0:1+0.003*(t-1100)):Math.max(1.5,0.0025*a);
+  const t1={K:1.5,N:1.5,J:1.5,E:1.5,T:0.5}[k], t2={K:2.5,N:2.5,J:2.5,E:2.5,T:1.0}[k];
+  return cls===1?Math.max(t1,0.004*a):Math.max(t2,0.0075*a); }
+function tolTxt(k,cls){ if(k==='B') return '±0,0025·|t|'; if(k==='R'||k==='S') return cls===1?'±1 °C sau ±[1 + 0,003(t − 1100)] °C':'±1,5 °C sau ±0,0025·|t|';
+  const t1={K:'1,5',N:'1,5',J:'1,5',E:'1,5',T:'0,5'}[k], t2={K:'2,5',N:'2,5',J:'2,5',E:'2,5',T:'1,0'}[k]; return cls===1?`±${t1} °C sau ±0,004·|t|`:`±${t2} °C sau ±0,0075·|t|`; }
+/* eroarea proprie a exemplarului (grad. C) — netedă, reproductibilă după „serie” */
+function specErr(k,cls,seed,t){ const ti=TCK.indexOf(k)+1; const r=mulberry32(seed*9973+ti*131); const k0=(r()*2-1)*.55, k1=(r()*2-1)*.45, k2=(r()*2-1)*.3, ph=r()*6.28; const d=TCD[k]; const x=(t-d.lo)/(d.hi-d.lo);
+  return clamp(k0+k1*x+k2*Math.sin(5*x+ph),-.95,.95)*tolC(k,cls,t); }
+
+/* ======================  BAIA TERMOSTATATĂ  ====================== */
+const MED={
+ apa:{n:'Baie termostatată apă–glicol',lo:0,hi:95,tau:18,rate:.6,band:.02,fl:.004,unif:.012,kind:'liq'},
+ ulei:{n:'Baie cu ulei siliconic',lo:30,hi:300,tau:30,rate:.7,band:.03,fl:.008,unif:.025,kind:'liq'},
+ sare:{n:'Baie de săruri topite (nitrați)',lo:250,hi:600,tau:40,rate:1.0,band:.1,fl:.03,unif:.12,kind:'liq'},
+ cup:{n:'Cuptor tubular de etalonare',lo:300,hi:1700,tau:70,rate:2.0,band:.4,fl:.1,unif:.5,kind:'fur'}};
+class Bath{
+  constructor(id){ this.t=0; this.setMed(id); }
+  setMed(id){ this.id=id; this.m=MED[id]; this.T=this.Ts=clamp(22,this.m.lo,this.m.hi); this.r=0; this.hold=0; }
+  setpoint(v){ const n=clamp(v,this.m.lo,this.m.hi); this.dir=n>this.Ts?1:n<this.Ts?-1:(this.dir||0); this.Ts=n; this.hold=0; }
+  step(dt){ const m=this.m; let rem=dt; while(rem>1e-9){ const d=Math.min(rem,.25); const e=this.Ts-this.T; const r=clamp(e/m.tau,-m.rate,m.rate); this.T+=r*d; this.r=r; this.t+=d; this.hold=Math.abs(this.Ts-this.T)<m.band?this.hold+d:0; rem-=d; } }
+  stable(){ return this.hold>=3; }
+  fl(){ return this.m.fl*(Math.sin(this.t*.8)+.5*Math.sin(this.t*2.3+1)); }
+  heating(){ return clamp(this.r/this.m.rate,0,1); }
+}
+
+/* ---- ajutoare pentru controale ---- */
+const BINDS=[];
+function rngHTML(id,label,min,max,step,val,hint){ return `<div class="ctrl"><label><span>${label}</span> <b id="v_${id}"></b></label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}">${hint?`<div class="hint">${hint}</div>`:''}</div>`; }
+function bind(id,f,cb){ const el=$('#'+id), lab=$('#v_'+id); const up=()=>{ if(lab) lab.innerHTML=f(+el.value); }; el.addEventListener('input',()=>{ up(); if(cb) cb(); }); up(); BINDS.push(up); return up; }
+function fillSel(el,list,cur){ el.innerHTML=list.map(([v,t])=>`<option value="${v}"${v===cur?' selected':''}>${t}</option>`).join(''); }
+const sgnd=(v,d=3)=>(v>=0?'+':'−')+fmt(Math.abs(v),d);
+const sgn=v=>sgnd(v,3);
+function mkRO(el,rows){ el.innerHTML=rows.map(r=>`<tr${r[2]?' class="hl"':''}><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''); }
+function errBars(cv,xs,ys,es,col){ const p=cv._plot; if(!p) return; const c=cv.getContext('2d'); c.save(); c.strokeStyle=col; c.lineWidth=1.4; xs.forEach((x,i)=>{ if(!isFinite(ys[i])) return; const X=p.X(x),y1=p.Y(ys[i]-es[i]),y2=p.Y(ys[i]+es[i]); c.beginPath(); c.moveTo(X,y1); c.lineTo(X,y2); c.moveTo(X-4,y1); c.lineTo(X+4,y1); c.moveTo(X-4,y2); c.lineTo(X+4,y2); c.stroke(); }); c.restore(); }
+
+/* ======================================================================
+   2. Instrumente de măsurare a temperaturii — grafică și simulare
+   ====================================================================== */
+function rtdR(t,R0=100){ const A=3.9083e-3,B=-5.775e-7,C=-4.183e-12; return t>=0?R0*(1+A*t+B*t*t):R0*(1+A*t+B*t*t+C*(t-100)*t*t*t); }
+function rtdT(R,R0=100){ const A=3.9083e-3,B=-5.775e-7; const q=R/R0; if(q>=1) return (-A+Math.sqrt(A*A-4*B*(1-q)))/(2*B); return bisect(t=>rtdR(t,R0)-R,-200,0); }
+
+function dial(c,cx,cy,R,lo,hi,v,major,minor,unit){
+  c.fillStyle=P.panel2; c.strokeStyle=P.steeld; c.lineWidth=4; c.beginPath(); c.arc(cx,cy,R,0,7); c.fill(); c.stroke();
+  const a0=Math.PI*.75, sw=Math.PI*1.5;
+  for(let q=Math.ceil(lo/minor)*minor;q<=hi+1e-9;q+=minor){ const a=a0+sw*(q-lo)/(hi-lo); const mj=Math.abs(q/major-Math.round(q/major))<1e-9; const r1=R*.88, r2=R*(mj?.74:.81);
+    c.strokeStyle=P.ink; c.lineWidth=mj?1.8:.9; c.beginPath(); c.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1); c.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2); c.stroke();
+    if(mj) tx(c,String(Math.round(q)),cx+Math.cos(a)*R*.6,cy+Math.sin(a)*R*.6,Math.max(10,R*.1),P.ink,'center'); }
+  tx(c,unit,cx,cy+R*.45,Math.max(11,R*.11),P.ink2,'center');
+  const a=a0+sw*clamp((v-lo)/(hi-lo),0,1); c.strokeStyle=P.alert; c.lineWidth=3; c.lineCap='round'; c.beginPath(); c.moveTo(cx-Math.cos(a)*R*.14,cy-Math.sin(a)*R*.14); c.lineTo(cx+Math.cos(a)*R*.78,cy+Math.sin(a)*R*.78); c.stroke(); c.lineCap='butt';
+  c.fillStyle=P.ink; c.beginPath(); c.arc(cx,cy,R*.05,0,7); c.fill(); }
+function mini(c,x,y,w,h,fn,x0,x1,y0,y1,xv,lab,logy){ c.fillStyle=P.canvasbg; c.strokeStyle=P.line; c.lineWidth=1; c.fillRect(x,y,w,h); c.strokeRect(x,y,w,h);
+  const X=v=>x+(v-x0)/(x1-x0)*w, Y=v=>logy?y+h-(Math.log(v)-Math.log(y0))/(Math.log(y1)-Math.log(y0))*h:y+h-(v-y0)/(y1-y0)*h;
+  c.strokeStyle=P.fueldeep; c.lineWidth=2; c.beginPath(); for(let i=0;i<=60;i++){ const t=x0+(x1-x0)*i/60; const q=clamp(fn(t),y0,y1); if(i) c.lineTo(X(t),Y(q)); else c.moveTo(X(t),Y(q)); } c.stroke();
+  const q=clamp(fn(xv),y0,y1); c.fillStyle=P.alert; c.beginPath(); c.arc(X(clamp(xv,x0,x1)),Y(q),4.5,0,7); c.fill(); tx(c,lab,x+6,y+11,11.5,P.ink2); }
+function medBox(c,x,y,w,h,T,lo,hi,t){ c.fillStyle=P.panel2; c.strokeStyle=P.steeld; c.lineWidth=2; rrect(c,x,y,w,h,6); c.fill(); c.stroke();
+  const f=clamp((T-lo)/(hi-lo),0,1); c.save(); rrect(c,x+2,y+2,w-4,h-4,5); c.clip(); c.fillStyle=`hsla(${Math.round(210-195*f)},70%,52%,.5)`; c.beginPath(); c.moveTo(x,y+h*.2); for(let q=0;q<=w;q+=6) c.lineTo(x+q,y+h*.2+Math.sin(q/10+t*2)*1.5); c.lineTo(x+w,y+h); c.lineTo(x,y+h); c.fill(); c.restore(); }
+function jig(c,cx,cy,r,n,sp,t,col){ c.fillStyle=col; for(let i=0;i<n;i++){ const a=i*2.399+t*sp*(1+(i%3)*.35), rr=r*(.25+.7*((i*37)%10)/10); c.beginPath(); c.arc(cx+Math.cos(a*1.3+i)*rr*.95,cy+Math.sin(a*.9+i*2)*rr*.95,2.2,0,7); c.fill(); } }
+
+/* ---------- 1. Termometru cu lichid în sticlă ---------- */
+function dLig(c,w,h,v,t){ const cx=w*.28, top=h*.06, bot=h*.76, br=h*.075, lo=-30, hi=350, f=clamp((v-lo)/(hi-lo),0,1), L=bot-top-14;
+  c.lineWidth=2; c.strokeStyle=P.steeld; c.fillStyle=P.panel2; rrect(c,cx-10,top,20,bot-top+6,10); c.fill(); c.stroke(); c.beginPath(); c.arc(cx,bot+br*.9,br,0,7); c.fill(); c.stroke();
+  const yT=bot-L*f; c.fillStyle='#9fb0bf'; rrect(c,cx-3.5,yT,7,bot-yT+8,3.5); c.fill(); c.beginPath(); c.arc(cx,bot+br*.9,br-4,0,7); c.fill();
+  c.fillStyle='rgba(255,255,255,.6)'; c.fillRect(cx-1.8,yT+2,1.6,bot-yT-2); jig(c,cx,bot+br*.9,br-6,16,.9+f*3,t,'rgba(70,90,110,.7)');
+  for(let q=-30;q<=350;q+=10){ const y=bot-L*(q-lo)/(hi-lo), mj=q%50===0; c.strokeStyle=P.ink2; c.lineWidth=mj?1.4:.8; c.beginPath(); c.moveTo(cx+13,y); c.lineTo(cx+(mj?26:19),y); c.stroke(); if(mj) tx(c,String(q),cx+30,y,11.5,P.ink2); }
+  c.strokeStyle=P.alert; c.setLineDash([4,3]); c.lineWidth=1.2; c.beginPath(); c.moveTo(cx-40,yT); c.lineTo(cx+70,yT); c.stroke(); c.setLineDash([]);
+  const x2=w*.52; tx(c,'rezervor (V₀ = 170 mm³, mercur)',cx+br+10,h*.93,13,P.ink2); tx(c,'capilar (d = 0,2 mm, A = 0,0314 mm²)',x2,h*.18,13,P.ink2);
+  txc(c,'Δh = β·V₀·Δt / A',x2,h*.34,20,P.fueldeep); txc(c,'= '+fmt(v*0.985,1)+' mm față de reperul 0 °C',x2,h*.42,17,P.ink);
+  medBox(c,w*.6,h*.55,w*.34,h*.3,v,lo,hi,t); tx(c,'Mediul măsurat',w*.77,h*.52,12.5,P.ink2,'center'); }
+/* ---------- 2. Termometru bimetalic ---------- */
+function dBim(c,w,h,v,t){ const cx=w*.27, cy=h*.48, R=Math.min(w*.2,h*.34); dial(c,cx,cy,R,-20,200,v,50,10,'°C');
+  const f=clamp((v+20)/220,0,1); c.strokeStyle=P.fueldeep; c.lineWidth=2; c.beginPath(); for(let a=0;a<14;a+=.12){ const r=R*(.1+.05*a*(1-.25*f)), an=a+f*2.2; if(a===0) c.moveTo(cx+Math.cos(an)*r,cy+Math.sin(an)*r); else c.lineTo(cx+Math.cos(an)*r,cy+Math.sin(an)*r); } c.stroke();
+  const x0=w*.58, y0=h*.34, Ls=w*.3, dT=v-20, phi=clamp(0.00519*dT*2.2,-1.3,1.3);
+  tx(c,'lama bimetalică (deformare exagerată)',x0,h*.14,12.5,P.ink2); c.fillStyle=P.steeld; c.fillRect(x0-14,y0-22,14,44);
+  const arcLayer=(r,col)=>{ c.strokeStyle=col; c.lineWidth=6; c.beginPath(); if(Math.abs(phi)<1e-3){ c.moveTo(x0,y0+(r-Math.abs(r))); c.lineTo(x0+Ls,y0); } else if(phi>0){ const rho=Ls/phi; c.arc(x0,y0+rho,rho+r,-Math.PI/2,-Math.PI/2+phi); } else { const rho=Ls/-phi; c.arc(x0,y0-rho,rho-r,Math.PI/2,Math.PI/2+phi,true); } c.stroke(); };
+  if(Math.abs(phi)<1e-3){ c.strokeStyle='#c9a14a'; c.lineWidth=6; c.beginPath(); c.moveTo(x0,y0-3); c.lineTo(x0+Ls,y0-3); c.stroke(); c.strokeStyle='#8c99a5'; c.beginPath(); c.moveTo(x0,y0+3); c.lineTo(x0+Ls,y0+3); c.stroke(); } else { arcLayer(-3,'#c9a14a'); arcLayer(3,'#8c99a5'); }
+  tx(c,'alamă (α₂ mare)',x0,h*.58,13,'#a98836'); tx(c,'invar (α₁ mic)',x0,h*.64,13,P.steeld); medBox(c,w*.56,h*.74,w*.38,h*.2,v,-20,200,t); tx(c,'mediul măsurat',w*.75,h*.71,12.5,P.ink2,'center'); }
+/* ---------- 3. Termometru manometric ---------- */
+function dMan(c,w,h,v,t){ const bx=w*.12, by=h*.70, br=h*.1, dx=w*.64, dy=h*.42, R=Math.min(w*.2,h*.3);
+  medBox(c,w*.02,h*.52,w*.2,h*.42,v,-50,500,t); c.fillStyle=P.panel; c.strokeStyle=P.steeld; c.lineWidth=2.5; c.beginPath(); c.arc(bx,by,br,0,7); c.fill(); c.stroke(); jig(c,bx,by,br-4,22,1+clamp((v+50)/550,0,1)*5,t,P.fueldeep);
+  c.strokeStyle=P.steeld; c.lineWidth=2; c.beginPath(); c.moveTo(bx+br,by-8); c.bezierCurveTo(w*.3,h*.55,w*.4,h*.12,dx-R*.55,h*.2); c.stroke(); c.beginPath(); c.moveTo(dx-R*.55,h*.2); c.lineTo(dx-R*.2,dy-R*.55); c.stroke();
+  tx(c,'capilar',w*.3,h*.32,12.5,P.ink2); tx(c,'rezervor cu gaz (N₂)',bx,h*.97,12.5,P.ink2,'center');
+  const p=1000*(v+K0)/K0; dial(c,dx,dy,R,-50,500,v,100,20,'°C'); tx(c,'tub Bourdon',dx,dy-R*1.12,12.5,P.ink2,'center'); txc(c,'p = p₀·T/T₀ = '+fmt(p,0)+' kPa',dx,dy+R*1.3,18,P.fueldeep,'center'); }
+/* ---------- 4. Termorezistență Pt100 (punte Wheatstone) ---------- */
+function resis(c,a,b,lab,fill,ctr){ const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,ang=Math.atan2(b[1]-a[1],b[0]-a[0]); c.strokeStyle=P.ink2; c.lineWidth=2; c.beginPath(); c.moveTo(a[0],a[1]); c.lineTo(b[0],b[1]); c.stroke();
+  c.save(); c.translate(mx,my); c.rotate(ang); c.fillStyle=fill||P.panel; c.strokeStyle=P.ink; c.lineWidth=1.8; c.fillRect(-20,-8,40,16); c.strokeRect(-20,-8,40,16); c.restore();
+  const dx=mx-ctr[0], dy=my-ctr[1], d=Math.hypot(dx,dy)||1; tx(c,lab,mx+dx/d*40,my+dy/d*26,13,P.ink,'center'); }
+function dRtd(c,w,h,v,t){ const bx=w*.27, by=h*.5, s=Math.min(w*.17,h*.28), Rt=rtdR(v), Vs=5, Vb=Vs*(Rt/(Rt+100)-.5), n={top:[bx,by-s],bot:[bx,by+s],lf:[bx-s,by],rt:[bx+s,by]}, ctr=[bx,by];
+  resis(c,n.top,n.lf,'R₁ = 100 Ω',null,ctr); resis(c,n.lf,n.bot,'R₂ = 100 Ω',null,ctr); resis(c,n.top,n.rt,'R₃ = 100 Ω',null,ctr);
+  const g=glow(v+300)||null; resis(c,n.rt,n.bot,'R_t (Pt100)',`hsla(${Math.round(210-195*clamp((v+200)/1050,0,1))},70%,60%,.9)`,ctr);
+  c.strokeStyle=P.ink2; c.setLineDash([4,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(n.lf[0],n.lf[1]); c.lineTo(n.rt[0],n.rt[1]); c.stroke(); c.setLineDash([]);
+  c.fillStyle=P.panel; c.strokeStyle=P.ink; c.lineWidth=2; c.beginPath(); c.arc(bx,by,17,0,7); c.fill(); c.stroke(); tx(c,'mV',bx,by,12,P.ink,'center',700);
+  [n.top,n.bot,n.lf,n.rt].forEach(p=>{ c.fillStyle=P.ink; c.beginPath(); c.arc(p[0],p[1],3.5,0,7); c.fill(); }); tx(c,'+ Vs = 5 V',bx,n.top[1]-14,13,P.alert,'center'); tx(c,'0 V',bx,n.bot[1]+14,13,P.ink2,'center');
+  txc(c,'U = '+fmt(Vb*1000,2)+' mV',bx,by+s+40,18,P.fueldeep,'center');
+  const px=w*.58, py=h*.2; c.fillStyle=P.steel; rrect(c,px-7,py,14,h*.5,4); c.fill(); c.fillStyle=P.ink; c.fillRect(px-11,py-14,22,16); medBox(c,px-w*.07,h*.52,w*.14,h*.26,v,-200,850,t);
+  c.strokeStyle=P.fueldeep; c.lineWidth=1.8; c.beginPath(); for(let i=0;i<14;i++) c.lineTo(px+(i%2?4:-4),h*.56+i*h*.015); c.stroke();
+  tx(c,'sondă Pt100',px,py-26,12.5,P.ink2,'center'); c.strokeStyle=P.ink2; c.setLineDash([3,3]); c.beginPath(); c.moveTo(px-11,py-6); c.bezierCurveTo(px-60,py-30,n.rt[0]+70,n.rt[1]+80,(n.rt[0]+n.bot[0])/2+22,(n.rt[1]+n.bot[1])/2); c.stroke(); c.setLineDash([]);
+  mini(c,w*.7,h*.14,w*.27,h*.4,x=>rtdR(x),-200,850,18,391,v,'R(t), Pt100 [Ω]'); txc(c,'R = '+fmt(Rt,2)+' Ω',w*.835,h*.62,19,P.ink,'center'); txc(c,'α ≈ 0,385 %/°C',w*.835,h*.7,15,P.ink2,'center'); }
+/* ---------- 5. Termistor NTC ---------- */
+function ntcR(t,R25=1e4,B=3950){ return R25*Math.exp(B*(1/(t+K0)-1/(25+K0))); }
+function dNtc(c,w,h,v,t){ const bx=w*.2, by=h*.45; medBox(c,w*.03,h*.62,w*.34,h*.3,v,-40,150,t);
+  c.strokeStyle=P.steeld; c.lineWidth=2.5; c.beginPath(); c.moveTo(bx-6,by+36); c.lineTo(bx-12,h*.78); c.moveTo(bx+6,by+36); c.lineTo(bx+12,h*.78); c.stroke(); c.beginPath(); c.moveTo(bx-6,by+36); c.lineTo(bx-9,h*.12); c.moveTo(bx+6,by+36); c.lineTo(bx+9,h*.12); c.stroke();
+  c.fillStyle='#2b3a46'; c.beginPath(); c.ellipse(bx,by+10,26,34,0,0,7); c.fill(); c.fillStyle='rgba(255,255,255,.25)'; c.beginPath(); c.ellipse(bx-8,by-2,6,12,.3,0,7); c.fill(); tx(c,'perlă de termistor (oxizi Mn, Ni, Co)',bx,h*.07,12.5,P.ink2,'center');
+  mini(c,w*.46,h*.1,w*.5,h*.52,x=>ntcR(x),-40,150,50,3e5,v,'R(t), NTC 10 kΩ, β = 3950 K [Ω]',true);
+  const R=ntcR(v); txc(c,'R = '+fmtS(R,4)+' Ω',w*.71,h*.7,20,P.ink,'center'); txc(c,'α = −β/T² = '+fmt(-3950/((v+K0)**2)*100,2)+' %/K',w*.71,h*.79,16,P.fueldeep,'center'); jig(c,bx,by+10,24,10,.5+Math.max(0,v+40)/60,t,'rgba(255,255,255,.35)'); }
+/* ---------- 6. Termocuplu ---------- */
+function dTc(c,w,h,v,t){ const jx=w*.14, jy=h*.72, f=glow(v); medBox(c,w*.02,h*.6,w*.26,h*.3,v,0,1300,t);
+  if(f){ c.fillStyle=rgb(f,.35); c.beginPath(); c.arc(jx,jy,30,0,7); c.fill(); }
+  const cx=w*.58, ty=h*.5; c.lineWidth=3.5; c.strokeStyle='#d33'; c.beginPath(); c.moveTo(jx-3,jy); c.lineTo(jx-3,ty-30); c.lineTo(cx,ty-30); c.stroke(); c.strokeStyle=P.blue; c.beginPath(); c.moveTo(jx+3,jy); c.lineTo(jx+3,ty+30); c.lineTo(cx,ty+30); c.stroke();
+  c.fillStyle=f?rgb(f):P.steeld; c.beginPath(); c.arc(jx,jy,6,0,7); c.fill(); tx(c,'joncțiunea de măsură (t)',jx,h*.2,12.5,P.ink2,'center'); tx(c,'cromel (+)',w*.34,ty-44,12.5,'#d33'); tx(c,'alumel (−)',w*.34,ty+46,12.5,P.blue);
+  c.fillStyle=P.steel; c.fillRect(cx,ty-48,14,96); tx(c,'joncțiunea de referință (0 °C)',cx,h*.2,12.5,P.ink2,'center');
+  const E=emf('K',v); const mx=w*.7, my=h*.26; c.fillStyle='#0f1c14'; rrect(c,mx,my,w*.26,h*.3,8); c.fill(); txc(c,fmt(E,3),mx+w*.24,my+h*.12,34,'#7CFC9A','right'); txc(c,'mV (tip K)',mx+w*.24,my+h*.23,15,'#4fae6d','right');
+  c.strokeStyle=P.ink2; c.lineWidth=2; c.beginPath(); c.moveTo(cx+14,ty-30); c.lineTo(mx,my+h*.1); c.moveTo(cx+14,ty+30); c.lineTo(mx,my+h*.2); c.stroke();
+  txc(c,'E = ∫ (S_A − S_B) dT ≈ S·Δt',w*.64,h*.72,17,P.fueldeep,'center'); txc(c,'S = '+fmt(seeb('K',v),1)+' µV/°C',w*.64,h*.8,16,P.ink,'center'); }
+/* ---------- 7. Senzor semiconductor integrat ---------- */
+function dIc(c,w,h,v,t){ const cx=w*.25, cy=h*.42, r=Math.min(w*.12,h*.2);
+  c.fillStyle='#2b3a46'; c.beginPath(); c.arc(cx,cy,r,Math.PI,0); c.lineTo(cx+r,cy+r*.9); c.lineTo(cx-r,cy+r*.9); c.closePath(); c.fill(); c.fillStyle='rgba(255,255,255,.7)'; c.font='600 13px Barlow Condensed'; c.textAlign='center'; c.fillText('LM35',cx,cy+r*.1);
+  [['+Vs',-r*.6],['Vout',0],['GND',r*.6]].forEach(([l,o])=>{ c.strokeStyle=P.steel; c.lineWidth=3; c.beginPath(); c.moveTo(cx+o,cy+r*.9); c.lineTo(cx+o,cy+r*2); c.stroke(); tx(c,l,cx+o,cy+r*2.25,12.5,P.ink2,'center'); });
+  c.fillStyle=P.fueldeep; for(let i=0;i<8;i++){ const a=t*2+i; c.fillRect(cx-r*.5+((a*17)%(r*1)),cy-r*.55+Math.sin(a)*4,3,3); } tx(c,'joncțiuni p–n (ΔV_BE ∝ T)',cx,cy-r*1.35,12.5,P.ink2,'center');
+  const V=0.010*v; const bx=w*.55, by=h*.18, bw=w*.38, bh=22; tx(c,'Tensiunea de ieșire V_out',bx,by-12,13,P.ink2); c.fillStyle=P.panel2; c.strokeStyle=P.line; c.fillRect(bx,by,bw,bh); c.strokeRect(bx,by,bw,bh); c.fillStyle=P.fuel; c.fillRect(bx,by,bw*clamp((V+.55)/2.05,0,1),bh);
+  txc(c,'V_out = 10 mV/°C · t = '+fmt(V*1000,1)+' mV',bx,by+bh+26,19,P.ink); const dV=8.617333e-5*(v+K0)*Math.log(8)*1000; txc(c,'ΔV_BE = (k·T/q)·ln N = '+fmt(dV,2)+' mV  (N = 8)',bx,by+bh+58,16,P.fueldeep);
+  mini(c,bx,h*.52,bw,h*.38,x=>0.010*x,-55,150,-.55,1.5,v,'V_out(t) [V]'); }
+/* ---------- 8. Cristale lichide termocrome ---------- */
+function dLc(c,w,h,v,t){ const n=16, x0=w*.06, cw=(w*.88)/n, y0=h*.3, hh=h*.28; const idx=Math.floor((v-15)/2); const fr=((v-15)/2)-idx;
+  for(let i=0;i<n;i++){ const act=i===idx; let col='#10151a'; if(act){ const hue=Math.round(5+fr*230); col=`hsl(${hue},85%,50%)`; } c.fillStyle=col; c.strokeStyle=P.steeld; c.lineWidth=1.5; c.fillRect(x0+i*cw,y0,cw-3,hh); c.strokeRect(x0+i*cw,y0,cw-3,hh); tx(c,String(15+2*i),x0+i*cw+cw/2-1,y0+hh/2,13,act?'#fff':'#8a99a6','center',700); tx(c,'°C',x0+i*cw+cw/2-1,y0+hh+14,11,P.ink2,'center'); }
+  tx(c,'Foaia cu cristale lichide colesterice — fiecare cadran se colorează numai în intervalul său de 2 °C',x0,h*.18,13,P.ink2);
+  const lam=Math.round(700-300*clamp(fr,0,1)); txc(c,'λ = 2·n·p·cosθ  ;  p scade cu t  →  culoarea trece de la roșu la albastru',w*.5,h*.72,17,P.fueldeep,'center'); txc(c,idx>=0&&idx<n?`Cadran activ: ${15+2*idx} … ${17+2*idx} °C  (λ reflectat ≈ ${lam} nm)`:'În afara domeniului scalei',w*.5,h*.82,18,P.ink,'center'); }
+/* ---------- 9. Senzor cu fibră optică (fluorescență) ---------- */
+function foTau(T){ return 2.0*Math.exp(-(T-20)/120); }
+function dFo(c,w,h,v,t){ const by=h*.26; c.fillStyle='#20303D'; rrect(c,w*.04,by-26,w*.16,52,6); c.fill(); txc(c,'LED + fotodiodă',w*.12,by,14,'#c9d6e0','center'); c.strokeStyle=P.steel; c.lineWidth=5; c.beginPath(); c.moveTo(w*.2,by); c.lineTo(w*.6,by); c.stroke(); c.strokeStyle=P.ink2; c.lineWidth=1; c.beginPath(); c.moveTo(w*.2,by); c.lineTo(w*.6,by); c.stroke();
+  const pu=(t*1.6)%1; c.fillStyle='rgba(60,140,255,.9)'; c.beginPath(); c.arc(w*.2+(w*.4)*pu,by,5,0,7); c.fill(); const f=glow(v); medBox(c,w*.58,by-30,w*.18,60,v,-50,250,t); c.fillStyle='#c33'; c.beginPath(); c.arc(w*.6,by,7,0,7); c.fill(); tx(c,'fosfor (GaAs)',w*.67,by-40,12.5,P.ink2,'center'); tx(c,'pulsul excitator ↗   răspunsul fluorescent ↙',w*.4,by-36,12.5,P.ink2,'center');
+  const tau=foTau(v); const gx=w*.08, gy=h*.5, gw=w*.55, gh=h*.4; c.fillStyle=P.canvasbg; c.strokeStyle=P.line; c.fillRect(gx,gy,gw,gh); c.strokeRect(gx,gy,gw,gh);
+  c.strokeStyle=P.alert; c.lineWidth=2.2; c.beginPath(); for(let i=0;i<=80;i++){ const tt=i/80*6; const y=Math.exp(-tt/tau); const X=gx+gw*i/80, Y=gy+gh-gh*.92*y; if(i) c.lineTo(X,Y); else c.moveTo(X,Y); } c.stroke();
+  c.strokeStyle=P.steeld; c.setLineDash([4,3]); c.beginPath(); c.moveTo(gx+gw*tau/6,gy+gh); c.lineTo(gx+gw*tau/6,gy+gh-gh*.92*Math.exp(-1)); c.lineTo(gx,gy+gh-gh*.92*Math.exp(-1)); c.stroke(); c.setLineDash([]); tx(c,'τ',gx+gw*tau/6,gy+gh+12,13,P.ink2,'center'); tx(c,'I(t) = I₀·exp(−t/τ)   [t: 0 … 6 ms]',gx+8,gy+12,12.5,P.ink2);
+  txc(c,'τ = '+fmt(tau,3)+' ms',w*.82,h*.58,22,P.ink,'center'); txc(c,'τ(t) = τ₀·exp[−(t − 20)/θ]',w*.82,h*.68,15,P.fueldeep,'center'); txc(c,'t = 20 − θ·ln(τ/τ₀)',w*.82,h*.76,15,P.ink2,'center'); }
+/* ---------- 10. Termometru cu infraroșu (schiță) ---------- */
+function dIrMini(c,w,h,v,t){ const gx=w*.1, gy=h*.5; c.fillStyle='#2b3a46'; rrect(c,gx-w*.07,gy-22,w*.16,50,10); c.fill(); c.fillStyle='#8fb4d8'; c.beginPath(); c.arc(gx+w*.09,gy+3,12,0,7); c.fill(); c.fillStyle='#142'; rrect(c,gx-w*.04,gy-14,w*.07,16,3); c.fill(); txc(c,fmt(v,1)+' °C',gx-w*.005,gy-6,13,'#7CFC9A','center');
+  const tx_=w*.72; c.fillStyle=rgb(irPal(clamp((v+20)/520,0,1))); c.beginPath(); c.arc(tx_,gy,44,0,7); c.fill(); c.strokeStyle=P.alert; c.lineWidth=1.3; c.setLineDash([5,4]); c.beginPath(); c.moveTo(gx+w*.1,gy+3); c.lineTo(tx_,gy-22); c.moveTo(gx+w*.1,gy+3); c.lineTo(tx_,gy+28); c.stroke(); c.setLineDash([]); c.beginPath(); c.ellipse(tx_,gy+3,10,25,0,0,7); c.stroke();
+  c.fillStyle='#e22'; c.beginPath(); c.arc(tx_,gy+3,3+Math.sin(t*9)*.6,0,7); c.fill(); for(let i=0;i<8;i++){ const q=((t*.7+i/8)%1); c.fillStyle=`rgba(224,86,30,${1-q})`; c.beginPath(); c.arc(lerp(tx_-30,gx+w*.1,q),gy+3+Math.sin(i*5+t*3)*10*(1-q*.7)*.4,2.2,0,7); c.fill(); }
+  tx(c,'radiația IR emisă de țintă (8…14 µm)',w*.45,h*.22,13,P.ink2,'center'); tx(c,'optică + detector (termopilă)',w*.02,h*.8,12.5,P.ink2); txc(c,'M = ε·σ·T⁴ = '+fmt(SIG*(v+K0)**4,0)+' W/m²',w*.5,h*.9,18,P.fueldeep,'center'); }
+/* ---------- 11. Pirometru de radiație (schiță) ---------- */
+function dPirMini(c,w,h,v,t){ const f=glow(v), fx=w*.06, fy=h*.2, fw=w*.2, fh=h*.6; c.fillStyle='#4b3b33'; rrect(c,fx,fy,fw,fh,8); c.fill(); c.fillStyle=f?rgb(f):'#2a1f1a'; rrect(c,fx+fw*.35,fy+fh*.2,fw*.6,fh*.6,6); c.fill(); if(f){ const g=c.createRadialGradient(fx+fw*.65,fy+fh*.5,2,fx+fw*.65,fy+fh*.5,90); g.addColorStop(0,rgb(f,.45)); g.addColorStop(1,rgb(f,0)); c.fillStyle=g; c.fillRect(0,0,w*.5,h); }
+  tx(c,'cuptor / țintă',fx+fw/2,fy-12,12.5,P.ink2,'center'); const lx=w*.52; c.strokeStyle=P.steeld; c.fillStyle='rgba(143,180,216,.35)'; c.lineWidth=2; c.beginPath(); c.ellipse(lx,h*.5,12,h*.2,0,0,7); c.fill(); c.stroke(); tx(c,'lentilă',lx,h*.22,12.5,P.ink2,'center');
+  c.strokeStyle=f?rgb(f,.7):P.muted; c.lineWidth=1.4; [-.1,0,.1].forEach(o=>{ c.beginPath(); c.moveTo(fx+fw*.9,h*.5+o*h*.5); c.lineTo(lx,h*.5+o*h*.4); c.lineTo(w*.72,h*.5); c.stroke(); });
+  c.fillStyle='#20303D'; rrect(c,w*.72,h*.4,w*.06,h*.2,3); c.fill(); tx(c,'termopilă',w*.75,h*.66,12.5,P.ink2,'center'); const V=0.07*(0.95*SIG*((v+K0)**4-K0**4))/1000; c.fillStyle='#0f1c14'; rrect(c,w*.8,h*.36,w*.17,h*.28,8); c.fill(); txc(c,fmt(V,2),w*.955,h*.5,26,'#7CFC9A','right'); txc(c,'mV',w*.955,h*.58,13,'#4fae6d','right');
+  txc(c,'V = k·ε·σ(T⁴ − T_a⁴)',w*.5,h*.9,18,P.fueldeep,'center'); }
+/* ---------- 12. Cameră termografică ---------- */
+function dCam(c,w,h,v,t){ const cols=44, rows=30, x0=w*.04, y0=h*.06, cw=(w*.66)/cols, ch=(h*.84)/rows, Ta=22, span=Math.max(v-Ta,10); let mn=1e9, mx=-1e9, cT=0;
+  for(let j=0;j<rows;j++) for(let i=0;i<cols;i++){ const dx=(i-cols*.42)/cols, dy=(j-rows*.5)/rows; let T=Ta+ (v-Ta)*Math.exp(-(dx*dx*38+dy*dy*70)); const d2=(i-cols*.75)/cols, e2=(j-rows*.3)/rows; T+=(v-Ta)*.45*Math.exp(-(d2*d2*220+e2*e2*400)); T+=Math.sin(i*1.7+j*2.3+t*3)*.15+Math.sin(i*.5-j*.9+t*1.3)*.1; if(i===Math.round(cols*.42)&&j===rows/2) cT=T; if(T<mn) mn=T; if(T>mx) mx=T; c.fillStyle=rgb(irPal((T-Ta+3)/(span*1.1+3))); c.fillRect(x0+i*cw,y0+j*ch,cw+.6,ch+.6); }
+  c.strokeStyle='#fff'; c.lineWidth=1.3; const cx=x0+cols*.42*cw+cw/2, cy=y0+rows*.5*ch+ch/2; c.beginPath(); c.moveTo(cx-10,cy); c.lineTo(cx+10,cy); c.moveTo(cx,cy-10); c.lineTo(cx,cy+10); c.stroke();
+  const sx=w*.74, sy=y0, sh=h*.84; for(let k=0;k<60;k++){ c.fillStyle=rgb(irPal(1-k/59)); c.fillRect(sx,sy+sh*k/60,16,sh/60+1); } tx(c,fmt(mx,0)+' °C',sx+22,sy+8,13,P.ink); tx(c,fmt(Ta,0)+' °C',sx+22,sy+sh-6,13,P.ink);
+  txc(c,'Centru: '+fmt(cT,1)+' °C',sx+22,h*.42,18,P.fueldeep); txc(c,'Max: '+fmt(mx,1)+' °C',sx+22,h*.5,16,P.ink); txc(c,'Min: '+fmt(mn,1)+' °C',sx+22,h*.57,16,P.ink); tx(c,'matrice de microbolometre',sx+22,h*.68,12.5,P.ink2); tx(c,'(ex. 320 × 240 pixeli)',sx+22,h*.73,12.5,P.ink2); }
+
+/* ---------- catalogul ---------- */
+const INS=[
+ {id:'lig',s:'Lichid în sticlă',nm:'Termometru cu lichid în sticlă',cat:'cu contact',lo:-30,hi:350,def:85,rng:'−38 … +357 °C (Hg); −100 … +70 °C (alcool)',acc:'±0,05 … ±1 °C',tau:'10 … 60 s',draw:dLig,
+  pr:'Dilatarea termică a lichidului din rezervor este făcută vizibilă de ridicarea lui într-un capilar. Mercurul nu udă sticla, se dilată aproape liniar și are domeniu larg, dar este toxic; alcoolul colorat este alternativa pentru temperaturi scăzute.',
+  eq:'Δh = β·V<sub>0</sub>·Δt / A  ,  β<sub>Hg</sub> ≈ 1,82·10<sup>-4</sup> K<sup>-1</sup>',pro:'Simplu, fără alimentare, exact și stabil în timp; folosit ca etalon de laborator.',con:'Fragil, citire locală, inerție mare, mercur toxic, corecție pentru porțiunea emersă a coloanei.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Dilatarea volumului față de 0 °C',fmt(170*1.82e-4*T,2)+' mm³'],['Înălțimea coloanei față de 0 °C',fmt(0.985*T,1)+' mm'],['Sensibilitatea',fmt(0.985,2)+' mm/°C']]},
+ {id:'bim',s:'Bimetalic',nm:'Termometru bimetalic',cat:'cu contact',lo:-20,hi:200,def:90,rng:'−70 … +500 °C',acc:'±1 … 2 % din domeniu',tau:'5 … 30 s',draw:dBim,
+  pr:'Două lame metalice sudate (invar și alamă) se curbează la încălzire, deoarece au coeficienți de dilatare diferiți. Lama, înfășurată în spirală, rotește acul unui cadran.',
+  eq:'κ = 3(α<sub>2</sub> − α<sub>1</sub>)·Δt / (2h) ,  δ = κ·L² / 2',pro:'Robust, ieftin, fără alimentare, citire directă pe cadran.',con:'Exactitate redusă, histerezis, inerție, nu se pretează la transmisie la distanță.',
+  rd:T=>{ const k=3*17.3e-6*(T-20)/(2*0.5e-3); return [['Indicația t',fmt(T,1)+' °C',1],['Curbura lamei κ',fmt(k,2)+' m⁻¹'],['Deplasarea capătului (L = 100 mm)',fmt(k*0.1*0.1/2*1000,2)+' mm'],['Unghiul acului',fmt((T+20)/220*270,0)+' °']]; }},
+ {id:'man',s:'Manometric',nm:'Termometru manometric',cat:'cu contact',lo:-50,hi:500,def:150,rng:'−200 … +700 °C',acc:'±1 … 2 % din domeniu',tau:'20 … 60 s',draw:dMan,
+  pr:'Un rezervor, un capilar și un tub Bourdon formează un sistem închis, umplut cu gaz (azot), lichid (mercur) sau vapori. La volum constant, presiunea gazului crește cu temperatura și este indicată de manometru, gradat în °C.',
+  eq:'p = p<sub>0</sub>·T / T<sub>0</sub> ,  (V = const.)',pro:'Indicare la distanță (capilar până la 50 m), fără energie electrică, antiex.',con:'Eroare de capilar și de temperatură ambiantă, inerție, deteriorarea capilarului.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Presiunea din sistem (p₀ = 1000 kPa la 0 °C)',fmt(1000*(T+K0)/K0,0)+' kPa'],['Sensibilitatea',fmt(1000/K0,2)+' kPa/°C']]},
+ {id:'rtd',s:'Pt100',nm:'Termorezistență metalică (Pt100)',cat:'cu contact',lo:-200,hi:850,def:100,rng:'−200 … +850 °C',acc:'cl. A: ±(0,15 + 0,002·|t|) °C',tau:'1 … 10 s',draw:dRtd,
+  pr:'Rezistența electrică a platinei crește aproape liniar cu temperatura (relația Callendar–Van Dusen). Sonda, cu R<sub>0</sub> = 100 Ω, se leagă într-o punte Wheatstone, în montaj cu 3 sau 4 fire care anulează rezistența conductoarelor.',
+  eq:'R(t) = R<sub>0</sub>(1 + A·t + B·t²) ,  A = 3,9083·10<sup>-3</sup> ,  B = −5,775·10<sup>-7</sup>',pro:'Cea mai bună exactitate și stabilitate pe domeniu larg; interschimbabilă.',con:'Necesită alimentare, auto-încălzire, mai lentă și mai scumpă decât termocuplul.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Rezistența R<sub>t</sub>',fmt(rtdR(T),3)+' Ω'],['Tensiunea de dezechilibru a punții',fmt(5*(rtdR(T)/(rtdR(T)+100)-.5)*1000,2)+' mV'],['Sensibilitatea dR/dt',fmt((rtdR(T+.5)-rtdR(T-.5)),4)+' Ω/°C']]},
+ {id:'ntc',s:'Termistor',nm:'Termistor (NTC)',cat:'cu contact',lo:-40,hi:150,def:25,rng:'−50 … +300 °C',acc:'±0,1 … ±1 °C',tau:'0,1 … 10 s',draw:dNtc,go:'t-th',
+  pr:'Semiconductor ceramic cu coeficient de temperatură negativ (NTC): rezistența scade exponențial cu temperatura. Sensibilitate foarte mare (3…6 %/K), dar caracteristică puternic neliniară.',
+  eq:'R(T) = R<sub>25</sub>·exp[β(1/T − 1/T<sub>25</sub>)] ,  1/T = A + B·ln R + C·(ln R)³',pro:'Sensibilitate mare, dimensiuni mici, răspuns rapid, preț redus.',con:'Neliniar, domeniu îngust, autoîncălzire, interschimbabilitate limitată.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Rezistența R',fmtS(ntcR(T),4)+' Ω'],['Sensibilitatea α = −β/T²',fmt(-3950/((T+K0)**2)*100,2)+' %/K'],['Raportul R(t)/R<sub>25</sub>',fmt(ntcR(T)/1e4,3)]]},
+ {id:'tc',s:'Termocuplu',nm:'Termocuplu (tip K)',cat:'cu contact',lo:0,hi:1300,def:400,rng:'−270 … +1820 °C (după tip)',acc:'±1,5 °C sau ±0,4 % (cl. 1)',tau:'0,01 … 5 s',draw:dTc,go:'t-etTC',
+  pr:'Doi conductori diferiți, uniți la un capăt (joncțiunea de măsură), produc între capetele libere o tensiune termoelectromotoare (efectul Seebeck), proporțională cu diferența de temperatură față de joncțiunea de referință.',
+  eq:'E<sub>AB</sub> = ∫<sub>T<sub>r</sub></sub><sup>T</sup> (S<sub>A</sub> − S<sub>B</sub>) dT',pro:'Domeniu foarte larg, răspuns rapid, robust, ieftin, nu necesită alimentare.',con:'Necesită compensarea joncțiunii de referință, semnal mic (µV/°C), exactitate moderată, îmbătrânire.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Tensiunea E (ref. 0 °C)',fmt(emf('K',T),3)+' mV'],['Coeficientul Seebeck S',fmt(seeb('K',T),1)+' µV/°C'],['Sensibilitatea față de Pt100','≈ 0,04 mV/°C față de 0,39 Ω/°C']]},
+ {id:'ic',s:'Semiconductor',nm:'Senzor semiconductor integrat',cat:'cu contact',lo:-55,hi:150,def:25,rng:'−55 … +150 °C',acc:'±0,5 … ±1 °C',tau:'1 … 20 s',draw:dIc,
+  pr:'Tensiunea bază–emitor a unui tranzistor, și mai exact diferența ΔV<sub>BE</sub> între două tranzistoare cu densități de curent diferite, este proporțională cu temperatura absolută (PTAT). Circuitul integrat o amplifică și o livrează calibrată (de ex. 10 mV/°C la LM35).',
+  eq:'ΔV<sub>BE</sub> = (k·T / q)·ln N ,&nbsp; V<sub>out</sub> = 10 mV/°C · t',pro:'Ieșire liniară, calibrată, ușor de integrat în sisteme electronice.',con:'Domeniu limitat, protecție mecanică necesară, autoîncălzire.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Tensiunea V<sub>out</sub>',fmt(10*T,1)+' mV'],['ΔV<sub>BE</sub> (N = 8)',fmt(8.617333e-5*(T+K0)*Math.log(8)*1000,2)+' mV'],['Sensibilitatea','10 mV/°C']]},
+ {id:'lc',s:'Cristale lichide',nm:'Termometru cu cristale lichide',cat:'cu contact',lo:15,hi:45,def:33,rng:'0 … +60 °C (benzi); −30 … +120 °C (vopsele)',acc:'±0,5 … ±1 °C',tau:'1 … 5 s',draw:dLc,
+  pr:'Cristalele lichide colesterice reflectă selectiv lumina; pasul elicei moleculare depinde de temperatură, deci culoarea reflectată trece de la roșu la albastru când temperatura crește. Se folosesc benzi și pelicule pentru termografie de suprafață și termometre clinice.',
+  eq:'λ = 2·n·p·cos θ ,&nbsp; p = p(t)',pro:'Vizualizare directă și ieftină a câmpului de temperatură pe suprafețe.',con:'Domeniu îngust pe peliculă, rezoluție de 1…2 °C, dependent de unghiul de vedere și de iluminare.',
+  rd:T=>{ const i=Math.floor((T-15)/2); return [['Indicația t',(i>=0&&i<16?`${15+2*i} … ${17+2*i}`:'în afara scalei')+' °C',1],['Valoarea reală',fmt(T,1)+' °C'],['Rezoluția scalei','2 °C']]; }},
+ {id:'fo',s:'Fibră optică',nm:'Senzor cu fibră optică (fluorescență)',cat:'cu contact',lo:-50,hi:250,def:80,rng:'−50 … +250 °C',acc:'±0,5 °C',tau:'0,1 … 1 s',draw:dFo,
+  pr:'Un fosfor de la capătul fibrei este excitat cu un impuls luminos. Durata de viață a fluorescenței scade cu temperatura; aceasta se măsoară pe semnalul reflectat și nu depinde de intensitatea luminii sau de atenuarea fibrei.',
+  eq:'I(t) = I<sub>0</sub>·exp(−t/τ) ,&nbsp; τ = τ<sub>0</sub>·exp[−(t − 20)/θ]',pro:'Imun la câmpuri electromagnetice, utilizabil în medii cu tensiune înaltă, microunde, medicină.',con:'Aparatură de citire costisitoare, domeniu moderat.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Timpul de relaxare τ',fmt(foTau(T),3)+' ms'],['Sensibilitatea dτ/dt',fmt(-foTau(T)/120*1000,2)+' µs/°C']]},
+ {id:'ir',s:'Termometru IR',nm:'Termometru cu infraroșu',cat:'fără contact',lo:-20,hi:500,def:120,rng:'−50 … +1000 °C',acc:'±1 °C sau ±1 % din valoare',tau:'0,1 … 0,5 s',draw:dIrMini,go:'t-ir',
+  pr:'Detectorul (termopilă sau bolometru) primește radiația infraroșie emisă de suprafață, în banda 8…14 µm; electronica o transformă în temperatură presupunând o emisivitate reglată. Câmpul vizual este definit de raportul distanță : spot.',
+  eq:'S = f·[ε·M(T<sub>obj</sub>) + (1 − ε)·M(T<sub>refl</sub>)] + (1 − f)·M(T<sub>fond</sub>)',pro:'Fără contact, instantaneu, pentru obiecte în mișcare, tensionate sau periculoase.',con:'Depinde de emisivitate, de reflexii, de distanță și de curățenia opticii.',
+  rd:T=>[['Indicația t',fmt(T,1)+' °C',1],['Radiația emisă de un corp negru (ε = 1)',fmt(SIG*(T+K0)**4,0)+' W/m²'],['Lungimea de undă a maximului',fmt(2897.8/(T+K0),2)+' µm']]},
+ {id:'pir',s:'Pirometru',nm:'Pirometru de radiație',cat:'fără contact',lo:600,hi:1800,def:1000,rng:'+400 … +3000 °C',acc:'±0,5 … ±1 % din valoare',tau:'1 ms … 1 s',draw:dPirMini,go:'t-pir',
+  pr:'Măsoară temperatura corpurilor incandescente după radiația termică. Pirometrul de radiație totală folosește legea Stefan–Boltzmann (termopilă), cel optic compară luminanța cu cea a unui filament etalon, iar cel bicolor face raportul a două radiații spectrale.',
+  eq:'M = ε·σ·T<sup>4</sup> ,&nbsp; 1/T = 1/T<sub>b</sub> + (λ/c<sub>2</sub>)·ln ε<sub>λ</sub>',pro:'Singura soluție pentru temperaturi foarte înalte și corpuri în mișcare sau inaccesibile.',con:'Dependent de emisivitate, de atenuarea mediului (fum, aburi); necesită vizare corectă.',
+  rd:T=>[['Indicația t',fmt(T,0)+' °C',1],['Radiația M = σT⁴ (ε = 1)',fmt(SIG*(T+K0)**4/1000,1)+' kW/m²'],['Semnalul termopilei (k = 0,07 mV/(kW/m²))',fmt(0.07*SIG*((T+K0)**4-K0**4)/1000,2)+' mV'],['λ<sub>max</sub>',fmt(2897.8/(T+K0),2)+' µm']]},
+ {id:'cam',s:'Cameră termografică',nm:'Cameră termografică',cat:'fără contact',lo:0,hi:200,def:60,rng:'−20 … +2000 °C',acc:'±2 °C sau ±2 %',tau:'< 50 ms/cadru',draw:dCam,
+  pr:'O matrice de microbolometre (8…14 µm) formează imaginea termică a scenei. Fiecărui pixel i se atribuie o temperatură, afișată într-o paletă de culori.',
+  eq:'T<sub>pixel</sub> = f(S<sub>pixel</sub>, ε, T<sub>refl</sub>, τ<sub>atm</sub>)',pro:'Măsurare simultană pe întreaga suprafață; depistează puncte calde (electrice, termoizolații, motoare).',con:'Cost ridicat, emisivitate variabilă pe scenă, rezoluție spațială limitată.',
+  rd:T=>[['Temperatura centrului',fmt(T,1)+' °C',1],['Temperatura mediului','22 °C'],['Contrastul termic ΔT',fmt(T-22,1)+' °C']]}
+];
+let INSI=INS[0]; const IS={};
+function insTable(){ return {head:['Instrument','Principiul','Domeniu uzual','Exactitate tipică','Timp de răspuns','Contact'],left:[0,1,2,3,4,5],
+  rows:INS.map(i=>[i.nm,strip(i.pr).split('.')[0]+'.',i.rng,i.acc,i.tau,i.cat])}; }
+function insSelect(id){ INSI=INS.find(i=>i.id===id); $$('#insChips button').forEach(b=>b.classList.toggle('on',b.dataset.i===id)); const el=$('#insT'); el.min=INSI.lo; el.max=INSI.hi; el.step=(INSI.hi-INSI.lo)>400?1:.5; el.value=INSI.def; IS.v=INSI.def; $('#insTitle').textContent=INSI.nm; $('#insCat').textContent=INSI.cat; $('#insGo').style.display=INSI.go?'':'none'; $('#insEq').innerHTML=INSI.eq;
+  $('#insInfo').innerHTML=`<div class="info-t">Principiul</div>${INSI.pr}<div class="kv2"><span>Domeniu</span><span>${INSI.rng}</span><span>Exactitate</span><span>${INSI.acc}</span><span>Răspuns</span><span>${INSI.tau}</span><span>Avantaje</span><span>${INSI.pro}</span><span>Limitări</span><span>${INSI.con}</span></div>`; insUpd(); }
+function insUpd(){ const T=+$('#insT').value; $('#v_insT').textContent=fmt(T,T%1?1:0)+' °C'; mkRO($('#roIns'),INSI.rd(T)); }
+function drawIns(t){ const cv=$('#cvIns'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,400); c.clearRect(0,0,w,h); c.fillStyle=P.canvasbg; c.fillRect(0,0,w,h); const T=+$('#insT').value; IS.v=(IS.v===undefined?T:IS.v)+(T-IS.v)*.12; INSI.draw(c,w,h,IS.v,t); }
+
+/* ======================================================================
+   Desen comun al băii / cuptorului de etalonare
+   ====================================================================== */
+function drawBath(cv,B,cfg,t){
+  const {c,w,h}=fitCanvas(cv,cfg.h||420); c.clearRect(0,0,w,h); c.fillStyle=P.canvasbg; c.fillRect(0,0,w,h);
+  const m=B.m, x0=w*.04, tw=w*.52, ty=h*.38, th=h*.54, fur=m.kind==='fur';
+  tx(c,m.n,x0,13,13.5,P.ink2,'left',600);
+  if(!fur){
+    c.fillStyle=P.panel2; c.strokeStyle=P.steeld; c.lineWidth=2.5; rrect(c,x0,ty,tw,th,10); c.fill(); c.stroke();
+    const lvl=ty+th*.12; c.save(); rrect(c,x0+3,ty+3,tw-6,th-6,8); c.clip();
+    c.fillStyle=liqCol(B.T); c.beginPath(); c.moveTo(x0,lvl); for(let q=0;q<=tw;q+=6) c.lineTo(x0+q,lvl+Math.sin(q/14+t*2)*1.4); c.lineTo(x0+tw,ty+th); c.lineTo(x0,ty+th); c.fill();
+    const hf=B.heating(); c.strokeStyle=hf>.02?`rgba(224,86,30,${.35+.65*hf})`:P.steeld; c.lineWidth=3; c.beginPath(); for(let q=0;q<=24;q++){ const X=x0+16+(tw-32)*q/24, Y=ty+th-16+(q%2?5:-5); if(q) c.lineTo(X,Y); else c.moveTo(X,Y); } c.stroke();
+    if(B.id==='apa'&&B.T>80){ c.fillStyle='rgba(255,255,255,.55)'; for(let i=0;i<16;i++){ const ph=(t*.5+i*.137)%1; c.beginPath(); c.arc(x0+14+((i*53)%100)/100*(tw-28),ty+th-20-ph*th*.75,2+(i%3),0,7); c.fill(); } }
+    c.restore();
+    const sx=x0+tw*(cfg.sx||.9), sy=ty+th*.72; c.strokeStyle=P.steeld; c.lineWidth=4; c.beginPath(); c.moveTo(sx,h*.1); c.lineTo(sx,sy); c.stroke(); c.fillStyle=P.ink; c.fillRect(sx-8,h*.07,16,14);
+    c.fillStyle=P.steeld; c.beginPath(); c.ellipse(sx,sy,16*Math.abs(Math.cos(t*9))+2,3.5,0,0,7); c.fill(); tx(c,'agitator',sx,h*.05,11.5,P.ink2,'center');
+  } else {
+    c.fillStyle='#5a4b43'; rrect(c,x0,ty-6,tw,th+6,10); c.fill(); c.strokeStyle='#2c231e'; c.lineWidth=2.5; c.stroke();
+    const g=glow(B.T), bx=x0+tw*.34, bw=tw*.32; c.fillStyle=g?rgb(g):'#2b2420'; rrect(c,bx,ty+6,bw,th-14,8); c.fill();
+    if(g){ const gr=c.createRadialGradient(bx+bw/2,ty+th*.5,5,bx+bw/2,ty+th*.5,tw*.5); gr.addColorStop(0,rgb(g,.35)); gr.addColorStop(1,rgb(g,0)); c.fillStyle=gr; c.fillRect(x0,ty-6,tw,th+6); }
+    const hf=B.heating(); c.strokeStyle=hf>.02?`rgba(255,150,60,${.4+.6*hf})`:'rgba(255,255,255,.18)'; c.lineWidth=3; for(let i=0;i<9;i++){ const Y=ty+16+i*(th-34)/8; c.beginPath(); c.moveTo(x0+12,Y); c.lineTo(bx-8,Y); c.moveTo(bx+bw+8,Y); c.lineTo(x0+tw-12,Y); c.stroke(); }
+    tx(c,'tub ceramic cu bloc izoterm',x0+tw/2,ty+th+12,12,P.ink2,'center'); }
+  const rodEnd=ty+th*(fur?.8:.7);
+  (cfg.probes||[]).forEach(p=>{ const px=w*p.x, hy=h*.15; tx(c,p.label,px,h*.095,12.5,P.ink,'center',600); if(p.label2) tx(c,p.label2,px,h*.095+13,11,P.ink2,'center');
+    if(p.kind==='lig'){ c.fillStyle='rgba(200,215,230,.35)'; c.strokeStyle=P.steeld; c.lineWidth=1.6; rrect(c,px-6,hy,12,rodEnd-hy+6,6); c.fill(); c.stroke(); const L=rodEnd-hy-4, yT=rodEnd-L*clamp(p.frac,.04,1); c.fillStyle='#9fb0bf'; c.fillRect(px-2,yT,4,rodEnd-yT+3); c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(px-1,yT,1.2,rodEnd-yT); for(let q=0;q<=20;q++){ const Y=rodEnd-L*q/20; c.strokeStyle=P.ink2; c.lineWidth=.7; c.beginPath(); c.moveTo(px+7,Y); c.lineTo(px+(q%5?10:13),Y); c.stroke(); } }
+    else { c.fillStyle=P.steel; c.strokeStyle=P.steeld; c.lineWidth=1.3; rrect(c,px-4,hy+18,8,rodEnd-hy-18,3); c.fill(); c.stroke();
+      if(p.kind==='bim'){ c.fillStyle=P.panel; c.strokeStyle=P.steeld; c.lineWidth=2.5; c.beginPath(); c.arc(px,hy+8,17,0,7); c.fill(); c.stroke(); const a=Math.PI*.75+Math.PI*1.5*clamp(p.frac,0,1); c.strokeStyle=P.alert; c.lineWidth=2; c.beginPath(); c.moveTo(px,hy+8); c.lineTo(px+Math.cos(a)*13,hy+8+Math.sin(a)*13); c.stroke(); }
+      else { c.fillStyle='#20303D'; rrect(c,px-18,hy-4,36,24,4); c.fill(); if(p.txt) txc(c,p.txt,px,hy+8,13,'#7CFC9A','center'); }
+      if(p.kind==='tc'){ c.lineWidth=2; c.strokeStyle='#d33'; c.beginPath(); c.moveTo(px-1.5,hy+22); c.lineTo(px-1.5,hy+2); c.stroke(); c.strokeStyle=P.blue; c.beginPath(); c.moveTo(px+1.5,hy+22); c.lineTo(px+1.5,hy+2); c.stroke(); } }
+    const gl=glow(B.T); c.fillStyle=p.kind==='tc'&&gl?rgb(gl):P.fueldeep; c.beginPath(); c.arc(px,rodEnd+2,5,0,7); c.fill();
+    if(cfg.cable){ c.strokeStyle=p.col||P.ink2; c.lineWidth=1.6; c.beginPath(); c.moveTo(px+(p.kind==='lig'?0:18),hy+8); c.bezierCurveTo(px+40,h*.02,w*cfg.cable[0]-40,cfg.cable[1]*h-40,w*cfg.cable[0],cfg.cable[1]*h); c.stroke(); } });
+  const px0=w*(cfg.px||.66), pw=w*(cfg.pw||.31); (cfg.disp||[]).forEach((d,i)=>{ const y=h*.1+i*h*.15; tx(c,d.l,px0,y-4,12.5,P.ink2); c.fillStyle='#0f1c14'; rrect(c,px0,y+2,pw,34,6); c.fill(); txc(c,d.v,px0+pw-10,y+20,24,'#7CFC9A','right'); });
+  const st=B.stable(), sy=h*.1+(cfg.disp||[]).length*h*.15+4; c.fillStyle=st?P.ok:(B.heating()>.02||B.r<-.02?P.fuel:P.muted); c.beginPath(); c.arc(px0+6,sy+8,6,0,7); c.fill();
+  tx(c,st?'stabilizată':(B.r>.02?'se încălzește …':B.r<-.02?'se răcește …':'în așteptare'),px0+18,sy+8,13,P.ink);
+  tx(c,'Impus: '+fmt(B.Ts,2)+' °C',px0,sy+30,12.5,P.ink2); tx(c,'Baia: '+fmt(B.T,3)+' °C',px0,sy+48,12.5,P.ink2);
+}
+
+/* ======================================================================
+   3. Etalonarea unui termometru prin comparare
+   ====================================================================== */
+const DUTS={
+ lig:{n:'Termometru cu mercur în sticlă (div. 0,1 °C)',s:'termometru Hg',rg:[-10,110],res:.05,ema:()=>.3,sd:.02,hy:0,kind:'lig',
+  err:(T,s)=>{ const r=mulberry32(s*31+1); const a=(r()*2-1)*.22,b=(r()*2-1)*.15,q=(r()*2-1)*.06,p=r()*6.28; return a+b*(T-50)/50+q*Math.sin(T/8+p); }},
+ pt:{n:'Termometru digital cu Pt100 (clasa B)',s:'termometru Pt100',rg:[-50,300],res:.01,ema:T=>.3+.005*Math.abs(T),sd:.006,hy:0,kind:'dig',
+  err:(T,s)=>{ const r=mulberry32(s*37+2); return (r()*2-1)*.12+(r()*2-1)*.0015*T; }},
+ bim:{n:'Termometru bimetalic cu cadran (div. 1 °C)',s:'termometru bimetalic',rg:[0,160],res:.5,ema:()=>2,sd:.15,hy:.4,kind:'bim',
+  err:(T,s)=>{ const r=mulberry32(s*41+3); return (r()*2-1)*1+(r()*2-1)*1.2*(T-80)/80; }},
+ ntc:{n:'Termometru digital cu termistor NTC',s:'termometru NTC',rg:[-20,120],res:.1,ema:()=>.5,sd:.03,hy:0,kind:'dig',
+  err:(T,s)=>{ const r=mulberry32(s*43+4); return (r()*2-1)*.15+(r()*2-1)*.35*Math.pow((T-25)/60,2); }}};
+const REFS={'0.02':'Etalon Pt100, U = 0,02 °C (k = 2)','0.05':'Etalon Pt100 industrial, U = 0,05 °C (k = 2)','0.005':'Etalon SPRT + punte, U = 0,005 °C (k = 2)'};
+const CTS={med:'apa',dut:'lig',ref:.02,seed:4,rows:[],auto:null,spd:20,last:null};
+const BT=new Bath('apa');
+function ctRange(med=CTS.med,dut=CTS.dut){ const m=MED[med], d=DUTS[dut].rg; const lo=Math.max(m.lo,d[0]), hi=Math.min(m.hi,d[1]); return hi-lo>=10?[lo,hi]:null; }
+function ctApply(newMed){ let r=ctRange(); if(!r){ const alt=['apa','ulei'].find(k=>ctRange(k,CTS.dut)); CTS.med=alt; $('#ctMed').value=alt; r=ctRange(); toast('Domeniul termometrului nu se acoperă cu mediul ales; s-a schimbat mediul'); newMed=true; }
+  if(newMed) BT.setMed(CTS.med); const el=$('#ctT'); el.min=Math.ceil(r[0]); el.max=Math.floor(r[1]); el.step=.5; const v=clamp(+el.value||r[0],r[0],r[1]); el.value=v; BT.setpoint(v); $('#v_ctT').textContent=fmt(v,1)+' °C'; ctUpdate(); }
+function ctSample(){ const D=DUTS[CTS.dut], Tt=BT.T+gauss(Math.random)*BT.m.fl*.7, ref=Tt+gauss(Math.random)*.003, xt=Tt+BT.m.unif*.5;
+  let x=xt+D.err(xt,CTS.seed)+(D.hy?D.hy*.5*(BT.dir||0):0)+gauss(Math.random)*D.sd; x=Math.round(x/D.res)*D.res; return [ref,x]; }
+function ctRecord(quiet){ if(!BT.stable()){ if(!quiet) toast('Baia nu este stabilizată — așteptați LED-ul verde'); return false; }
+  const D=DUTS[CTS.dut], n=5, rs=[], xs=[]; for(let i=0;i<n;i++){ const [r,x]=ctSample(); rs.push(r); xs.push(x); }
+  const Tr=mean(rs)+gauss(Math.random)*CTS.ref/4, Td=mean(xs), s=stdev(xs), C=Tr-Td;
+  const comp=[['Etalon (certificat)','normală',CTS.ref/2],['Uniformitatea băii','dreptunghiulară',BT.m.unif/Math.sqrt(3)],['Stabilitatea băii','sinusoidală',BT.m.fl/Math.sqrt(2)],['Rezoluția termometrului','dreptunghiulară',D.res/Math.sqrt(12)],['Repetabilitatea (s/√n)','normală, tip A',s/Math.sqrt(n)],['Histerezis','dreptunghiulară',D.hy/Math.sqrt(3)]];
+  const uc=Math.sqrt(comp.reduce((a,q)=>a+q[2]*q[2],0)), U=2*uc, ema=D.ema(Td); const row={Tr,Td,s,C,U,uc,ema,ok:Math.abs(C)+U<=ema,comp,n};
+  CTS.rows.push(row); CTS.rows.sort((a,b)=>a.Tr-b.Tr); CTS.last=row; ctTables(); ctCharts(); renderRef(); return true; }
+function ctTable(){ return {head:['Nr.','t<sub>et</sub> [°C]','t<sub>x</sub> [°C]','s [°C]','C = t<sub>et</sub> − t<sub>x</sub> [°C]','U (k = 2) [°C]','EMA [°C]','Verdict'],left:[],
+  rows:CTS.rows.map((r,i)=>[String(i+1),fmt(r.Tr,3),fmt(r.Td,2),fmt(r.s,3),sgn(r.C),fmt(r.U,3),'±'+fmt(r.ema,2),r.ok?'<span class="tag ok">conform</span>':'<span class="tag bad">neconform</span>'])}; }
+function budTable(){ const r=CTS.last; if(!r) return {head:['Componenta','Distribuția','u [°C]'],left:[0,1],rows:[['— nu există încă puncte înregistrate —','','']]};
+  return {head:['Componenta','Distribuția','u [°C]'],left:[0,1],rows:r.comp.map(q=>[q[0],q[1],fmt(q[2],4)]),foot:['Incertitudinea tip combinată u<sub>c</sub> / extinsă U (k = 2)','',fmt(r.uc,4)+' / '+fmt(r.U,3)]}; }
+function ctFit(){ if(CTS.rows.length<2) return null; const xs=CTS.rows.map(r=>r.Td), ys=CTS.rows.map(r=>r.C); if(Math.max(...xs)-Math.min(...xs)<1e-6) return null; return linreg(xs,ys); }
+function ctTables(){ buildTable($('#tblCT'),ctTable()); buildTable($('#tblBud'),budTable()); const f=ctFit(); $('#ctEq').innerHTML=f?`Curba de corecție (regresie liniară):<br><b>C(t) = ${sci(f.a)} ${f.b<0?'−':'+'} ${sci(Math.abs(f.b))}·t</b> [°C]<br>R² = ${fmt(f.r2,4)} ; n = ${CTS.rows.length}`:'Curba de corecție: C(t) = c<sub>0</sub> + c<sub>1</sub>·t<br><span class="small">Înregistrați cel puțin 2 puncte.</span>'; }
+function ctCharts(){ const r=ctRange()||[0,100], D=DUTS[CTS.dut], rows=CTS.rows, xs=rows.map(q=>q.Td), ys=rows.map(q=>q.C), es=rows.map(q=>q.U);
+  const tt=lin(r[0],r[1],24), em=tt.map(T=>D.ema(T)); const ym=Math.max(...em,...rows.map(q=>Math.abs(q.C)+q.U))*1.18, f=ctFit();
+  const ser=[{x:tt,y:em,color:'--alert',dash:[6,4],lw:1.4,name:'± EMA'},{x:tt,y:em.map(v=>-v),color:'--alert',dash:[6,4],lw:1.4}];
+  if(f) ser.push({x:[r[0],r[1]],y:[f.a+f.b*r[0],f.a+f.b*r[1]],color:'--blue',lw:2,name:'C(t) — regresie liniară'});
+  ser.push({x:xs,y:ys,color:'--fuel-deep',pointsOnly:true,markers:'o',name:'C ± U (k = 2)'});
+  const cv=$('#chCT1'); plot(cv,{height:340,series:ser,xmin:r[0],xmax:r[1],ymin:-ym,ymax:ym,xlabel:'Indicația termometrului t [°C]',ylabel:'Corecția C [°C]',hlines:[{y:0,color:'--muted'}]}); errBars(cv,xs,ys,es,css('--fuel-deep'));
+  const s2=[{x:[r[0],r[1]],y:[r[0],r[1]],color:'--muted',dash:[5,4],lw:1.3,name:'indicație ideală'},{x:rows.map(q=>q.Tr),y:xs,color:'--fuel-deep',pointsOnly:true,markers:'o',name:'termometrul etalonat'}];
+  plot($('#chCT2'),{height:340,series:s2,xmin:r[0],xmax:r[1],ymin:r[0]-ym*.5,ymax:r[1]+ym*.5,xlabel:'Temperatura etalonului t_et [°C]',ylabel:'Indicația t_x [°C]',legendBR:true}); }
+function ctUpdate(){ const D=DUTS[CTS.dut]; $('#ctTag').textContent=D.s; ctTables(); ctCharts(); }
+let CTLU=0;
+function ctLive(){ const D=DUTS[CTS.dut]; const [rf,x]=ctSample(); const e=x-rf; mkRO($('#roCT'),[['Temperatura băii',fmt(BT.T,3)+' °C'],['Valoarea impusă',fmt(BT.Ts,2)+' °C'],['Etalon (live)',fmt(rf,3)+' °C',1],['Termometrul etalonat (live)',fmt(x,D.res<.02?2:D.res<.1?2:1)+' °C',1],['Eroarea instantanee t<sub>x</sub> − t<sub>et</sub>',sgn(e)+' °C'],['Stabilitate',(BT.stable()?'<span class="tag ok">stabilă</span>':'<span class="tag">instabilă</span>')],['Puncte înregistrate',String(CTS.rows.length)]]); }
+function ctDraw(t){ const D=DUTS[CTS.dut], r=ctRange()||[0,100], [rf,x]=[BT.T+BT.fl(),BT.T+BT.fl()+BT.m.unif*.5+D.err(BT.T,CTS.seed)];
+  const frac=clamp((x-r[0])/(r[1]-r[0]),0,1);
+  drawBath($('#cvCT'),BT,{h:420,px:.66,pw:.31,probes:[{x:.16,kind:'dig',label:'etalon Pt100',txt:fmt(rf,3),col:P.blue},{x:.36,kind:D.kind,label:D.s,frac:(x-D.rg[0])/(D.rg[1]-D.rg[0]),txt:fmt(x,D.res<.1?2:1),col:P.fueldeep}],
+    disp:[{l:'Etalon [°C]',v:fmt(rf,3)},{l:'Etalonat [°C]',v:fmt(x,D.res<.1?2:1)}]},t); }
+function ctAutoStart(){ const r=ctRange(); const pts=Array.from({length:6},(_,i)=>Math.round((r[0]+(r[1]-r[0])*(.08+.168*i))*2)/2); CTS.auto={pts,i:0}; BT.setpoint(pts[0]); $('#ctT').value=pts[0]; $('#v_ctT').textContent=fmt(pts[0],1)+' °C'; $('#ctAuto').textContent='Oprește secvența'; toast('Secvență automată: 6 puncte'); }
+function ctAutoTick(){ const a=CTS.auto; if(!a||!BT.stable()) return; if(ctRecord(true)){ a.i++; if(a.i>=a.pts.length){ CTS.auto=null; $('#ctAuto').textContent='Secvență automată'; toast('Secvența s-a încheiat'); } else { BT.setpoint(a.pts[a.i]); $('#ctT').value=a.pts[a.i]; $('#v_ctT').textContent=fmt(a.pts[a.i],1)+' °C'; } } }
+function ctInit(){
+  fillSel($('#ctMed'),[['apa',MED.apa.n+' (0 … 95 °C)'],['ulei',MED.ulei.n+' (30 … 300 °C)']],CTS.med);
+  fillSel($('#ctDut'),Object.keys(DUTS).map(k=>[k,DUTS[k].n]),CTS.dut); fillSel($('#ctRef'),Object.keys(REFS).map(k=>[k,REFS[k]]),'0.02');
+  $('#ctlCT').innerHTML=rngHTML('ctSeed','Exemplarul termometrului (seria)',1,9,1,CTS.seed)+rngHTML('ctT','Valoarea impusă a băii',0,100,.5,25)+rngHTML('ctSpd','Viteza simulării',1,100,1,CTS.spd,'Timpul simulat trece mai repede decât cel real.');
+  bind('ctSeed',v=>'nr. '+v,()=>{ CTS.seed=+$('#ctSeed').value; CTS.rows=[]; CTS.last=null; ctUpdate(); renderRef(); }); bind('ctSpd',v=>'×'+v,()=>CTS.spd=+$('#ctSpd').value);
+  bind('ctT',v=>fmt(v,1)+' °C',()=>{ if(CTS.auto){ CTS.auto=null; $('#ctAuto').textContent='Secvență automată'; } BT.setpoint(+$('#ctT').value); });
+  $('#ctMed').onchange=e=>{ CTS.med=e.target.value; CTS.rows=[]; CTS.last=null; ctApply(true); renderRef(); };
+  $('#ctDut').onchange=e=>{ CTS.dut=e.target.value; CTS.rows=[]; CTS.last=null; ctApply(false); renderRef(); };
+  $('#ctRef').onchange=e=>{ CTS.ref=+e.target.value; CTS.rows=[]; CTS.last=null; ctUpdate(); renderRef(); };
+  $('#ctRec').onclick=()=>ctRecord(false); $('#ctAuto').onclick=()=>{ if(CTS.auto){ CTS.auto=null; $('#ctAuto').textContent='Secvență automată'; } else ctAutoStart(); };
+  $('#ctClr').onclick=()=>{ CTS.rows=[]; CTS.last=null; ctUpdate(); renderRef(); };
+  $('#ctMsg').textContent='Procedura: se așteaptă LED-ul verde (temperatură stabilizată), apoi se înregistrează punctul; la fiecare punct se fac 5 citiri simultane la etalon și la termometrul de etalonat.';
+  ctApply(true); }
+
+/* ======================================================================
+   4. Etalonarea unui termocuplu
+   ====================================================================== */
+const TCS={type:'K',med:'ulei',cls:2,seed:3,cj:'ice',amb:23,deg:2,rows:[],auto:null,spd:25,last:null,fit:null,cjErr:.2,live:{ref:22,V:0,Ec:0}};
+const BC=new Bath('ulei');
+function tcRange(ty=TCS.type,med=TCS.med){ const d=TCD[ty], m=MED[med]; const lo=Math.max(d.lo,m.lo), hi=Math.min(d.hi,m.hi); return hi-lo>=20?[lo,hi]:null; }
+function tcSample(){ const ty=TCS.type, Tt=BC.T+gauss(Math.random)*BC.m.fl*.7, ref=Tt+gauss(Math.random)*.004, Tx=Tt+BC.m.unif*.5;
+  const err=specErr(ty,TCS.cls,TCS.seed,Tx)*seeb(ty,Tx)/1000; const Tcj=TCS.cj==='ice'?0:TCS.amb;
+  const V=Math.round((emf(ty,Tx)+err-emf(ty,Tcj)+gauss(Math.random)*.0015)*1000)/1000; const Ec=TCS.cj==='cjc'?V+emf(ty,TCS.amb+TCS.cjErr):V; return {ref,V,Ec}; }
+function tcRecord(quiet){ if(!BC.stable()){ if(!quiet) toast('Mediul nu este stabilizat — așteptați LED-ul verde'); return false; }
+  const s=[]; for(let i=0;i<5;i++) s.push(tcSample()); const Tr=mean(s.map(q=>q.ref))+gauss(Math.random)*.006, V=mean(s.map(q=>q.V)), Ec=mean(s.map(q=>q.Ec));
+  const ty=TCS.type, En=emf(ty,Tr), dE=(Ec-En)*1000, dT=dE/seeb(ty,Tr), tol=tolC(ty,TCS.cls,Tr); TCS.rows.push({Tr,V,Ec,En,dE,dT,tol,ok:Math.abs(dT)<=tol}); TCS.rows.sort((a,b)=>a.Tr-b.Tr); TCS.last=TCS.rows[TCS.rows.length-1];
+  tcUpdate(); renderRef(); return true; }
+function tcFitCalc(){ const R=TCS.rows, n=R.length; if(n<2) return null; const deg=Math.min(TCS.deg,n-1); const xs=R.map(r=>r.Tr); if(Math.max(...xs)-Math.min(...xs)<1) return null;
+  const fE=polyfit(xs,R.map(r=>r.Ec),deg), fT=polyfit(R.map(r=>r.Ec),xs,deg); const r=tcRange()||[0,100]; let mx=0; lin(r[0],r[1],60).forEach(T=>{ const d=Math.abs((pv_(fE.a,T)-emf(TCS.type,T))/seeb(TCS.type,T)*1000); if(d>mx) mx=d; }); return {fE,fT,deg,mx,n}; }
+function tcTable(){ return {head:['Nr.','t<sub>et</sub> [°C]','U<sub>borne</sub> [mV]','E<sub>0</sub> [mV]','E<sub>ITS-90</sub> [mV]','ΔE [µV]','Δt [°C]','± tol. [°C]','Verdict'],left:[],
+  rows:TCS.rows.map((r,i)=>[String(i+1),fmt(r.Tr,3),fmt(r.V,3),fmt(r.Ec,3),fmt(r.En,3),fmt(r.dE,1),sgnd(r.dT,2),'±'+fmt(r.tol,2),r.ok?'<span class="tag ok">în clasă</span>':'<span class="tag bad">în afara clasei</span>'])}; }
+function fitTable(){ const F=TCS.fit, ty=TCS.type, rows=[['Termocuplul / clasa',TCD[ty].nm+' / clasa '+TCS.cls,'toleranță '+tolTxt(ty,TCS.cls)]];
+  if(!F){ rows.push(['Curba de etalonare','—','sunt necesare cel puțin 2 puncte']); return {head:['Mărimea','Valoarea','Observație'],left:[0,1,2],rows}; }
+  rows.push(['Gradul polinomului',String(F.deg),F.deg<TCS.deg?'redus la n − 1 (puncte insuficiente)':'ales de utilizator']); F.fE.a.forEach((v,i)=>rows.push([`a<sub>${i}</sub> (E = Σ a<sub>i</sub>·t<sup>i</sup>)`,sci(v,5),i===0?'mV':'mV/°C'+(i>1?'<sup>'+i+'</sup>':'')])); F.fT.a.forEach((v,i)=>rows.push([`b<sub>${i}</sub> (t = Σ b<sub>i</sub>·E<sup>i</sup>)`,sci(v,5),i===0?'°C':'°C/mV'+(i>1?'<sup>'+i+'</sup>':'')]));
+  rows.push(['R² (curba E = f(t))',fmt(F.fE.r2,7),'']); rows.push(['Abaterea medie pătratică',fmt(F.fE.rms*1000,2)+' µV','n = '+F.n]); rows.push(['Abaterea maximă față de ITS-90 pe domeniu',fmt(F.mx,2)+' °C','curba ajustată vs. tabelul de referință']);
+  const r=tcRange(); rows.push(['Coeficientul Seebeck mediu',fmt((pv_(F.fE.a,r[1])-pv_(F.fE.a,r[0]))/(r[1]-r[0])*1000,2)+' µV/°C','pe domeniul măsurat']); return {head:['Mărimea','Valoarea','Observație'],left:[0,1,2],rows}; }
+function refTable(){ const d=TCD[TCS.type]; const T=lin(d.lo,d.hi,14).map(v=>Math.round(v/10)*10); return {head:['t [°C]','E [mV]','S [µV/°C]','Toleranță cl. 1 [± °C]','Toleranță cl. 2 [± °C]'],left:[],rows:T.map(t=>[fmt(t,0),fmt(emf(TCS.type,t),3),fmt(seeb(TCS.type,t),1),fmt(tolC(TCS.type,1,t),2),fmt(tolC(TCS.type,2,t),2)])}; }
+function tcEqHTML(){ const F=TCS.fit; if(!F) return 'Curba de etalonare: E(t) = Σ a<sub>i</sub>·t<sup>i</sup> [mV]<br><span class="small">Înregistrați cel puțin 2 puncte pentru a obține ecuația.</span>';
+  return `<b>Curba de etalonare (grad ${F.deg}):</b><br>E(t) = ${polyStr(F.fE.a,'t')} &nbsp;[mV]<br>R² = ${fmt(F.fE.r2,7)} ; σ = ${fmt(F.fE.rms*1000,2)} µV<br><b>Curba inversă:</b><br>t(E) = ${polyStr(F.fT.a,'E')} &nbsp;[°C]`; }
+function tcTables(){ TCS.fit=tcFitCalc(); buildTable($('#tblTC'),tcTable()); buildTable($('#tblFit'),fitTable()); buildTable($('#tblRefTC'),refTable()); $('#tcEq').innerHTML=tcEqHTML(); }
+function tcCharts(){ const ty=TCS.type, r=tcRange()||[0,100], R=TCS.rows, F=TCS.fit, tt=lin(r[0],r[1],70), col=tcColCur();
+  const s1=[{x:tt,y:tt.map(T=>emf(ty,T)),color:'--muted',dash:[6,4],lw:1.6,name:'ITS-90 (IEC 60584-1)'}]; if(F) s1.push({x:tt,y:tt.map(T=>pv_(F.fE.a,T)),color:'--blue',lw:2,name:'curba de etalonare (ajustată)'}); s1.push({x:R.map(q=>q.Tr),y:R.map(q=>q.Ec),color:'--fuel-deep',pointsOnly:true,markers:'o',name:'puncte măsurate'});
+  plot($('#chTC1'),{height:340,series:s1,xmin:r[0],xmax:r[1],xlabel:'Temperatura t [°C]',ylabel:'Tensiunea E [mV]',legendLeft:true});
+  const tl=tt.map(T=>tolC(ty,1,T)), t2=tt.map(T=>tolC(ty,2,T)); const mxd=Math.max(...t2,...R.map(q=>Math.abs(q.dT)))*1.15;
+  const s2=[{x:tt,y:t2,color:'--alert',dash:[6,4],lw:1.3,name:'± toleranța clasei 2'},{x:tt,y:t2.map(v=>-v),color:'--alert',dash:[6,4],lw:1.3},{x:tt,y:tl,color:'--ok',dash:[3,3],lw:1.3,name:'± toleranța clasei 1'},{x:tt,y:tl.map(v=>-v),color:'--ok',dash:[3,3],lw:1.3}];
+  if(F) s2.push({x:tt,y:tt.map(T=>(pv_(F.fE.a,T)-emf(ty,T))/seeb(ty,T)*1000),color:'--blue',lw:2,name:'curba ajustată − ITS-90'}); s2.push({x:R.map(q=>q.Tr),y:R.map(q=>q.dT),color:'--fuel-deep',pointsOnly:true,markers:'o',name:'Δt măsurat'});
+  plot($('#chTC2'),{height:340,series:s2,xmin:r[0],xmax:r[1],ymin:-mxd,ymax:mxd,xlabel:'Temperatura t [°C]',ylabel:'Abaterea Δt [°C]',legendBR:true,hlines:[{y:0,color:'--muted'}]});
+  const s3=[{x:tt,y:tt.map(T=>seeb(ty,T)),color:'--muted',dash:[6,4],lw:1.6,name:'S ITS-90'}]; if(F) s3.push({x:tt,y:tt.map(T=>dpv_(F.fE.a,T)*1000),color:'--blue',lw:2,name:'S din curba ajustată'});
+  plot($('#chTC3'),{height:340,series:s3,xmin:r[0],xmax:r[1],xlabel:'Temperatura t [°C]',ylabel:'S = dE/dt [µV/°C]',legendBR:true});
+  plot($('#chTC4'),{height:340,series:TCK.map(k=>{ const d=TCD[k], x=lin(d.lo,d.hi,90); return {x,y:x.map(T=>emf(k,T)),color:d.col,lw:k===ty?3.4:1.6,name:k}; }),xmin:-200,xmax:1800,xlabel:'Temperatura t [°C]',ylabel:'Tensiunea E [mV] (ref. 0 °C)',legendLeft:true}); }
+const tcColCur=()=>tcColor(TCS.type); function tcColor(k){ return tcCol(k); }
+function tcUpdate(){ $('#tcTag').textContent='tip '+TCS.type; tcTables(); tcCharts(); }
+let TCLU=0;
+function tcLive(){ const L=TCS.live=tcSample(), ty=TCS.type, F=TCS.fit; const Tind=F?pv_(F.fT.a,L.Ec):emfInv(ty,L.Ec); const Tcj=TCS.cj==='ice'?0:TCS.amb;
+  mkRO($('#roTC'),[['Temperatura etalon',fmt(L.ref,3)+' °C'],['Joncțiunea de referință',fmt(Tcj,1)+' °C'+(TCS.cj==='ice'?' (gheață)':TCS.cj==='cjc'?' (compensată)':' (necompensată)')],['Tensiunea la borne U',fmt(L.V,3)+' mV',1],['Tensiunea referită la 0 °C',fmt(L.Ec,3)+' mV'],['Valoarea ITS-90 E(t)',fmt(emf(ty,L.ref),3)+' mV'],['Abaterea ΔE',sgnd((L.Ec-emf(ty,L.ref))*1000,1)+' µV'],['Temperatura indicată',fmt(Tind,2)+' °C',1],['Eroarea de indicație',sgnd(Tind-L.ref,2)+' °C'],['Coeficientul Seebeck S',fmt(seeb(ty,L.ref),1)+' µV/°C'],['Stabilitate',BC.stable()?'<span class="tag ok">stabilă</span>':'<span class="tag">instabilă</span>']]); }
+function tcDraw(t){ const cv=$('#cvTC'), ty=TCS.type, L=TCS.live; drawBath(cv,BC,{h:440,px:.77,pw:.21,sx:.1,probes:[{x:.27,kind:'dig',label:'etalon Pt100',txt:fmt(L.ref,2)},{x:.43,kind:'tc',label:'termocuplu '+ty,label2:TCD[ty].pos.split(' ')[0]+' (+) / '+TCD[ty].neg.split(' ')[0]+' (−)'}],disp:[{l:'Tensiunea la borne [mV]',v:fmt(L.V,3)},{l:'Etalon Pt100 [°C]',v:fmt(L.ref,3)}]},t);
+  const c=cv.getContext('2d'), w=cv.clientWidth, h=440, dx=w*.585, dw=w*.145, dy=h*.38, dh=h*.34; const hx=w*.43+18, hy=h*.15+8;
+  c.lineWidth=2.2; [[ '#d33',-2],[P.blue,2]].forEach(([col,o])=>{ c.strokeStyle=col; c.beginPath(); c.moveTo(hx,hy+o); c.bezierCurveTo(hx+60,h*.04,dx+dw*.4,dy-50,dx+dw*(.45+o*.04),dy+dh*.28); c.stroke(); });
+  c.fillStyle=P.panel2; c.strokeStyle=P.steeld; c.lineWidth=2.5; rrect(c,dx,dy,dw,dh,10); c.fill(); c.stroke();
+  if(TCS.cj==='ice'){ c.fillStyle='rgba(120,190,235,.35)'; c.fillRect(dx+3,dy+dh*.16,dw-6,dh*.82-3); c.fillStyle='rgba(255,255,255,.75)'; for(let i=0;i<9;i++){ rrect(c,dx+8+(i%3)*dw*.3,dy+dh*.5+Math.floor(i/3)*dh*.15+Math.sin(i+t)*0.6,dw*.2,dh*.11,3); c.fill(); } }
+  c.fillStyle='#20303D'; rrect(c,dx+dw*.28,dy+dh*.2,dw*.44,dh*.2,3); c.fill(); tx(c,'borne',dx+dw/2,dy+dh*.3,11.5,'#c9d6e0','center');
+  tx(c,'joncțiunea de referință:',dx+dw/2,dy+dh+14,12,P.ink2,'center'); tx(c,TCS.cj==='ice'?'0 °C (gheață + apă)':'borne la '+fmt(TCS.amb,0)+' °C',dx+dw/2,dy+dh+28,12,P.ink,'center',600);
+  c.strokeStyle='#c8761c'; c.lineWidth=2.2; [[.3,.12],[.7,.28]].forEach(([a,b])=>{ c.beginPath(); c.moveTo(dx+dw*a,dy+dh*.3); c.bezierCurveTo(dx+dw*a,dy-30,w*.75,h*.2,w*.77,h*.1+b*40); c.stroke(); });
+  tx(c,'conductoare de cupru',w*.755,dy+dh+14,11.5,'#c8761c','center'); }
+function tcAutoStart(){ const r=tcRange(); const pts=Array.from({length:7},(_,i)=>Math.round(r[0]+(r[1]-r[0])*(.05+.15*i))); TCS.auto={pts,i:0}; BC.setpoint(pts[0]); $('#tcT').value=pts[0]; $('#v_tcT').textContent=fmt(pts[0],0)+' °C'; $('#tcAuto').textContent='Oprește secvența'; toast('Secvență automată: 7 puncte'); }
+function tcAutoTick(){ const a=TCS.auto; if(!a||!BC.stable()) return; if(tcRecord(true)){ a.i++; if(a.i>=a.pts.length){ TCS.auto=null; $('#tcAuto').textContent='Secvență automată'; toast('Secvența s-a încheiat'); } else { BC.setpoint(a.pts[a.i]); $('#tcT').value=a.pts[a.i]; $('#v_tcT').textContent=fmt(a.pts[a.i],0)+' °C'; } } }
+function tcApply(newMed){ let r=tcRange(); if(!r){ const alt=Object.keys(MED).find(k=>tcRange(TCS.type,k)); TCS.med=alt; $('#tcMed').value=alt; r=tcRange(); newMed=true; toast('Mediul ales nu acoperă domeniul termocuplului; s-a ales '+MED[alt].n.toLowerCase()); }
+  $$('#tcMed option').forEach(o=>o.disabled=!tcRange(TCS.type,o.value)); if(newMed) BC.setMed(TCS.med); const el=$('#tcT'); el.min=Math.ceil(r[0]); el.max=Math.floor(r[1]); el.step=1; const v=clamp(+el.value||r[0],r[0],r[1]); el.value=v; BC.setpoint(v); $('#v_tcT').textContent=fmt(v,0)+' °C';
+  $('#tcMsg').innerHTML=`Domeniul măsurabil: <b>${fmt(r[0],0)} … ${fmt(r[1],0)} °C</b> (mediul ∩ tipul ales). Tolerața clasei ${TCS.cls}: ${tolTxt(TCS.type,TCS.cls)}.`; tcUpdate(); }
+function tcReset(){ TCS.rows=[]; TCS.last=null; TCS.auto=null; $('#tcAuto').textContent='Secvență automată'; }
+function tcInit(){
+  $('#tcTypes').innerHTML=TCK.map(k=>`<button data-t="${k}"${k===TCS.type?' class="on"':''} title="${TCD[k].nm}">${k}</button>`).join('');
+  fillSel($('#tcMed'),Object.keys(MED).map(k=>[k,`${MED[k].n} (${MED[k].lo} … ${MED[k].hi} °C)`]),TCS.med);
+  $('#ctlTC').innerHTML=rngHTML('tcSeed','Exemplarul termocuplului (seria)',1,9,1,TCS.seed)+rngHTML('tcAmb','Temperatura ambiantă a bornelor',15,35,.5,TCS.amb)+rngHTML('tcT','Temperatura lichidului / mediului',0,100,1,100)+rngHTML('tcDeg','Gradul polinomului de etalonare',1,4,1,TCS.deg)+rngHTML('tcSpd','Viteza simulării',1,100,1,TCS.spd);
+  bind('tcSeed',v=>'nr. '+v,()=>{ TCS.seed=+$('#tcSeed').value; tcReset(); tcUpdate(); renderRef(); }); bind('tcAmb',v=>fmt(v,1)+' °C',()=>{ TCS.amb=+$('#tcAmb').value; if(TCS.cj!=='ice'){ tcReset(); tcUpdate(); } });
+  bind('tcT',v=>fmt(v,0)+' °C',()=>{ if(TCS.auto){ TCS.auto=null; $('#tcAuto').textContent='Secvență automată'; } BC.setpoint(+$('#tcT').value); }); bind('tcDeg',v=>'grad '+v,()=>{ TCS.deg=+$('#tcDeg').value; tcUpdate(); renderRef(); }); bind('tcSpd',v=>'×'+v,()=>TCS.spd=+$('#tcSpd').value);
+  $$('#tcTypes button').forEach(b=>b.onclick=()=>{ TCS.type=b.dataset.t; $$('#tcTypes button').forEach(x=>x.classList.toggle('on',x===b)); tcReset(); tcApply(false); renderRef(); });
+  $('#tcMed').onchange=e=>{ TCS.med=e.target.value; tcReset(); tcApply(true); renderRef(); }; $('#tcCls').onchange=e=>{ TCS.cls=+e.target.value; tcReset(); tcApply(false); renderRef(); };
+  $('#tcCJ').onchange=e=>{ TCS.cj=e.target.value; tcReset(); tcUpdate(); renderRef(); };
+  $('#tcRec').onclick=()=>tcRecord(false); $('#tcAuto').onclick=()=>{ if(TCS.auto){ TCS.auto=null; $('#tcAuto').textContent='Secvență automată'; } else tcAutoStart(); }; $('#tcClr').onclick=()=>{ tcReset(); tcUpdate(); renderRef(); };
+  tcApply(true); }
+
+/* ======================================================================
+   5. Termistorul
+   ====================================================================== */
+const THM={
+ ntc10:{n:'NTC 10 kΩ (β = 3950 K)',k:'ntc',R25:1e4,B:3950,lo:-40,hi:150},
+ ntc100:{n:'NTC 100 kΩ (β = 4250 K)',k:'ntc',R25:1e5,B:4250,lo:-20,hi:200},
+ ntc2:{n:'NTC 2,2 kΩ (β = 3977 K)',k:'ntc',R25:2200,B:3977,lo:-40,hi:125},
+ kty:{n:'PTC silistor tip KTY (R₂₅ = 2 kΩ)',k:'ptc',R25:2000,lo:-50,hi:150},
+ ptcs:{n:'PTC ceramic de comutare (BaTiO₃, T_c = 120 °C)',k:'ptc',R25:200,lo:20,hi:180}};
+const GAM=3.0e4; // termen pătratic care face ca termistorul „real” să difere de modelul β
+const THS={id:'ntc10',T:25,Vs:5,lrs:4,del:2,self:true,sh:[0,25,100]};
+function thR(m,T){ if(m.k==='ntc'){ const x=1/(T+K0)-1/(25+K0); return m.R25*Math.exp(m.B*x+GAM*x*x); } if(m===THM.kty) return 2000*(1+7.88e-3*(T-25)+1.937e-5*(T-25)**2); return 200*(1+Math.pow(10,(T-120)/12)); }
+const thRb=(m,T)=>m.R25*Math.exp(m.B*(1/(T+K0)-1/(25+K0)));
+const thAlpha=(m,T)=>{ const d=.25; return (Math.log(thR(m,T+d))-Math.log(thR(m,T-d)))/(2*d); };
+function thSolve(m,Ta,Vs,Rs,del,self){ if(!self){ const R=thR(m,Ta), I=Vs/(Rs+R); return {Tb:Ta,R,I,P:I*I*R,run:false}; }
+  let Tb=Ta, run=false; for(let i=0;i<300;i++){ const R=thR(m,Tb), I=Vs/(Rs+R), Pw=I*I*R, Tn=Ta+Pw/(del*1e-3); if(Tn>m.hi+250){ run=true; Tb=m.hi+250; break; } Tb=.65*Tb+.35*Tn; }
+  const R=thR(m,Tb), I=Vs/(Rs+R); return {Tb,R,I,P:I*I*R,run}; }
+function shCoef(m,pts){ const L=pts.map(T=>Math.log(thR(m,T))), y=pts.map(T=>1/(T+K0)); const g2=(y[1]-y[0])/(L[1]-L[0]), g3=(y[2]-y[0])/(L[2]-L[0]); const C=(g3-g2)/(L[2]-L[1])/(L[0]+L[1]+L[2]); const B=g2-C*(L[0]*L[0]+L[0]*L[1]+L[1]*L[1]); const A=y[0]-(B+C*L[0]*L[0])*L[0]; return {A,B,C}; }
+const shT=(k,R)=>{ const l=Math.log(R); return 1/(k.A+k.B*l+k.C*l*l*l)-K0; };
+const bT=(m,R)=>1/(1/(25+K0)+Math.log(R/m.R25)/m.B)-K0;
+const thCur=()=>THM[THS.id], thRs=()=>Math.pow(10,THS.lrs);
+function thState(){ const m=thCur(), Rs=thRs(), S=thSolve(m,THS.T,THS.Vs,Rs,THS.del,THS.self), Vo=THS.Vs*Rs/(Rs+S.R); const Rm=Rs*(THS.Vs/Vo-1);
+  const sh=m.k==='ntc'?shCoef(m,THS.sh):null; return {m,Rs,S,Vo,Rm,sh,Tb:m.k==='ntc'?bT(m,Rm):null,Ts:sh?shT(sh,Rm):null}; }
+function thUpdate(){ const q=thState(), m=q.m; $('#thTag').textContent=m.k.toUpperCase();
+  const rows=[['Temperatura mediului T<sub>a</sub>',fmt(THS.T,1)+' °C'],['Temperatura corpului termistorului',fmt(q.S.Tb,2)+' °C'],['Rezistența termistorului R',fmtS(q.S.R,4)+' Ω',1],['Curentul prin divizor I',fmt(q.S.I*1000,3)+' mA'],['Puterea disipată P',fmt(q.S.P*1000,3)+' mW'],['Tensiunea de ieșire U<sub>ies</sub>',fmt(q.Vo,4)+' V',1],['Sensibilitatea α = (1/R)(dR/dt)',fmt(thAlpha(m,q.S.Tb)*100,2)+' %/°C']];
+  if(q.Tb!==null){ rows.push(['Temperatura din model β',fmt(q.Tb,2)+' °C (eroare '+sgnd(q.Tb-THS.T,2)+')']); rows.push(['Temperatura din Steinhart–Hart',fmt(q.Ts,2)+' °C (eroare '+sgnd(q.Ts-THS.T,2)+')',1]); }
+  mkRO($('#roTh'),rows); const b=q.sh?`Steinhart–Hart din 3 puncte (${THS.sh.join(' / ')} °C):<br>A = ${sci(q.sh.A,5)}<br>B = ${sci(q.sh.B,5)}<br>C = ${sci(q.sh.C,5)}<br>1/T = A + B·ln R + C·(ln R)³`:'Pentru PTC nu se aplică relația Steinhart–Hart; caracteristica este aproximativ liniară (silistor) sau cu salt la temperatura Curie (ceramic).';
+  $('#thEq').innerHTML=b+(q.S.run?'<div class="warnbar"><b>Alunecare termică:</b> autoîncălzirea nu mai are echilibru stabil (reduceți U<sub>s</sub> sau măriți R<sub>s</sub>).</div>':''); thTable(); thCharts(); renderRef(); }
+function thTableObj(){ const q=thState(), m=q.m, ntc=m.k==='ntc', T=lin(m.lo,m.hi,14).map(v=>Math.round(v/5)*5); const rows=T.map(t=>{ const R=thR(m,t), Vo=THS.Vs*q.Rs/(q.Rs+R), a=thAlpha(m,t)*100; const base=[fmt(t,0),fmtS(R,4),fmt(Vo,3),fmt(Math.abs(a),2)];
+    if(ntc) base.push(fmtS(thRb(m,t),4),sgnd(bT(m,R)-t,2),sgnd(shT(q.sh,R)-t,2)); return base; });
+  return {head:ntc?['t [°C]','R [Ω]','U<sub>ies</sub> [V]','|α| [%/°C]','R model β [Ω]','Eroare model β [°C]','Eroare Steinhart–Hart [°C]']:['t [°C]','R [Ω]','U<sub>ies</sub> [V]','|α| [%/°C]'],left:[],rows}; }
+function thTable(){ buildTable($('#tblTh'),thTableObj()); }
+function thCharts(){ const q=thState(), m=q.m, ntc=m.k==='ntc', T=lin(m.lo,m.hi,80), R=T.map(t=>thR(m,t)); const Rmin=Math.min(...R), Rmax=Math.max(...R);
+  const s1=[{x:T,y:R,color:'--fuel-deep',lw:2.2,name:'R reală'}]; if(ntc) s1.push({x:T,y:T.map(t=>thRb(m,t)),color:'--blue',dash:[6,4],lw:1.6,name:'model β'}); s1.push({x:[THS.T],y:[q.S.R],color:'--alert',pointsOnly:true,markers:'o',name:'punctul curent'});
+  plot($('#chTh1'),{height:330,series:s1,xmin:m.lo,xmax:m.hi,logy:true,ymin:Rmin*.7,ymax:Rmax*1.4,xlabel:'Temperatura t [°C]',ylabel:'Rezistența R [Ω] (scară logaritmică)',legendLeft:true});
+  const Rs=q.Rs, Vo=T.map((t,i)=>THS.Vs*Rs/(Rs+R[i])), al=T.map(t=>Math.abs(thAlpha(m,t))*100);
+  plot($('#chTh2'),{height:330,series:[{x:T,y:Vo,color:'--fuel-deep',lw:2.2,name:'U_ies [V]'},{x:T,y:al,color:'--teal',lw:2,axis:2,dash:[6,4],name:'|α| [%/°C]'}],y2:true,y2label:'|α| [%/°C]',xmin:m.lo,xmax:m.hi,ymin:0,ymax:THS.Vs*1.05,xlabel:'Temperatura t [°C]',ylabel:'Tensiunea de ieșire [V]',legendLeft:true});
+  if(ntc){ const x=T.map(t=>1000/(t+K0)), y=R.map(Math.log), f=linreg(x,y); const xs=[Math.min(...x),Math.max(...x)]; plot($('#chTh3'),{height:330,series:[{x,y,color:'--fuel-deep',lw:2.2,name:'ln R (real)'},{x:xs,y:xs.map(v=>f.a+f.b*v),color:'--blue',dash:[6,4],lw:1.6,name:`regresie: β = ${fmt(f.b*1000,0)} K, R² = ${fmt(f.r2,5)}`}],xmin:xs[0],xmax:xs[1],xlabel:'10³/T [K⁻¹]',ylabel:'ln R (R în Ω)',xticks:6,legendLeft:true}); }
+  else plot($('#chTh3'),{height:330,series:[{x:T,y:R,color:'--fuel-deep',lw:2.2,name:'R [Ω]'}],xmin:m.lo,xmax:m.hi,ymin:0,xlabel:'Temperatura t [°C]',ylabel:'Rezistența R [Ω] (scară liniară)'});
+  if(ntc){ plot($('#chTh4'),{height:330,series:[{x:T,y:T.map((t,i)=>bT(m,R[i])-t),color:'--blue',lw:2,name:'model β (2 parametri)'},{x:T,y:T.map((t,i)=>shT(q.sh,R[i])-t),color:'--ok',lw:2,name:'Steinhart–Hart (3 puncte)'}],xmin:m.lo,xmax:m.hi,xlabel:'Temperatura t [°C]',ylabel:'Eroarea de conversie [°C]',legendBR:true,hlines:[{y:0,color:'--muted'}],vlines:THS.sh.map(v=>({x:v,color:'--ok',label:v+' °C'}))}); }
+  else plot($('#chTh4'),{height:330,series:[{x:T,y:T.map(t=>thAlpha(m,t)*100),color:'--teal',lw:2.2,name:'α [%/°C]'}],xmin:m.lo,xmax:m.hi,ymin:0,xlabel:'Temperatura t [°C]',ylabel:'Sensibilitatea α [%/°C]'});
+  const Vv=lin(.5,12,40); plot($('#chTh5'),{height:330,series:[1,2,5,10].map((d,i)=>({x:Vv,y:Vv.map(v=>{ const s=thSolve(m,THS.T,v,Rs,d,true); return s.run?NaN:Math.min(s.Tb-THS.T,60); }),color:['--blue','--teal','--fuel-deep','--alert'][i],lw:2,name:`δ = ${d} mW/K`})),xmin:.5,xmax:12,ymin:0,xlabel:'Tensiunea de alimentare U_s [V]',ylabel:'Autoîncălzirea ΔT [°C] (limitat la 60)',legendLeft:true}); }
+function drawTh(t){ const cv=$('#cvTh'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,400); c.clearRect(0,0,w,h); c.fillStyle=P.canvasbg; c.fillRect(0,0,w,h); const q=thState(), m=q.m;
+  const x1=w*.1, x2=w*.38, y1=h*.12, y3=h*.88, ya=h*.2, yb=h*.44, ym=h*.5, yc=h*.56, yd=h*.8, path=[[x1,h*.4],[x1,y1],[x2,y1],[x2,y3],[x1,y3],[x1,h*.6]];
+  c.strokeStyle=P.ink2; c.lineWidth=2.2; c.beginPath(); c.moveTo(x1,h*.4); c.lineTo(x1,y1); c.lineTo(x2,y1); c.lineTo(x2,ya); c.moveTo(x2,yb); c.lineTo(x2,yc); c.moveTo(x2,yd); c.lineTo(x2,y3); c.lineTo(x1,y3); c.lineTo(x1,h*.6); c.stroke();
+  c.lineWidth=3; c.beginPath(); c.moveTo(x1-18,h*.46); c.lineTo(x1+18,h*.46); c.stroke(); c.lineWidth=5; c.beginPath(); c.moveTo(x1-9,h*.54); c.lineTo(x1+9,h*.54); c.stroke(); tx(c,'U_s = '+fmt(THS.Vs,1)+' V',x1-6,h*.34,13,P.ink,'center',600); tx(c,'+',x1+26,h*.44,15,P.alert,'center',700);
+  const hue=Math.round(210-195*clamp((q.S.Tb-m.lo)/(m.hi-m.lo),0,1)); c.fillStyle=`hsla(${hue},70%,58%,.9)`; c.strokeStyle=P.ink; c.lineWidth=2; c.fillRect(x2-15,ya,30,yb-ya); c.strokeRect(x2-15,ya,30,yb-ya); c.beginPath(); c.moveTo(x2-24,yb-4); c.lineTo(x2-8,yb-4); c.lineTo(x2+8,ya+4); c.lineTo(x2+24,ya+4); c.stroke();
+  tx(c,m.k==='ntc'?'R_t (NTC)':'R_t (PTC)',x2-30,(ya+yb)/2,13.5,P.ink,'right',600); c.fillStyle=P.panel; c.fillRect(x2-15,yc,30,yd-yc); c.strokeRect(x2-15,yc,30,yd-yc); tx(c,'R_s = '+fmtS(q.Rs,3)+' Ω',x2-30,(yc+yd)/2,13.5,P.ink,'right',600);
+  c.strokeStyle=P.ink2; c.lineWidth=2.2; c.beginPath(); c.moveTo(x2,ym); c.lineTo(w*.54,ym); c.stroke(); c.fillStyle=P.ink; c.beginPath(); c.arc(x2,ym,3.5,0,7); c.fill(); c.fillStyle=P.panel; c.beginPath(); c.arc(w*.58,ym,19,0,7); c.fill(); c.stroke(); tx(c,'V',w*.58,ym,15,P.ink,'center',700); c.beginPath(); c.moveTo(w*.58,ym+19); c.lineTo(w*.58,y3); c.lineTo(x2,y3); c.stroke();
+  txc(c,fmt(q.Vo,3)+' V',w*.58,ym-34,20,P.fueldeep,'center');
+  let L=0; const seg=[]; for(let i=0;i<path.length-1;i++){ const d=Math.hypot(path[i+1][0]-path[i][0],path[i+1][1]-path[i][1]); seg.push(d); L+=d; } const sp=clamp(q.S.I*1000*.12,.02,.9); c.fillStyle=P.alert;
+  for(let k=0;k<14;k++){ let s=((t*sp+k/14)%1)*L, i=0; while(i<seg.length-1&&s>seg[i]){ s-=seg[i]; i++; } const f=s/seg[i], X=lerp(path[i][0],path[i+1][0],f), Y=lerp(path[i][1],path[i+1][1],f); c.beginPath(); c.arc(X,Y,2.6,0,7); c.fill(); }
+  const bx=w*.7, by=h*.5, bw=w*.26, bh=h*.4; medBox(c,bx,by,bw,bh,THS.T,m.lo,m.hi,t); const cx=bx+bw/2, cy=by+bh*.55; if(q.S.P>1e-5){ const a=clamp(q.S.Tb-THS.T,0,40)/40; c.fillStyle=`rgba(224,86,30,${.18+.5*a})`; c.beginPath(); c.arc(cx,cy,26+a*10+Math.sin(t*5)*1.5,0,7); c.fill(); }
+  c.fillStyle='#2b3a46'; c.beginPath(); c.ellipse(cx,cy,12,16,0,0,7); c.fill(); c.strokeStyle=P.steeld; c.lineWidth=2; c.beginPath(); c.moveTo(cx-5,cy-12); c.lineTo(cx-8,by-30); c.moveTo(cx+5,cy-12); c.lineTo(cx+8,by-30); c.stroke(); tx(c,'mediul măsurat: '+fmt(THS.T,1)+' °C',cx,by+bh+12,13,P.ink2,'center');
+  tx(c,'T_corp = T_a + P/δ = '+fmt(q.S.Tb,2)+' °C',bx,h*.1,13.5,P.ink); tx(c,'ΔT autoîncălzire = '+fmt(q.S.Tb-THS.T,3)+' °C',bx,h*.1+22,13.5,q.S.Tb-THS.T>.5?P.alert:P.ink2); tx(c,'I = '+fmt(q.S.I*1000,3)+' mA , P = '+fmt(q.S.P*1000,3)+' mW',bx,h*.1+44,13.5,P.ink2);
+}
+function thInit(){
+  fillSel($('#thType'),Object.keys(THM).map(k=>[k,THM[k].n]),THS.id);
+  $('#ctlTh').innerHTML=rngHTML('thT','Temperatura mediului t<sub>a</sub>',-40,150,.5,25)+rngHTML('thVs','Tensiunea de alimentare U<sub>s</sub>',.5,12,.1,THS.Vs)+rngHTML('thRs','Rezistența de sarcină R<sub>s</sub>',2,6,.01,THS.lrs)+rngHTML('thDel','Constanta de disipare δ',.5,20,.5,THS.del,'Puterea necesară pentru a încălzi termistorul cu 1 °C (în aer calm ≈ 1…2 mW/K).')+'<div class="ctrl"><label><span><input type="checkbox" id="thSelf" checked> Include autoîncălzirea (efectul Joule)</span></label></div>';
+  const up=()=>thUpdate(); bind('thT',v=>fmt(v,1)+' °C',()=>{ THS.T=+$('#thT').value; up(); }); bind('thVs',v=>fmt(v,1)+' V',()=>{ THS.Vs=+$('#thVs').value; up(); }); bind('thRs',v=>fmtS(Math.pow(10,v),3)+' Ω',()=>{ THS.lrs=+$('#thRs').value; up(); }); bind('thDel',v=>fmt(v,1)+' mW/K',()=>{ THS.del=+$('#thDel').value; up(); });
+  $('#thSelf').onchange=e=>{ THS.self=e.target.checked; up(); }; $('#thSH').onchange=e=>{ THS.sh=e.target.value.split(',').map(Number); up(); };
+  $('#thType').onchange=e=>{ THS.id=e.target.value; const m=thCur(); const el=$('#thT'); el.min=m.lo; el.max=m.hi; THS.T=clamp(THS.T,m.lo,m.hi); el.value=THS.T; THS.lrs=Math.log10(m.R25); $('#thRs').value=THS.lrs; BINDS.forEach(f=>f()); up(); };
+  const m=thCur(); const el=$('#thT'); el.min=m.lo; el.max=m.hi; THS.lrs=Math.log10(m.R25); $('#thRs').value=THS.lrs; BINDS.forEach(f=>f()); thUpdate(); }
+
+/* ======================================================================
+   6. Termometrul cu infraroșu
+   ====================================================================== */
+const MAT=[['Aluminiu lustruit',.05],['Cupru lustruit',.03],['Oțel inoxidabil lustruit',.16],['Oțel oxidat',.80],['Aluminiu anodizat',.77],['Fontă oxidată',.70],['Vopsea neagră mată',.95],['Cărămidă',.93],['Ceramică',.90],['Sticlă',.90],['Apă',.96],['Plastic (PVC)',.93],['Hârtie',.93],['Piele umană',.98]];
+const IRS={eps:.8,eset:.95,ratio:12,band:[8,14],Tobj:120,Tamb:23,Tbg:23,dist:1,dt:80};
+function irCalc(o){ const [l1,l2]=o.band, Mo=T=>band(l1,l2,T+K0,24), spot=o.dist*1000/o.ratio, f=Math.min(1,Math.pow(o.dt/spot,2));
+  const S=f*(o.eps*Mo(o.Tobj)+(1-o.eps)*Mo(o.Tamb))+(1-f)*Mo(o.Tbg); const Mest=(S-(1-o.eset)*Mo(o.Tamb))/o.eset; const low=Mo(-100); const Tr=Mest<=low?-100:bisect(T=>Mo(T)-Mest,-100,2600,60);
+  return {spot,f,S,Mest,Tr,lim:Mest<=low,Mobj:Mo(o.Tobj)}; }
+const irO=()=>({...IRS});
+function irUpdate(){ const r=irCalc(irO()); $('#irTag').textContent='ε = '+fmt(IRS.eps,2);
+  mkRO($('#roIR'),[['Temperatura reală a țintei',fmt(IRS.Tobj,1)+' °C'],['Emisivitatea reală / reglată',fmt(IRS.eps,2)+' / '+fmt(IRS.eset,2)],['Diametrul spotului la distanța D',fmt(r.spot,0)+' mm'],['Factorul de umplere f',fmt(r.f*100,0)+' %'],['Indicația aparatului',r.lim?'< −100 °C':fmt(r.Tr,1)+' °C',1],['Eroarea de indicație',r.lim?'—':sgnd(r.Tr-IRS.Tobj,1)+' °C',1],['Radiația primită S',fmt(r.S,2)+' W/m²']]);
+  $('#irEq').innerHTML='S = f·[ε·M(T<sub>obj</sub>) + (1 − ε)·M(T<sub>refl</sub>)] + (1 − f)·M(T<sub>fond</sub>)<br>M<sub>est</sub> = [S − (1 − ε<sub>reg</sub>)·M(T<sub>amb</sub>)] / ε<sub>reg</sub> &nbsp;→&nbsp; t = M<sup>-1</sup>(M<sub>est</sub>)<br>M(T) = ∫<sub>λ1</sub><sup>λ2</sup> M<sub>λ</sub>(T) dλ';
+  const w=[]; if(r.f<.999) w.push(`<b>Spotul (${fmt(r.spot,0)} mm) este mai mare decât ținta (${fmt(IRS.dt,0)} mm):</b> aparatul mediază ținta cu fundalul (f = ${fmt(r.f*100,0)} %). Apropiați-vă sau alegeți un raport D:S mai mare.`);
+  if(Math.abs(IRS.eps-IRS.eset)>.03&&IRS.eps<.5) w.push('<b>Emisivitate mică:</b> suprafața reflectă mediul; indicația depinde mult de temperatura ambiantă și de valoarea ε reglată.'); if(r.lim) w.push('<b>Semnal insuficient în banda aleasă</b> pentru această temperatură.');
+  $('#irWarn').innerHTML=w.map(s=>`<div class="warnbar">${s}</div>`).join('')||'<div class="okbar">Condiții de măsurare corecte: spotul se încadrează în țintă, iar emisivitatea reglată este apropiată de cea reală.</div>'; irTable(); irCharts(); renderRef(); }
+function irTableObj(){ return {head:['Material','ε','Indicația [°C]','Eroarea [°C]'],left:[0],rows:MAT.map(([n,e])=>{ const o=irO(); o.eps=e; const r=irCalc(o); return [n,fmt(e,2),r.lim?'< −100':fmt(r.Tr,1),r.lim?'—':sgnd(r.Tr-IRS.Tobj,1)]; })}; }
+function irTable(){ buildTable($('#tblIR'),irTableObj()); }
+function irCharts(){ const [l1,l2]=IRS.band, L=lin(1,20,120), To=IRS.Tobj+K0, Ta=IRS.Tamb+K0; plot($('#chIR1'),{height:330,series:[{x:L,y:L.map(l=>planck(l,To)),color:'--alert',lw:2.2,name:`corp la ${fmt(IRS.Tobj,0)} °C`},{x:L,y:L.map(l=>planck(l,Ta)),color:'--blue',lw:2,name:`mediu la ${fmt(IRS.Tamb,0)} °C`}],xmin:1,xmax:20,ymin:0,xlabel:'Lungimea de undă λ [µm]',ylabel:'M_λ [W/(m²·µm)]',vlines:[{x:l1,color:'--teal',label:fmt(l1,1)+' µm'},{x:l2,color:'--teal',label:fmt(l2,1)+' µm',dy:14}],legendLeft:false});
+  const E=lin(.1,1,46); plot($('#chIR2'),{height:330,series:[{x:E,y:E.map(e=>{ const o=irO(); o.eset=e; const r=irCalc(o); return r.lim?NaN:r.Tr-IRS.Tobj; }),color:'--fuel-deep',lw:2.2,name:'eroarea de indicație'}],xmin:.1,xmax:1,xlabel:'Emisivitatea reglată pe aparat ε_reg',ylabel:'Eroarea [°C]',hlines:[{y:0,color:'--muted'}],vlines:[{x:IRS.eps,color:'--ok',label:'ε reală'}],legendBR:true});
+  const D=lin(.1,5,50); plot($('#chIR3'),{height:330,series:[{x:D,y:D.map(d=>{ const o=irO(); o.dist=d; const r=irCalc(o); return r.lim?NaN:r.Tr; }),color:'--fuel-deep',lw:2.2,name:'indicația aparatului'}],xmin:.1,xmax:5,xlabel:'Distanța până la țintă D [m]',ylabel:'Indicația [°C]',hlines:[{y:IRS.Tobj,color:'--ok',label:'valoarea reală'}],legendBR:true}); }
+function drawIR(t){ const cv=$('#cvIR'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,400); c.clearRect(0,0,w,h); c.fillStyle=P.canvasbg; c.fillRect(0,0,w,h); const o=irO(), r=irCalc(o);
+  const gx=w*.04, gy=h*.5, lx=gx+w*.17, tX=lx+40+(IRS.dist/5)*(w-lx-40-w*.1), ref=Math.max(150,IRS.dt,r.spot), rT=clamp(h*.40*IRS.dt/ref,5,h*.42), rS=clamp(h*.40*r.spot/ref,3,h*.47);
+  c.fillStyle=rgb(irPal(clamp((IRS.Tbg+20)/520,0,1)),.25); c.fillRect(tX+rT+10,h*.04,w-(tX+rT+10)-4,h*.92); tx(c,'fond '+fmt(IRS.Tbg,0)+' °C',w-8,h*.08,12,P.ink2,'right');
+  const th=clamp((IRS.Tobj+20)/520,0,1); const gr=c.createRadialGradient(tX,gy,2,tX,gy,rT*1.5); gr.addColorStop(0,rgb(irPal(th),.55)); gr.addColorStop(1,rgb(irPal(th),0)); c.fillStyle=gr; c.fillRect(tX-rT*1.6,gy-rT*1.6,rT*3.2,rT*3.2);
+  c.fillStyle=rgb(irPal(th)); c.beginPath(); c.arc(tX,gy,rT,0,7); c.fill(); c.strokeStyle=P.steeld; c.lineWidth=1.5; c.stroke(); tx(c,'țintă Ø '+fmt(IRS.dt,0)+' mm',tX,gy+rT+14,12,P.ink2,'center');
+  c.strokeStyle=P.alert; c.lineWidth=1.4; c.setLineDash([5,4]); c.beginPath(); c.moveTo(lx,gy); c.lineTo(tX,gy-rS); c.moveTo(lx,gy); c.lineTo(tX,gy+rS); c.stroke(); c.beginPath(); c.ellipse(tX,gy,Math.max(3,rS*.22),rS,0,0,7); c.stroke(); c.setLineDash([]);
+  tx(c,'spot Ø '+fmt(r.spot,0)+' mm',tX,gy-rS-10,12,P.alert,'center'); c.fillStyle='#e22'; c.beginPath(); c.arc(tX,gy,3+Math.sin(t*10)*.5,0,7); c.fill();
+  for(let i=0;i<8;i++){ const q=(t*.6+i/8)%1; c.fillStyle=`rgba(224,86,30,${1-q})`; c.beginPath(); c.arc(lerp(tX-rT*.2,lx+12,q),gy+Math.sin(i*5+t*3)*rS*.35*(1-q),2.3,0,7); c.fill(); }
+  c.fillStyle='#2b3a46'; rrect(c,gx,gy-34,lx-gx-8,64,12); c.fill(); c.fillStyle='#20303D'; rrect(c,gx+8,gy-26,lx-gx-30,26,4); c.fill(); c.fillStyle='#8fb4d8'; c.beginPath(); c.arc(lx-6,gy,11,0,7); c.fill(); c.fillStyle='#5a6b7a'; rrect(c,gx+14,gy+12,24,40,6); c.fill();
+  txc(c,r.lim?'LO':fmt(r.Tr,1),lx-30,gy-13,24,'#7CFC9A','right'); txc(c,'°C  ε '+fmt(IRS.eset,2),lx-30,gy+5,12,'#4fae6d','right'); tx(c,'D = '+fmt(IRS.dist,2)+' m',(lx+tX)/2,h*.9,13,P.ink2,'center'); tx(c,'D:S = '+IRS.ratio+' : 1',gx,h*.12,13,P.ink2); tx(c,'detector: banda '+fmt(IRS.band[0],1)+' … '+fmt(IRS.band[1],1)+' µm',gx,h*.06,13,P.ink2); }
+function irInit(){ fillSel($('#irMat'),MAT.map(([n,e],i)=>[String(i),`${n} (ε = ${fmt(e,2)})`]),'3');
+  $('#ctlIR').innerHTML=rngHTML('irEps','Emisivitatea reală a ținței ε',.02,1,.01,IRS.eps)+rngHTML('irEset','Emisivitatea reglată pe aparat ε<sub>reg</sub>',.1,1,.01,IRS.eset)+rngHTML('irTobj','Temperatura reală a țintei',-20,1000,1,IRS.Tobj)+rngHTML('irTamb','Temperatura mediului (reflexii)',-10,50,.5,IRS.Tamb)+rngHTML('irTbg','Temperatura fundalului',-10,100,.5,IRS.Tbg)+rngHTML('irDist','Distanța D',.1,5,.05,IRS.dist)+rngHTML('irDt','Diametrul țintei',10,1000,5,IRS.dt);
+  const up=()=>irUpdate(); [['irEps','eps',v=>fmt(v,2)],['irEset','eset',v=>fmt(v,2)],['irTobj','Tobj',v=>fmt(v,0)+' °C'],['irTamb','Tamb',v=>fmt(v,1)+' °C'],['irTbg','Tbg',v=>fmt(v,1)+' °C'],['irDist','dist',v=>fmt(v,2)+' m'],['irDt','dt',v=>fmt(v,0)+' mm']].forEach(([id,k,f])=>bind(id,f,()=>{ IRS[k]=+$('#'+id).value; up(); }));
+  $('#irMat').onchange=e=>{ IRS.eps=MAT[+e.target.value][1]; $('#irEps').value=IRS.eps; BINDS.forEach(f=>f()); up(); }; $('#irRatio').onchange=e=>{ IRS.ratio=+e.target.value; up(); }; $('#irBand').onchange=e=>{ IRS.band=e.target.value.split(',').map(Number); up(); };
+  IRS.eps=MAT[3][1]; $('#irEps').value=IRS.eps; BINDS.forEach(f=>f()); irUpdate(); }
+
+/* ======================================================================
+   7. Pirometrul de radiație (totală, optic, bicolor)
+   ====================================================================== */
+const PS={mode:'tot',T:1000,eps:.8,eset:1,Ta:25,att:0,I:.5,de:1,lam:.65,l1:.8,l2:1.0};
+const FIL=I=>900+1200*Math.pow(clamp(I,0,1),.8), FILinv=T=>Math.pow(clamp((T-900)/1200,0,1),1/.8);
+function pTot(T,eps,eset,att){ const tau=1-att, Tk=T+K0, Ta=PS.Ta+K0, V=0.07*tau*eps*SIG*(Tk**4-Ta**4)/1000; const Ti=Math.pow((V/.07)*1000/(eset*SIG)+Ta**4,.25)-K0; return {V,Ti}; }
+function pOpt(T,eps,eset,att){ const l=PS.lam, tau=1-att, Tb=bisect(x=>planck(l,x)-eps*tau*planck(l,T+K0),400,4500), Ti=bisect(x=>planck(l,x)-planck(l,Tb)/eset,400,4500); return {Tb,Ti:Ti-K0,Tbc:Tb-K0}; }
+function pBic(T,de){ const rm=planck(PS.l1,T+K0)/planck(PS.l2,T+K0)/de; const Ti=bisect(x=>planck(PS.l1,x)/planck(PS.l2,x)-rm,400,4500); return {rm,Ti:Ti-K0}; }
+function pirUpdate(){ const m=PS.mode, att=PS.att/100; const A=pTot(PS.T,PS.eps,PS.eset,att), B=pOpt(PS.T,PS.eps,PS.eset,att), C=pBic(PS.T,PS.de); const Tfil=FIL(PS.I);
+  $('#pTag').textContent={tot:'Stefan–Boltzmann',opt:'λ = '+fmt(PS.lam,2)+' µm',bic:'λ₁/λ₂ = '+fmt(PS.l1,1)+' / '+fmt(PS.l2,1)+' µm'}[m];
+  const base=[['Temperatura reală a țintei',fmt(PS.T,0)+' °C'],['Emisivitatea reală / reglată',fmt(PS.eps,2)+(m==='bic'?' (ε₂/ε₁ = '+fmt(PS.de,2)+')':' / '+fmt(PS.eset,2))],['Atenuarea mediului',fmt(PS.att,0)+' %']];
+  let rows, eq, warn=[];
+  if(m==='tot'){ rows=base.concat([['Tensiunea termopilei V',fmt(A.V,3)+' mV'],['Indicația pirometrului',fmt(A.Ti,0)+' °C',1],['Eroarea',sgnd(A.Ti-PS.T,0)+' °C',1]]); eq='V = k·τ·ε·σ(T<sup>4</sup> − T<sub>a</sub><sup>4</sup>) , k = 0,07 mV/(kW/m²)<br>t<sub>ind</sub> = [(V/k)/(ε<sub>reg</sub>σ) + T<sub>a</sub><sup>4</sup>]<sup>1/4</sup> − 273,15'; if(att>.01) warn.push('Atenuarea (fum, praf, geam murdar) reduce semnalul, deci pirometrul de radiație totală indică prea puțin.'); }
+  else if(m==='opt'){ const d=Tfil-B.Tb; rows=base.concat([['Luminanța țintei: temperatura de luminanță T<sub>b</sub>',fmt(B.Tbc,0)+' °C'],['Filament: curentul / temperatura',fmt(PS.I*100,0)+' % / '+fmt(Tfil-K0,0)+' °C'],['Starea filamentului',Math.abs(d)<3?'dispărut (egalizat)':d>0?'mai luminos':'mai întunecat'],['Indicația (după corecția cu ε<sub>reg</sub>)',fmt(B.Ti,0)+' °C',1],['Eroarea',sgnd(B.Ti-PS.T,0)+' °C',1]]); eq='1/T = 1/T<sub>b</sub> + (λ/c<sub>2</sub>)·ln ε<sub>λ</sub> &nbsp;;&nbsp; λ = '+fmt(PS.lam,2)+' µm'; if(Math.abs(d)>=3) warn.push('Reglați curentul filamentului până când acesta dispare pe fondul incandescent al țintei.'); }
+  else { rows=base.concat([['Raportul semnalelor R = S(λ₁)/S(λ₂)',fmt(C.rm,3)],['Indicația pirometrului bicolor',fmt(C.Ti,0)+' °C',1],['Eroarea',sgnd(C.Ti-PS.T,0)+' °C',1],['Semnal relativ față de corpul negru',fmt((1-att)*PS.eps*100,0)+' %']]); eq='R = (ε₁/ε₂)(λ₂/λ₁)<sup>5</sup>·exp[(c<sub>2</sub>/T)(1/λ₂ − 1/λ₁)]<br>R nu depinde de atenuarea neselectivă și de ε, dacă ε₁ = ε₂ (corp cenușiu).'; if(Math.abs(PS.de-1)>.01) warn.push('Corpul nu este cenușiu (ε₂ ≠ ε₁): raportul este deplasat, deci apare o eroare.'); else if(att>.01) warn.push('Atenuarea afectează la fel ambele lungimi de undă: raportul și indicația rămân neschimbate.'); }
+  mkRO($('#roPir'),rows); $('#pirEq').innerHTML=eq; $('#pirWarn').innerHTML=warn.map(s=>`<div class="${s.startsWith('Atenuarea afectează')?'okbar':'warnbar'}">${s}</div>`).join(''); pirTable(); pirCharts(); renderRef(); }
+function pirTableObj(){ const att=PS.att/100, A=pTot(PS.T,PS.eps,PS.eset,att), B=pOpt(PS.T,PS.eps,PS.eset,att), C=pBic(PS.T,PS.de);
+  return {head:['Pirometrul','Mărimea măsurată','Indicația [°C]','Eroarea [°C]'],left:[0,1],rows:[['De radiație totală (termopilă)','M = ε·σ·T⁴ (toate λ)',fmt(A.Ti,0),sgnd(A.Ti-PS.T,0)],['Optic cu filament dispărând (λ = '+fmt(PS.lam,2)+' µm)','luminanța spectrală',fmt(B.Ti,0),sgnd(B.Ti-PS.T,0)],['Bicolor ('+fmt(PS.l1,1)+' / '+fmt(PS.l2,1)+' µm)','raportul a două radiații',fmt(C.Ti,0),sgnd(C.Ti-PS.T,0)]]}; }
+function pirTable(){ buildTable($('#tblPir'),pirTableObj()); }
+function pirCharts(){ const L=lin(.3,3,100), Ts=[800,1000,1200,1500], cols=['--blue','--teal','--ok','--fuel-deep'], att=PS.att/100;
+  plot($('#chPir1'),{height:330,series:Ts.map((T,i)=>({x:L,y:L.map(l=>planck(l,T+K0)),color:cols[i],lw:1.8,name:T+' °C'})).concat([{x:L,y:L.map(l=>planck(l,PS.T+K0)),color:'--alert',lw:2.6,dash:[6,3],name:'ținta: '+fmt(PS.T,0)+' °C'}]),xmin:.3,xmax:3,logy:true,ymin:.01,ymax:1e6,xlabel:'Lungimea de undă λ [µm]',ylabel:'M_λ [W/(m²·µm)] (logaritmic)',vlines:[{x:PS.lam,color:'--violet',label:'optic '+fmt(PS.lam,2)},{x:PS.l1,color:'--steel-d',label:'λ₁',dy:16},{x:PS.l2,color:'--steel-d',label:'λ₂',dy:30}],legendBR:true});
+  const E=lin(.2,1,40); plot($('#chPir2'),{height:330,series:[{x:E,y:E.map(e=>pTot(PS.T,e,PS.eset,att).Ti-PS.T),color:'--fuel-deep',lw:2.2,name:'radiație totală'},{x:E,y:E.map(e=>pOpt(PS.T,e,PS.eset,att).Ti-PS.T),color:'--violet',lw:2.2,name:'optic (λ = '+fmt(PS.lam,2)+' µm)'},{x:E,y:E.map(()=>pBic(PS.T,PS.de).Ti-PS.T),color:'--ok',lw:2.2,name:'bicolor'}],xmin:.2,xmax:1,xlabel:'Emisivitatea reală a țintei ε',ylabel:'Eroarea de indicație [°C]',hlines:[{y:0,color:'--muted'}],vlines:[{x:PS.eset,color:'--steel-d',label:'ε reglat'}],legendBR:true});
+  const T=lin(400,1800,60); plot($('#chPir3'),{height:330,series:[{x:T,y:T.map(t=>pTot(t,1,1,0).V),color:'--muted',dash:[6,4],lw:1.6,name:'corp negru (ε = 1)'},{x:T,y:T.map(t=>pTot(t,PS.eps,1,att).V),color:'--fuel-deep',lw:2.2,name:'ținta reală'},{x:[PS.T],y:[pTot(PS.T,PS.eps,1,att).V],color:'--alert',pointsOnly:true,markers:'o',name:'punctul curent'}],xmin:400,xmax:1800,ymin:0,xlabel:'Temperatura țintei t [°C]',ylabel:'Tensiunea termopilei V [mV]',legendLeft:true}); }
+function drawPir(t){ const cv=$('#cvPir'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,400); c.clearRect(0,0,w,h); c.fillStyle=P.canvasbg; c.fillRect(0,0,w,h); const m=PS.mode, gl=glow(PS.T), att=PS.att/100;
+  const furnace=()=>{ const fx=w*.04, fy=h*.2, fw=w*.2, fh=h*.58; c.fillStyle='#4b3b33'; rrect(c,fx,fy,fw,fh,8); c.fill(); c.fillStyle=gl?rgb(gl):'#2a1f1a'; rrect(c,fx+fw*.3,fy+fh*.18,fw*.65,fh*.64,6); c.fill(); if(gl){ const g=c.createRadialGradient(fx+fw*.62,fy+fh*.5,2,fx+fw*.62,fy+fh*.5,110); g.addColorStop(0,rgb(gl,.4)); g.addColorStop(1,rgb(gl,0)); c.fillStyle=g; c.fillRect(0,0,w*.5,h); } tx(c,'cuptor: '+fmt(PS.T,0)+' °C',fx+fw/2,fy-12,13,P.ink2,'center'); tx(c,'ε = '+fmt(PS.eps,2),fx+fw/2,fy+fh+14,12.5,P.ink2,'center');
+    if(att>.01){ for(let i=0;i<14;i++){ const px=w*.28+((i*61)%100)/100*w*.14+Math.sin(t*.9+i)*5, py=h*.28+((i*37)%100)/100*h*.4+Math.cos(t*.7+i*2)*5; c.fillStyle=`rgba(120,120,125,${.12+att*.35})`; c.beginPath(); c.arc(px,py,14+att*10,0,7); c.fill(); } tx(c,'fum / praf: '+fmt(PS.att,0)+' %',w*.35,h*.84,12.5,P.ink2,'center'); } return {fx,fy,fw,fh}; };
+  if(m==='tot'){ furnace(); const lx=w*.5; c.strokeStyle=P.steeld; c.fillStyle='rgba(143,180,216,.35)'; c.lineWidth=2; c.beginPath(); c.ellipse(lx,h*.5,12,h*.2,0,0,7); c.fill(); c.stroke(); tx(c,'lentilă',lx,h*.22,12.5,P.ink2,'center');
+    c.strokeStyle=gl?rgb(gl,.7):P.muted; c.lineWidth=1.5; [-.1,0,.1].forEach(o=>{ c.beginPath(); c.moveTo(w*.24,h*.5+o*h*.5); c.lineTo(lx,h*.5+o*h*.4); c.lineTo(w*.7,h*.5); c.stroke(); });
+    c.fillStyle='#20303D'; rrect(c,w*.7,h*.4,w*.05,h*.2,3); c.fill(); tx(c,'termopilă',w*.725,h*.66,12.5,P.ink2,'center'); const A=pTot(PS.T,PS.eps,PS.eset,att); c.fillStyle='#0f1c14'; rrect(c,w*.79,h*.3,w*.19,h*.4,8); c.fill(); txc(c,fmt(A.V,2)+' mV',w*.96,h*.42,24,'#7CFC9A','right'); txc(c,fmt(A.Ti,0)+' °C',w*.96,h*.56,30,'#7CFC9A','right');
+    txc(c,'V = k·τ·ε·σ(T⁴ − T_a⁴)',w*.5,h*.92,18,P.fueldeep,'center'); }
+  else if(m==='opt'){ const cx=w*.64, cy=h*.5, R=Math.min(w*.22,h*.36), B=pOpt(PS.T,PS.eps,PS.eset,att), Tf=FIL(PS.I); const gT=glow(B.Tbc), gF=glow(Tf-K0);
+    c.fillStyle='#0d0d0f'; c.beginPath(); c.arc(cx,cy,R+14,0,7); c.fill(); c.fillStyle=gT?rgb(gT):'#1a1411'; c.beginPath(); c.arc(cx,cy,R,0,7); c.fill();
+    c.strokeStyle=gF?rgb(gF):'#1a1411'; c.lineWidth=7; c.lineCap='round'; c.beginPath(); c.arc(cx,cy+R*1.45,R*1.45,-Math.PI*.64,-Math.PI*.36); c.stroke(); c.lineCap='butt'; c.strokeStyle='#0d0d0f'; c.lineWidth=14; c.beginPath(); c.arc(cx,cy,R+7,0,7); c.stroke();
+    tx(c,'câmpul ocularului: țintă + filamentul lămpii etalon',cx,h*.05,13,P.ink2,'center'); const d=Tf-B.Tb; txc(c,Math.abs(d)<3?'filament DISPĂRUT — luminanțe egale':d>0?'filament mai luminos → micșorați curentul':'filament mai întunecat → măriți curentul',cx,h*.95,17,Math.abs(d)<3?P.ok:P.alert,'center');
+    txc(c,'t(filament) = '+fmt(Tf-K0,0)+' °C',w*.03,h*.3,17,P.ink); txc(c,'T_b țintă = '+fmt(B.Tbc,0)+' °C',w*.03,h*.38,17,P.ink); txc(c,'t indicat = '+fmt(B.Ti,0)+' °C',w*.03,h*.48,22,P.fueldeep); }
+  else { const F=furnace(); const lx=w*.42; c.strokeStyle=P.steeld; c.fillStyle='rgba(143,180,216,.35)'; c.lineWidth=2; c.beginPath(); c.ellipse(lx,h*.5,10,h*.18,0,0,7); c.fill(); c.stroke(); const sx=w*.56; c.strokeStyle=P.steeld; c.lineWidth=3; c.beginPath(); c.moveTo(sx-8,h*.58); c.lineTo(sx+8,h*.42); c.stroke(); tx(c,'oglindă semitransparentă',sx,h*.34,12,P.ink2,'center');
+    c.strokeStyle=gl?rgb(gl,.7):P.muted; c.lineWidth=1.4; c.beginPath(); c.moveTo(F.fx+F.fw*.9,h*.5); c.lineTo(sx,h*.5); c.moveTo(sx,h*.5); c.lineTo(w*.74,h*.5); c.moveTo(sx,h*.5); c.lineTo(sx,h*.76); c.stroke();
+    c.fillStyle='#7b4dd0'; c.fillRect(w*.66,h*.43,6,h*.14); tx(c,'filtru λ₁ = '+fmt(PS.l1,1)+' µm',w*.66,h*.38,12,P.ink2,'center'); c.fillStyle='#c0392b'; c.fillRect(sx-h*.07,h*.7,h*.14,6); tx(c,'filtru λ₂ = '+fmt(PS.l2,1)+' µm',sx,h*.87,12,P.ink2,'center');
+    c.fillStyle='#20303D'; rrect(c,w*.74,h*.44,w*.04,h*.12,3); c.fill(); rrect(c,sx-14,h*.76,28,h*.06,3); c.fill(); const C=pBic(PS.T,PS.de); c.fillStyle='#0f1c14'; rrect(c,w*.8,h*.3,w*.18,h*.4,8); c.fill(); txc(c,'R = '+fmt(C.rm,2),w*.965,h*.42,22,'#7CFC9A','right'); txc(c,fmt(C.Ti,0)+' °C',w*.965,h*.57,30,'#7CFC9A','right'); txc(c,'R = S(λ₁) / S(λ₂)',w*.5,h*.95,18,P.fueldeep,'center'); } }
+function pirMode(m){ PS.mode=m; $$('#pMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); $('#pTitle').textContent={tot:'Pirometrul de radiație totală',opt:'Pirometrul optic cu filament dispărând',bic:'Pirometrul bicolor (de raport)'}[m]; $$('.pm').forEach(e=>e.style.display=e.classList.contains('pm-'+m)||e.classList.contains('pm-all')?'':'none'); $('#pOptBtn').style.display=m==='opt'?'':'none'; pirUpdate(); }
+function pirInit(){ const R=(id,l,a,b,s,v)=>rngHTML(id,l,a,b,s,v);
+  $('#ctlPir').innerHTML='<div class="pm pm-all">'+R('pT','Temperatura reală a țintei',600,1800,10,PS.T)+R('pEps','Emisivitatea reală a țintei ε',.1,1,.01,PS.eps)+R('pAtt','Atenuarea mediului (fum, praf, geam murdar)',0,80,1,PS.att)+'</div><div class="pm pm-tot pm-opt">'+R('pEset','Emisivitatea reglată pe aparat ε<sub>reg</sub>',.1,1,.01,PS.eset)+'</div><div class="pm pm-opt">'+R('pI','Curentul prin filament',0,1,.005,PS.I)+'</div><div class="pm pm-bic">'+R('pDe','Raportul emisivităților ε₂/ε₁',.8,1.2,.01,PS.de)+'</div>';
+  [['pT','T',v=>fmt(v,0)+' °C'],['pEps','eps',v=>fmt(v,2)],['pAtt','att',v=>fmt(v,0)+' %'],['pEset','eset',v=>fmt(v,2)],['pI','I',v=>fmt(v*100,1)+' %'],['pDe','de',v=>fmt(v,2)]].forEach(([id,k,f])=>bind(id,f,()=>{ PS[k]=+$('#'+id).value; pirUpdate(); }));
+  $$('#pMode button').forEach(b=>b.onclick=()=>pirMode(b.dataset.m)); $('#pAuto').onclick=()=>{ const B=pOpt(PS.T,PS.eps,PS.eset,PS.att/100); PS.I=FILinv(B.Tb); $('#pI').value=PS.I; BINDS.forEach(f=>f()); pirUpdate(); toast('Luminanțele au fost egalizate'); }; pirMode('tot'); }
+
+/* ======================================================================
+   8. Test grilă, 9. Referat, bucla principală
+   ====================================================================== */
+const MCQ=[
+ {q:'Pe ce principiu funcționează termometrul cu lichid în sticlă?',o:['Variația rezistenței electrice','Dilatarea volumică a lichidului din rezervor','Efectul Seebeck','Radiația infraroșie emisă de lichid'],a:1,e:'Lichidul se dilată mai mult decât sticla și urcă în capilar (relația 2).'},
+ {q:'Care este semnificația notației Pt100?',o:['Platină, 100 mm lungime','Platină, rezistența de 100 Ω la 0 °C','Platină, 100 °C temperatura maximă','Platină, toleranță de 100 mK'],a:1,e:'R₀ = 100 Ω la 0 °C; la 100 °C rezistența este de aproximativ 138,5 Ω.'},
+ {q:'Cum variază rezistența unui termistor NTC cu temperatura?',o:['Crește liniar','Scade exponențial','Rămâne constantă','Crește brusc la temperatura Curie'],a:1,e:'R = R₂₅·exp[β(1/T − 1/T₂₅)], deci scade cu creșterea temperaturii.'},
+ {q:'Din panta cărei drepte se determină parametrul β al unui termistor NTC?',o:['R = f(t)','ln R = f(1/T)','1/R = f(t)','U = f(R)'],a:1,e:'ln R = ln R₂₅ + β(1/T − 1/T₂₅), deci panta este β.'},
+ {q:'Ce permite legea temperaturilor intermediare la termocuple?',o:['Creșterea tensiunii termoelectrice','Compensarea joncțiunii de referință care nu este la 0 °C','Eliminarea efectului Seebeck','Folosirea unui singur conductor'],a:1,e:'E(t,0) = E(t,tⱼ) + E(tⱼ,0): se adaugă tensiunea corespunzătoare temperaturii joncțiunii de referință.'},
+ {q:'Care dintre termocuplurile K, J, E, S dă cea mai mare tensiune la 1000 °C?',o:['K','J','E','S'],a:2,e:'Tipul E are aproximativ 76 mV la 1000 °C (K: 41 mV; J: 58 mV; S: 9,6 mV).'},
+ {q:'Joncțiunea de referință a unui termocuplu K este la 23 °C și nu este compensată. Tensiunea măsurată față de valoarea referită la 0 °C este:',o:['Mai mare cu E(23 °C)','Mai mică cu E(23 °C)','Egală','Zero'],a:1,e:'U = E(t,0) − E(23,0): aparatul indică o temperatură prea mică.'},
+ {q:'Ce se întâmplă dacă pe termometrul IR se reglează o emisivitate mai mare decât cea reală (ținta mai caldă decât mediul)?',o:['Indicația este prea mare','Indicația este prea mică','Nu se schimbă','Aparatul se defectează'],a:1,e:'Aparatul presupune că ținta emite mai mult decât emite în realitate, deci calculează o temperatură mai mică.'},
+ {q:'Ce efect are un spot al termometrului IR mai mare decât ținta?',o:['Niciunul','Indicația este influențată de temperatura fundalului','Indicația crește mereu','Emisivitatea devine 1'],a:1,e:'Factorul de umplere f < 1: semnalul este o medie între țintă și fundal.'},
+ {q:'Care pirometru este cel mai puțin influențat de atenuarea neselectivă a mediului (fum, praf)?',o:['De radiație totală','Optic cu filament','Bicolor (de raport)','Toate la fel'],a:2,e:'Atenuarea neselectivă scade la fel ambele semnale, iar raportul lor rămâne neschimbat.'},
+ {q:'Cum se definește corecția C a unui termometru etalonat?',o:['C = t indicat − t etalon','C = t etalon − t indicat','C = t etalon + t indicat','C = U/2'],a:1,e:'Corecția se adaugă la indicație pentru a obține valoarea corectă (relația 17).'},
+ {q:'Incertitudinea extinsă U = k·u_c cu k = 2 corespunde aproximativ unui nivel de încredere de:',o:['50 %','68 %','95 %','99,99 %'],a:2,e:'Pentru o distribuție normală, k = 2 corespunde la aproximativ 95 %.'},
+ {q:'Temperatura de luminanță T_b a unui corp cu ε < 1, măsurată cu pirometrul optic, este:',o:['Mai mare decât temperatura reală','Egală cu temperatura reală','Mai mică decât temperatura reală','Independentă de ε'],a:2,e:'Din relația (15): 1/T_b = 1/T − (λ/c₂)·ln ε, iar ln ε < 0, deci T_b < T.'}];
+function quizRender(el,Q,cb){ el.innerHTML=''; Q.forEach((q,i)=>{ const d=document.createElement('div'); d.className='mcq'; d.innerHTML=`<p><b>${i+1}.</b> ${q.q}</p>`+q.o.map((o,j)=>`<label><input type="radio" name="mq${i}" value="${j}"> ${o}</label>`).join('')+'<div class="expl" style="display:none"></div>'; el.appendChild(d); });
+  const b=document.createElement('button'); b.className='btn fuel'; b.textContent='Verifică răspunsurile'; const res=document.createElement('p'); res.className='small'; el.appendChild(b); el.appendChild(res);
+  b.onclick=()=>{ let ok=0; Q.forEach((q,i)=>{ const d=el.children[i], v=d.querySelector('input:checked'), g=!!v&&+v.value===q.a; if(g) ok++; d.classList.toggle('good',g); d.classList.toggle('badq',!g); const e=d.querySelector('.expl'); e.style.display='block'; e.innerHTML=(g?'<b>Corect.</b> ':'<b>Greșit.</b> ')+q.e; }); res.innerHTML=`<b>Scor: ${ok} din ${Q.length}</b>`; if(cb) cb(ok,Q.length); }; }
+let MCQS=null;
+
+/* ---- concluzii și referat ---- */
+function conclusions(){ const L=[];
+  const rows=CTS.rows; if(rows.length){ const Cs=rows.map(r=>r.C), ok=rows.filter(r=>r.ok).length, f=ctFit(); L.push(`Etalonarea termometrului (${DUTS[CTS.dut].s}) în ${MED[CTS.med].n.toLowerCase()}: ${rows.length} puncte între ${fmt(rows[0].Tr,1)} și ${fmt(rows[rows.length-1].Tr,1)} °C; corecțiile sunt cuprinse între ${sgnd(Math.min(...Cs),2)} și ${sgnd(Math.max(...Cs),2)} °C, cu incertitudinea extinsă maximă U = ${fmt(Math.max(...rows.map(r=>r.U)),3)} °C (k = 2). ${ok} din ${rows.length} puncte se încadrează în EMA.`+(f?` Curba de corecție este C(t) = ${fmt(f.a,3)} ${f.b<0?'−':'+'} ${fmt(Math.abs(f.b),5)}·t [°C], R² = ${fmt(f.r2,3)}.`:'')); } else L.push('Etalonarea termometrului: nu au fost înregistrate puncte.');
+  const F=TCS.fit; if(TCS.rows.length&&F){ const mx=Math.max(...TCS.rows.map(r=>Math.abs(r.dT))); L.push(`Etalonarea termocuplului tip ${TCS.type} (clasa ${TCS.cls}, joncțiune de referință ${TCS.cj==='ice'?'la 0 °C':TCS.cj==='cjc'?'ambiantă, compensată':'ambiantă, necompensată'}): curba E = f(t) de gradul ${F.deg} are R² = ${fmt(F.fE.r2,6)} și abaterea medie pătratică ${fmt(F.fE.rms*1000,2)} µV; abaterea maximă față de ITS-90 este ${fmt(mx,2)} °C în punctele măsurate (toleranța clasei: ${tolTxt(TCS.type,TCS.cls)}).`+(TCS.cj==='unc'?' Joncțiunea de referință necompensată introduce o abatere sistematică egală cu E(t<sub>amb</sub>).':'')); } else L.push('Etalonarea termocuplului: nu au fost înregistrate suficiente puncte.');
+  const q=thState(), m=q.m; if(m.k==='ntc'){ const T=lin(m.lo,m.hi,60), eb=Math.max(...T.map(t=>Math.abs(bT(m,thR(m,t))-t))), es=Math.max(...T.map(t=>Math.abs(shT(q.sh,thR(m,t))-t))), f=linreg(T.map(t=>1/(t+K0)),T.map(t=>Math.log(thR(m,t)))); L.push(`Termistorul ${m.n}: din dreapta ln R = f(1/T) rezultă β = ${fmt(f.b,0)} K. Pe domeniul ${m.lo} … ${m.hi} °C modelul β are eroarea maximă ${fmt(eb,2)} °C, iar relația Steinhart–Hart cu trei puncte ${fmt(es,3)} °C. Autoîncălzirea la condițiile alese este ${fmt(q.S.Tb-THS.T,3)} °C.`); } else L.push(`Termistorul ${m.n}: caracteristica este de tip PTC; autoîncălzirea la condițiile alese este ${fmt(q.S.Tb-THS.T,3)} °C.`);
+  const r=irCalc(irO()); L.push(`Termometrul IR: pentru ținta de ${fmt(IRS.Tobj,0)} °C (ε = ${fmt(IRS.eps,2)}, ε reglat = ${fmt(IRS.eset,2)}, D:S = ${IRS.ratio}:1, D = ${fmt(IRS.dist,2)} m) indicația este ${r.lim?'sub limita aparatului':fmt(r.Tr,1)+' °C (eroare '+sgnd(r.Tr-IRS.Tobj,1)+' °C)'}; factorul de umplere este ${fmt(r.f*100,0)} %.`);
+  const att=PS.att/100, A=pTot(PS.T,PS.eps,PS.eset,att), B=pOpt(PS.T,PS.eps,PS.eset,att), C=pBic(PS.T,PS.de); L.push(`Pirometre (ținta la ${fmt(PS.T,0)} °C, ε = ${fmt(PS.eps,2)}, atenuare ${fmt(PS.att,0)} %): radiație totală ${fmt(A.Ti,0)} °C (${sgnd(A.Ti-PS.T,0)}), optic ${fmt(B.Ti,0)} °C (${sgnd(B.Ti-PS.T,0)}), bicolor ${fmt(C.Ti,0)} °C (${sgnd(C.Ti-PS.T,0)}).`);
+  if(MCQS) L.push(`Scorul la testul grilă: ${MCQS[0]} din ${MCQS[1]}.`); return L; }
+function reportHTML(forWord){ const name=$('#stName').value||'…………………………', grp=$('#stGroup').value||'……', dt=$('#stDate').value||'…………';
+  const H=t=>forWord?`<h2 style="font:bold 13pt Calibri,Arial;color:#16324A;border-bottom:1.5pt solid #D9961A;margin:14pt 0 6pt">${t}</h2>`:`<h2>${t}</h2>`;
+  const Pp=t=>forWord?`<p style="font:11pt Calibri,Arial;text-align:justify;margin:0 0 6pt">${t}</p>`:`<p>${t}</p>`;
+  const tb=(T,cap)=>forWord?tableHTMLWord(T,cap):`<p><b>${cap}</b></p><div class="tbl-wrap">${(()=>{ const d=document.createElement('div'); buildTable(d,T); return d.innerHTML; })()}</div>`;
+  const title='Referat — Măsurarea temperaturii și etalonarea termometrelor';
+  let h=forWord?`<p style="font:10pt Calibri,Arial;color:#4E6072">Universitatea Politehnica Timișoara, Facultatea de Mecanică</p><h1 style="font:bold 16pt Calibri,Arial;color:#16324A;margin:4pt 0">${title}</h1><p style="font:11pt Calibri,Arial">Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`:`<h1 style="font-size:22px;margin:0 0 4px">${title}</h1><p>Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`;
+  h+=H('1. Scopul lucrării')+Pp('Cunoașterea instrumentelor de măsurare a temperaturii, etalonarea unui termometru și a unui termocuplu prin comparare cu un etalon, studiul termistorului, al termometrului cu infraroșu și al pirometrului de radiație.');
+  h+=H('2. Instrumente de măsurare a temperaturii')+tb(insTable(),'Tabelul 1. Instrumente de măsurare a temperaturii');
+  h+=H('3. Etalonarea termometrului')+Pp(`Termometru etalonat: ${DUTS[CTS.dut].n}; etalon: ${REFS[String(CTS.ref)]||('U = '+CTS.ref+' °C')}; mediu: ${MED[CTS.med].n}.`)+tb(ctTable(),'Tabelul 2. Rezultatele etalonării termometrului')+tb(budTable(),'Tabelul 3. Bugetul incertitudinii (ultimul punct)')+Pp($('#ctEq').innerHTML.replace(/<br>/g,' ; '));
+  h+=H('4. Etalonarea termocuplului')+Pp(`Termocuplu tip ${TCD[TCS.type].nm}; mediu: ${MED[TCS.med].n}; joncțiunea de referință: ${TCS.cj==='ice'?'0 °C (gheață)':TCS.cj==='cjc'?'ambiantă, cu compensare':'ambiantă, necompensată'}.`)+tb(tcTable(),'Tabelul 4. Etalonarea termocuplului')+tb(fitTable(),'Tabelul 5. Ecuația curbei de etalonare și coeficienții ei')+Pp($('#tcEq').innerHTML.replace(/<br>/g,' ; '));
+  h+=H('5. Termistorul')+tb(thTableObj(),'Tabelul 7. Caracteristica termistorului ('+thCur().n+')');
+  h+=H('6. Termometrul cu infraroșu')+tb(irTableObj(),'Tabelul 8. Indicația termometrului IR pe diferite materiale');
+  h+=H('7. Pirometrul de radiație')+tb(pirTableObj(),'Tabelul 9. Compararea pirometrelor');
+  h+=H('8. Concluzii')+conclusions().map(Pp).join('')+Pp('<i>Concluzii personale ale studentului: …</i>'); return h; }
+function renderRef(){ if($('#t-ref').classList.contains('on')) $('#refBody').innerHTML=reportHTML(false); }
+
+/* ---- experimente dirijate ---- */
+function goTab(id){ $(`nav.tabs button[data-tab="${id}"]`).click(); }
+function experiment(e){
+  if(e==='A'||e==='B'){ TCS.type='K'; $$('#tcTypes button').forEach(b=>b.classList.toggle('on',b.dataset.t==='K')); TCS.med='ulei'; $('#tcMed').value='ulei'; TCS.cls=2; $('#tcCls').value='2'; TCS.cj=e==='A'?'ice':'unc'; $('#tcCJ').value=TCS.cj; TCS.deg=2; $('#tcDeg').value=2; TCS.spd=100; $('#tcSpd').value=100; BINDS.forEach(f=>f()); tcReset(); tcApply(true); goTab('t-etTC'); tcAutoStart(); }
+  if(e==='C'){ IRS.eps=.05; IRS.eset=.95; IRS.Tobj=150; IRS.dist=.5; IRS.dt=80; IRS.Tamb=23; IRS.Tbg=23; IRS.band=[8,14]; $('#irBand').value='8,14'; $('#irMat').value='0'; ['irEps','irEset','irTobj','irTamb','irTbg','irDist','irDt'].forEach((id,i)=>{ $('#'+id).value=[IRS.eps,IRS.eset,IRS.Tobj,IRS.Tamb,IRS.Tbg,IRS.dist,IRS.dt][i]; }); BINDS.forEach(f=>f()); irUpdate(); goTab('t-ir'); }
+  if(e==='D'){ PS.att=50; PS.eps=.8; PS.eset=1; PS.T=1200; PS.de=1; ['pT','pEps','pAtt','pEset','pDe'].forEach((id,i)=>{ $('#'+id).value=[PS.T,PS.eps,PS.att,PS.eset,PS.de][i]; }); BINDS.forEach(f=>f()); pirMode('tot'); goTab('t-pir'); }
+  toast('Experimentul '+e+' a fost aplicat'); }
+
+/* ---- bucla de animație ---- */
+let ACTIVE='t-teorie', LAST=0, TIME=0, LU=0;
+function frame(ts){ const dt=Math.min(.1,Math.max(0,(ts-LAST)/1000)); LAST=ts; TIME+=dt; pal(); BT.step(dt*CTS.spd); BC.step(dt*TCS.spd); ctAutoTick(); tcAutoTick();
+  if(ACTIVE==='t-ins'&&$('#insAnim').checked) drawIns(TIME);
+  if(ACTIVE==='t-etT'){ if(TIME-LU>.25){ LU=TIME; ctLive(); } ctDraw(TIME); }
+  if(ACTIVE==='t-etTC'){ if(TIME-LU>.25){ LU=TIME; tcLive(); } tcDraw(TIME); }
+  if(ACTIVE==='t-th') drawTh(TIME); if(ACTIVE==='t-ir') drawIR(TIME); if(ACTIVE==='t-pir') drawPir(TIME);
+  requestAnimationFrame(frame); }
+function chartsFor(tab){ pal(); if(tab==='t-ins'){ insUpd(); drawIns(TIME); } if(tab==='t-etT'){ ctCharts(); ctLive(); } if(tab==='t-etTC'){ tcCharts(); tcLive(); } if(tab==='t-th') thCharts(); if(tab==='t-ir') irCharts(); if(tab==='t-pir') pirCharts(); if(tab==='t-ref') renderRef(); }
+function refreshAll(){ pal(); BINDS.forEach(f=>f()); buildTable($('#tblIns'),insTable()); insUpd(); ctUpdate(); tcUpdate(); thUpdate(); irUpdate(); pirUpdate(); chartsFor(ACTIVE); renderRef(); }
+
+window.addEventListener('DOMContentLoaded',()=>{ initTheme(); pal();
+  $('#insChips').innerHTML=INS.map(i=>`<button data-i="${i.id}">${i.s}</button>`).join(''); $$('#insChips button').forEach(b=>b.onclick=()=>insSelect(b.dataset.i)); $('#insT').addEventListener('input',insUpd); $('#insGo').onclick=()=>goTab(INSI.go);
+  buildTable($('#tblIns'),insTable()); insSelect('lig'); ctInit(); tcInit(); thInit(); irInit(); pirInit();
+  $$('[data-exp]').forEach(b=>b.onclick=()=>experiment(b.dataset.exp));
+  quizRender($('#mcq'),MCQ,(ok,n)=>{ MCQS=[ok,n]; renderRef(); });
+  $('#stDate').valueAsDate=new Date(); ['stName','stGroup','stDate'].forEach(k=>$('#'+k).addEventListener('input',renderRef));
+  $('#bRef').onclick=async()=>{ const hh=reportHTML(true); if(await copyRich(hh,$('#refBody').innerText)) toast('Referat copiat – lipiți în Word'); else manualModal('Referat pentru Word',hh,true); };
+  $('#bRefTxt').onclick=async()=>{ const t=$('#refBody').innerText; if(await copyText(t)) toast('Referat copiat ca text'); else manualModal('Referat',t); };
+  wireCopy(document);
+  initTabs(t=>{ ACTIVE=t; chartsFor(t); });
+  if(document.fonts) document.fonts.ready.then(()=>chartsFor(ACTIVE));
+  let rz; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>chartsFor(ACTIVE),150); });
+  ['themechange','decchange'].forEach(ev=>window.addEventListener(ev,refreshAll));
+  requestAnimationFrame(frame); });
+</script></body></html>
