@@ -1,0 +1,2789 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulator MEF Aplicații practice</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+/* Concept: stație de lucru academică — bandă Workbench (etape), panou de parametri, viewport cu bară de culori, rezultate și raport. */
+:root {
+  --bg: #eceff3; --panel: #ffffff; --panel2: #f5f7f9; --ink: #14202b; --mute: #566676; --line: #d6dde4; --grid: #e2e7ec;
+  --accent: #1b4d8c; --accent-ink: #ffffff; --accent-soft: #e2ecf8; --ok: #17744a; --ok-soft: #dff2e8; --warn: #96590a; --warn-soft: #fbecd2;
+  --bad: #ab2a22; --bad-soft: #f9dedb; --vp-top: #d6e2ee; --vp-bot: #f8fafc;
+  --c0: #1f5fae; --c1: #c4501b; --c2: #23805a; --c3: #7a4bb0; --tip: rgba(10, 20, 30, .94);
+  --f-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1218; --panel: #131b23; --panel2: #18222c; --ink: #e5ecf2; --mute: #93a3b3; --line: #26323e; --grid: #212c37;
+    --accent: #6eaef2; --accent-ink: #06121f; --accent-soft: #162a40; --ok: #4cc38a; --ok-soft: #123324; --warn: #e3a64c; --warn-soft: #35280f;
+    --bad: #f27d73; --bad-soft: #3a1a17; --vp-top: #1c2936; --vp-bot: #0e151c;
+    --c0: #6eaef2; --c1: #f2965f; --c2: #4cc38a; --c3: #bb98ee; --tip: rgba(2, 8, 14, .96); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1218; --panel: #131b23; --panel2: #18222c; --ink: #e5ecf2; --mute: #93a3b3; --line: #26323e; --grid: #212c37;
+  --accent: #6eaef2; --accent-ink: #06121f; --accent-soft: #162a40; --ok: #4cc38a; --ok-soft: #123324; --warn: #e3a64c; --warn-soft: #35280f;
+  --bad: #f27d73; --bad-soft: #3a1a17; --vp-top: #1c2936; --vp-bot: #0e151c;
+  --c0: #6eaef2; --c1: #f2965f; --c2: #4cc38a; --c3: #bb98ee; --tip: rgba(2, 8, 14, .96); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45;
+  padding-block: 14px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+h1, h2, h3 { margin: 0; font-weight: 600; text-wrap: balance; }
+button, select, input { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* antet */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mark { width: 38px; height: 38px; flex: none; border-radius: 6px; background: var(--accent); position: relative; overflow: hidden; }
+.mark::before, .mark::after { content: ""; position: absolute; inset: 0; background:
+  linear-gradient(135deg, transparent 47%, rgba(255,255,255,.85) 48% 52%, transparent 53%),
+  linear-gradient(45deg, transparent 47%, rgba(255,255,255,.55) 48% 52%, transparent 53%); background-size: 12px 12px; }
+.mark::after { background: linear-gradient(90deg, transparent 47%, rgba(255,255,255,.7) 48% 52%, transparent 53%); background-size: 12px 12px; }
+.brand h1 { font-family: var(--f-display); font-size: 22px; letter-spacing: .1px; }
+.brand p { margin: 0; color: var(--mute); font-size: 12.5px; }
+.top-actions { display: flex; gap: 8px; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 500; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.sm { padding: 3px 9px; font-size: 12.5px; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* tab-uri lucrări */
+.labs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.lab-tab { flex: none; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 14px; cursor: pointer; text-align: left; min-width: 150px; }
+.lab-tab small { display: block; color: var(--mute); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
+.lab-tab b { font-weight: 600; }
+.lab-tab[aria-selected="true"] { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); background: var(--accent-soft); }
+
+.intro { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: start; }
+.intro h2 { font-family: var(--f-display); font-size: 19px; }
+.intro p { margin: 2px 0 0; color: var(--mute); max-width: 95ch; }
+.chip { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line); color: var(--mute); white-space: nowrap; }
+
+/* etape Workbench */
+.wb { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.stg { border: 0; border-right: 1px solid var(--line); background: transparent; padding: 9px 12px 9px 14px; text-align: left; cursor: pointer; position: relative; min-width: 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 6px; }
+.stg:last-child { border-right: 0; }
+.stg b { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stg small { grid-column: 1; color: var(--mute); font-size: 11px; font-family: var(--f-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stg .st { grid-row: 1 / span 2; grid-column: 2; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 11px; color: transparent; }
+.stg.done .st { background: var(--ok); border-color: var(--ok); color: #fff; }
+.stg.dirty .st { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.stg.busy .st { border-color: var(--accent); border-top-color: transparent; animation: spin .8s linear infinite; }
+.stg[aria-selected="true"] { background: var(--accent-soft); box-shadow: inset 0 3px 0 var(--accent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .stg.busy .st { animation: none; } }
+
+/* grilă principală */
+.grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.controls { padding: 14px; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow-y: auto; scrollbar-width: thin; }
+.controls h2 { font-family: var(--f-display); font-size: 17px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.controls h2 small { font-family: var(--f-mono); font-size: 11.5px; color: var(--mute); font-weight: 400; }
+.book { margin: 8px 0 12px; padding: 8px 10px; background: var(--panel2); border-left: 3px solid var(--accent); font-size: 12.5px; color: var(--mute); border-radius: 0 6px 6px 0; }
+.book i { font-style: normal; color: var(--accent); font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; display: block; }
+.prm { margin-bottom: 11px; }
+.prm > label { display: block; font-size: 12.5px; margin-bottom: 3px; }
+.prm-row { display: flex; align-items: center; gap: 8px; }
+.prm input[type="number"] { width: 96px; flex: none; border: 1px solid var(--line); background: var(--panel2); border-radius: 5px; padding: 4px 6px; font-family: var(--f-mono); text-align: right; }
+.prm input[type="number"]:focus { border-color: var(--accent); }
+.prm .u { font-family: var(--f-mono); font-size: 11.5px; color: var(--mute); width: 54px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prm input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.prm select, .sel { width: 100%; border: 1px solid var(--line); background: var(--panel2); border-radius: 5px; padding: 5px 6px; }
+.grp { margin: 14px 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+.info { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 12.5px; margin: 6px 0 10px; }
+.info dt { color: var(--mute); } .info dd { margin: 0; text-align: right; font-family: var(--f-mono); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 6px 0; cursor: pointer; }
+.chk input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+/* viewport */
+.stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.vp { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.vp-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.vp-bar .sel { width: auto; min-width: 210px; max-width: 100%; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 4px 9px; cursor: pointer; font-size: 12.5px; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--accent-soft); }
+.scl { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--mute); }
+.scl input[type="range"] { width: 130px; accent-color: var(--accent); }
+.scl b { font-family: var(--f-mono); color: var(--ink); font-weight: 500; min-width: 7ch; }
+.vp-body { display: flex; height: clamp(360px, 54vh, 560px); position: relative; }
+.vp-canvas { flex: 1; min-width: 0; position: relative; }
+.vp-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.vp-canvas canvas:active { cursor: grabbing; }
+.cbar { width: 92px; flex: none; padding: 10px 8px 10px 4px; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line); }
+.cb-title { font-size: 11.5px; color: var(--mute); margin-bottom: 6px; line-height: 1.25; }
+.cb-title b { color: var(--ink); font-weight: 600; display: block; font-size: 12px; }
+.cb-body { flex: 1; display: flex; gap: 6px; min-height: 0; }
+.cb-body canvas { width: 16px; flex: none; border: 1px solid var(--line); }
+.cb-ticks { position: relative; flex: 1; font-family: var(--f-mono); font-size: 11px; }
+.cb-ticks span { position: absolute; left: 0; transform: translateY(-50%); white-space: nowrap; }
+.probe { position: absolute; left: 8px; top: 8px; background: var(--tip); color: #fff; border-radius: 5px; padding: 3px 8px; font-family: var(--f-mono); font-size: 12px; pointer-events: none; opacity: 0; transition: opacity .1s; }
+.probe.on { opacity: 1; }
+.vp-help { position: absolute; right: 8px; bottom: 6px; font-size: 11px; color: var(--mute); pointer-events: none; text-align: right; }
+.vp-err { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad); padding: 8px 12px; border-radius: 6px; font-size: 13px; display: none; }
+.vp-err.on { display: block; }
+.vp-busy { position: absolute; inset: 0; display: none; place-items: center; background: color-mix(in srgb, var(--panel) 55%, transparent); font-weight: 600; }
+.vp-busy.on { display: grid; }
+.vp-foot { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 7px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--mute); font-family: var(--f-mono); }
+.vp-foot b { color: var(--ink); font-weight: 500; }
+
+/* indicatori */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; min-width: 0; }
+.kpi .l { font-size: 12px; color: var(--mute); }
+.kpi .v { font-family: var(--f-mono); font-size: 24px; font-weight: 500; letter-spacing: -.3px; margin: 2px 0; overflow-wrap: anywhere; }
+.kpi .r { font-size: 12px; color: var(--mute); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-family: var(--f-mono); font-size: 11.5px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.mid { background: var(--warn-soft); color: var(--warn); } .pill.far { background: var(--bad-soft); color: var(--bad); }
+
+/* tabele */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.card > h3 { font-size: 14.5px; margin-bottom: 8px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.card > h3 small { font-weight: 400; color: var(--mute); font-size: 12px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 12px; }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 600; font-size: 11.5px; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 12px; }
+.chart { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 6px; min-width: 0; }
+.chart h3 { font-size: 13.5px; margin-bottom: 4px; font-weight: 600; }
+.chart .cw { height: 250px; position: relative; }
+.chart canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.note { margin: 6px 0 0; padding: 7px 10px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); font-size: 12.5px; }
+.notes { display: flex; flex-direction: column; gap: 6px; }
+
+/* raport */
+.report { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.report > summary { cursor: pointer; padding: 12px 16px; font-family: var(--f-display); font-size: 17px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.report > summary::-webkit-details-marker { display: none; }
+.report > summary::after { content: "Extinde"; font-family: var(--f-body); font-size: 12px; color: var(--accent); font-weight: 500; }
+.report[open] > summary::after { content: "Restrânge"; }
+.rep { padding: 0 18px 18px; display: grid; gap: 14px; }
+.rep h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); }
+.eq { font-family: var(--f-display); font-style: italic; font-size: 15px; padding: 6px 12px; margin: 4px 0; background: var(--panel2); border-radius: 5px; overflow-x: auto; white-space: nowrap; }
+.rep p { margin: 4px 0; max-width: 100ch; }
+.rep ul { margin: 4px 0; padding-left: 20px; }
+.foot { color: var(--mute); font-size: 12px; padding: 4px 2px; }
+
+@media (max-width: 1060px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .controls { position: static; max-height: none; order: 2; }
+  .wb { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stg:nth-child(3) { border-right: 0; }
+  .stg:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 560px) {
+  .intro { grid-template-columns: 1fr; }
+  .vp-body { height: 56vh; min-height: 320px; }
+  .cbar { width: 78px; }
+  .vp-bar .sel { min-width: 0; width: 100%; }
+  .brand h1 { font-size: 19px; }
+  .kpi .v { font-size: 20px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>Simulator MEF - autor:S.L. dr. ing. Vetres Ion</h1>
+        <p>Metoda elementului finit, aplicații practice · Lelea D., Cioabă A.-E., Ed. Politehnica, 2018</p>
+      </div>
+    </div>
+    <div class="top-actions"><button class="btn" id="themeBtn" type="button" aria-label="Schimbă tema">Temă: automată</button></div>
+  </header>
+
+  <nav class="labs" id="labTabs" role="tablist" aria-label="Lucrări de laborator"></nav>
+
+  <section class="intro" id="intro"></section>
+
+  <section class="wb" id="stages" role="tablist" aria-label="Etape de simulare"></section>
+
+  <main class="grid">
+    <aside class="panel controls" id="controls" aria-live="polite"></aside>
+
+    <section class="stage">
+      <div class="vp">
+        <div class="vp-bar">
+          <select class="sel" id="fieldSel" aria-label="Mărimea afișată"></select>
+          <div class="seg" role="group" aria-label="Vedere">
+            <button type="button" data-v="iso">Izometric</button><button type="button" data-v="front">Față</button><button type="button" data-v="top">Sus</button><button type="button" data-v="right">Dreapta</button>
+          </div>
+          <button class="btn sm" id="wireBtn" type="button" aria-pressed="true">Rețea</button>
+          <button class="btn sm" id="animBtn" type="button" aria-pressed="false">Animație</button>
+          <div class="scl"><span>Deformație</span><input type="range" id="sclRange" min="0" max="300" step="1" value="100" aria-label="Amplificarea deformației"><b id="sclVal">×1</b><button class="btn sm" id="realBtn" type="button" aria-pressed="false" title="Deformația reală, fără amplificare">Real ×1</button></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-canvas">
+            <canvas id="vpCanvas" aria-label="Vizualizare 3D a rezultatelor"></canvas>
+            <div class="probe" id="probe"></div>
+            <div class="vp-help">Trage: rotește · Shift+trage: translatează · Rotiță: zoom · Dublu clic: resetare</div>
+            <div class="vp-busy" id="busy">Calculez…</div>
+            <div class="vp-err" id="err" role="alert"></div>
+          </div>
+          <div class="cbar" id="cbar">
+            <div class="cb-title" id="cbTitle"></div>
+            <div class="cb-body"><canvas id="cbCanvas" width="1" height="256"></canvas><div class="cb-ticks" id="cbTicks"></div></div>
+          </div>
+        </div>
+        <div class="vp-foot" id="vpFoot"></div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+      <div class="two">
+        <div class="card"><h3>Rezultate numerice <small>simulator față de carte (Ansys)</small></h3><div class="tw" id="tblRes"></div></div>
+        <div class="card"><h3>Verificări analitice <small>soluții în formă închisă</small></h3><div class="tw" id="tblChk"></div></div>
+      </div>
+      <div class="notes" id="notes"></div>
+      <div class="charts" id="charts"></div>
+      <details class="report" id="reportBox">
+        <summary>Raport de calcul</summary>
+        <div class="rep" id="report"></div>
+      </details>
+      <div class="foot">Solver MEF propriu, rulat local în browser. Valorile de referință sunt cele raportate în lucrare. Sursa: D. Lelea, A.-E. Cioabă, Metoda elementului finit – Aplicații practice, Editura Politehnica, Timișoara, 2018.</div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   MEF core — solver propriu (fără dependențe)
+   - Hexaedru 8 noduri cu moduri incompatibile (Wilson–Taylor)
+   - Triunghi pătratic T6: stare plană de tensiuni, axisimetric, termic
+   - Mesher 2D Delaunay cu frontiere constrânse, mesher structurat
+   - Solver direct cu matrice bandă (Cholesky) + reordonare RCM
+   ============================================================ */
+(function (root) {
+'use strict';
+const FEM = {};
+
+/* ---------- utilitare dense ---------- */
+function invDense(A, n) {            // Gauss-Jordan cu pivotare parțială
+  const a = new Float64Array(2 * n * n), w = 2 * n;
+  for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) a[i * w + j] = A[i * n + j]; a[i * w + n + i] = 1; }
+  for (let c = 0; c < n; c++) {
+    let p = c, m = Math.abs(a[c * w + c]);
+    for (let r = c + 1; r < n; r++) { const v = Math.abs(a[r * w + c]); if (v > m) { m = v; p = r; } }
+    if (m < 1e-300) throw new Error('Matrice singulară (element degenerat)');
+    if (p !== c) for (let j = 0; j < w; j++) { const t = a[c * w + j]; a[c * w + j] = a[p * w + j]; a[p * w + j] = t; }
+    const d = 1 / a[c * w + c];
+    for (let j = 0; j < w; j++) a[c * w + j] *= d;
+    for (let r = 0; r < n; r++) if (r !== c) {
+      const f = a[r * w + c]; if (f === 0) continue;
+      for (let j = 0; j < w; j++) a[r * w + j] -= f * a[c * w + j];
+    }
+  }
+  const out = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) out[i * n + j] = a[i * w + n + j];
+  return out;
+}
+function jac3(X, dN, J) {
+  J.fill(0);
+  for (let n = 0; n < 8; n++) for (let i = 0; i < 3; i++) {
+    const x = X[3 * n + i];
+    J[3 * i] += x * dN[3 * n]; J[3 * i + 1] += x * dN[3 * n + 1]; J[3 * i + 2] += x * dN[3 * n + 2];
+  }
+}
+function inv3(J, I) {
+  const a = J[0], b = J[1], c = J[2], d = J[3], e = J[4], f = J[5], g = J[6], h = J[7], k = J[8];
+  const A = e * k - f * h, B = -(d * k - f * g), C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  const id = 1 / det;
+  I[0] = A * id; I[1] = -(b * k - c * h) * id; I[2] = (b * f - c * e) * id;
+  I[3] = B * id; I[4] = (a * k - c * g) * id; I[5] = -(a * f - c * d) * id;
+  I[6] = C * id; I[7] = -(a * h - b * g) * id; I[8] = (a * e - b * d) * id;
+  return det;
+}
+
+/* ---------- matrice de rigiditate material ---------- */
+FEM.D3 = function (E, nu) {
+  const l = E * nu / ((1 + nu) * (1 - 2 * nu)), m = E / (2 * (1 + nu));
+  const D = new Float64Array(36);
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) D[i * 6 + j] = l;
+  for (let i = 0; i < 3; i++) D[i * 6 + i] = l + 2 * m;
+  D[3 * 6 + 3] = D[4 * 6 + 4] = D[5 * 6 + 5] = m;
+  return D;
+};
+FEM.Dps = function (E, nu) {
+  const c = E / (1 - nu * nu);
+  return new Float64Array([c, c * nu, 0, c * nu, c, 0, 0, 0, c * (1 - nu) / 2]);
+};
+FEM.Dax = function (E, nu) {
+  const c = E / ((1 + nu) * (1 - 2 * nu));
+  return new Float64Array([
+    c * (1 - nu), c * nu, c * nu, 0,
+    c * nu, c * (1 - nu), c * nu, 0,
+    c * nu, c * nu, c * (1 - nu), 0,
+    0, 0, 0, c * (1 - 2 * nu) / 2]);
+};
+
+/* ---------- RCM ---------- */
+FEM.rcm = function (nn, elems, npe) {
+  const ne = elems.length / npe;
+  const adjS = new Array(nn);
+  for (let i = 0; i < nn; i++) adjS[i] = new Set();
+  for (let e = 0; e < ne; e++)
+    for (let a = 0; a < npe; a++) for (let b = a + 1; b < npe; b++) {
+      const na = elems[e * npe + a], nb = elems[e * npe + b];
+      adjS[na].add(nb); adjS[nb].add(na);
+    }
+  const adj = adjS.map(s => Array.from(s));
+  const deg = adj.map(a => a.length);
+  const seen = new Uint8Array(nn), order = [];
+  const byDeg = Array.from({ length: nn }, (_, i) => i).sort((a, b) => deg[a] - deg[b]);
+  function farthest(s) {
+    const lvl = new Int32Array(nn).fill(-1); lvl[s] = 0;
+    const q = [s]; let best = s;
+    for (let h = 0; h < q.length; h++) {
+      const u = q[h];
+      if (lvl[u] > lvl[best] || (lvl[u] === lvl[best] && deg[u] < deg[best])) best = u;
+      for (const v of adj[u]) if (lvl[v] < 0) { lvl[v] = lvl[u] + 1; q.push(v); }
+    }
+    return best;
+  }
+  for (const s0 of byDeg) {
+    if (seen[s0]) continue;
+    let s = s0; s = farthest(s); s = farthest(s);
+    const q = [s]; seen[s] = 1;
+    for (let h = 0; h < q.length; h++) {
+      const u = q[h]; order.push(u);
+      const nb = adj[u].filter(v => !seen[v]).sort((a, b) => deg[a] - deg[b]);
+      for (const v of nb) { seen[v] = 1; q.push(v); }
+    }
+  }
+  order.reverse();
+  const rank = new Int32Array(nn);
+  for (let r = 0; r < nn; r++) rank[order[r]] = r;
+  return rank;
+};
+
+/* ---------- sistem bandă + Cholesky ---------- */
+FEM.BandSystem = function (nn, ndof, elems, npe, fixed, coords, cdim) {
+  const ne = elems.length / npe;
+  function numbering(rank) {
+    const nodeAt = new Int32Array(nn);
+    for (let i = 0; i < nn; i++) nodeAt[rank[i]] = i;
+    const map = new Int32Array(nn * ndof).fill(-1);
+    let c = 0;
+    for (let r = 0; r < nn; r++) {
+      const n = nodeAt[r];
+      for (let d = 0; d < ndof; d++) if (!fixed[n * ndof + d]) map[n * ndof + d] = c++;
+    }
+    let bw = 0;
+    for (let e = 0; e < ne; e++) {
+      let mn = 1e15, mx = -1;
+      for (let a = 0; a < npe; a++) {
+        const n = elems[e * npe + a];
+        for (let d = 0; d < ndof; d++) {
+          const m = map[n * ndof + d];
+          if (m >= 0) { if (m < mn) mn = m; if (m > mx) mx = m; }
+        }
+      }
+      if (mx >= 0 && mx - mn > bw) bw = mx - mn;
+    }
+    return { map, n: c, bw };
+  }
+  let best = numbering(FEM.rcm(nn, elems, npe));
+  if (coords) {
+    for (let ax = 0; ax < cdim; ax++) {
+      const idx = Array.from({ length: nn }, (_, i) => i).sort((a, b) => coords[a * cdim + ax] - coords[b * cdim + ax] || a - b);
+      const rank = new Int32Array(nn);
+      for (let r = 0; r < nn; r++) rank[idx[r]] = r;
+      const cand = numbering(rank);
+      if (cand.bw < best.bw) best = cand;
+    }
+  }
+  this.nn = nn; this.ndof = ndof; this.n = best.n; this.map = best.map; this.bw = best.bw;
+  this.K = new Float64Array(best.n * (best.bw + 1));
+  this.f = new Float64Array(best.n);
+  this.tmp = new Int32Array(64);
+};
+FEM.BandSystem.prototype.addK = function (dofs, Ke) {
+  const m = dofs.length, map = this.map, bw = this.bw, K = this.K, w = bw + 1, fd = this.tmp;
+  for (let i = 0; i < m; i++) fd[i] = map[dofs[i]];
+  for (let i = 0; i < m; i++) {
+    const p = fd[i]; if (p < 0) continue;
+    const base = p * w + bw - p;
+    for (let j = 0; j < m; j++) {
+      const q = fd[j]; if (q < 0 || q > p) continue;
+      K[base + q] += Ke[i * m + j];
+    }
+  }
+};
+FEM.BandSystem.prototype.addF = function (dofs, fe) {
+  for (let i = 0; i < dofs.length; i++) { const p = this.map[dofs[i]]; if (p >= 0) this.f[p] += fe[i]; }
+};
+FEM.BandSystem.prototype.addFdof = function (dof, v) { const p = this.map[dof]; if (p >= 0) this.f[p] += v; };
+FEM.BandSystem.prototype.solve = function () {
+  const n = this.n, bw = this.bw, w = bw + 1;
+  const A = this.K.slice();        // copie pentru reziduu
+  const K = this.K;
+  for (let i = 0; i < n; i++) {
+    const ri = i * w, j0 = Math.max(0, i - bw);
+    for (let j = j0; j <= i; j++) {
+      const rj = j * w;
+      let s = K[ri + j - i + bw];
+      const pa = ri - i + bw + j0, pb = rj - j + bw + j0, cnt = j - j0;
+      for (let t = 0; t < cnt; t++) s -= K[pa + t] * K[pb + t];
+      if (j === i) {
+        if (!(s > 0)) throw new Error('Sistem singular: structura nu este suficient fixată (mișcare de corp rigid)');
+        K[ri + bw] = Math.sqrt(s);
+      } else K[ri + j - i + bw] = s / K[rj + bw];
+    }
+  }
+  const y = this.f.slice();
+  for (let i = 0; i < n; i++) {
+    const ri = i * w, j0 = Math.max(0, i - bw);
+    let s = y[i];
+    for (let j = j0; j < i; j++) s -= K[ri + j - i + bw] * y[j];
+    y[i] = s / K[ri + bw];
+  }
+  for (let i = n - 1; i >= 0; i--) {
+    let s = y[i];
+    const jm = Math.min(n - 1, i + bw);
+    for (let j = i + 1; j <= jm; j++) s -= K[j * w + i - j + bw] * y[j];
+    y[i] = s / K[i * w + bw];
+  }
+  // reziduu relativ ||A y - f|| / ||f||
+  const r = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const ri = i * w, j0 = Math.max(0, i - bw);
+    for (let j = j0; j < i; j++) { const a = A[ri + j - i + bw]; r[i] += a * y[j]; r[j] += a * y[i]; }
+    r[i] += A[ri + bw] * y[i];
+  }
+  let nr = 0, nf = 0;
+  for (let i = 0; i < n; i++) { const d = r[i] - this.f[i]; nr += d * d; nf += this.f[i] * this.f[i]; }
+  this.residual = Math.sqrt(nr / (nf || 1));
+  const U = new Float64Array(this.nn * this.ndof);
+  for (let i = 0; i < U.length; i++) { const p = this.map[i]; if (p >= 0) U[i] = y[p]; }
+  return U;
+};
+
+/* ============================================================
+   HEXAEDRU 8 NODURI + MODURI INCOMPATIBILE
+   ============================================================ */
+const HXI = [-1, 1, 1, -1, -1, 1, 1, -1], HET = [-1, -1, 1, 1, -1, -1, 1, 1], HZE = [-1, -1, -1, -1, 1, 1, 1, 1];
+const GP = 1 / Math.sqrt(3);
+function hexDN(xi, et, ze, dN) {
+  for (let n = 0; n < 8; n++) {
+    const a = HXI[n], b = HET[n], c = HZE[n];
+    dN[3 * n] = a * (1 + b * et) * (1 + c * ze) / 8;
+    dN[3 * n + 1] = b * (1 + a * xi) * (1 + c * ze) / 8;
+    dN[3 * n + 2] = c * (1 + a * xi) * (1 + b * et) / 8;
+  }
+}
+function setCols(B, w, col, gx, gy, gz) {
+  B[col] = gx; B[3 * w + col] = gy; B[5 * w + col] = gz;
+  B[w + col + 1] = gy; B[3 * w + col + 1] = gx; B[4 * w + col + 1] = gz;
+  B[2 * w + col + 2] = gz; B[4 * w + col + 2] = gy; B[5 * w + col + 2] = gx;
+}
+FEM.hexElem = function (X, D) {
+  const dN = new Float64Array(24), J = new Float64Array(9), Ji = new Float64Array(9), J0 = new Float64Array(9), Ji0 = new Float64Array(9);
+  hexDN(0, 0, 0, dN); jac3(X, dN, J0);
+  const det0 = inv3(J0, Ji0);
+  if (!(det0 > 0)) throw new Error('Element hexaedric degenerat (Jacobian ≤ 0)');
+  const W = 33, K = new Float64Array(W * W), B = new Float64Array(6 * W), DB = new Float64Array(6 * W);
+  const g = new Float64Array(24);
+  for (let gk = 0; gk < 8; gk++) {
+    const xi = (gk & 1 ? 1 : -1) * GP, et = (gk & 2 ? 1 : -1) * GP, ze = (gk & 4 ? 1 : -1) * GP;
+    hexDN(xi, et, ze, dN); jac3(X, dN, J);
+    const det = inv3(J, Ji);
+    if (!(det > 0)) throw new Error('Element hexaedric distorsionat (Jacobian ≤ 0)');
+    B.fill(0);
+    for (let n = 0; n < 8; n++) {
+      const a = dN[3 * n], b = dN[3 * n + 1], c = dN[3 * n + 2];
+      const gx = Ji[0] * a + Ji[3] * b + Ji[6] * c, gy = Ji[1] * a + Ji[4] * b + Ji[7] * c, gz = Ji[2] * a + Ji[5] * b + Ji[8] * c;
+      setCols(B, W, 3 * n, gx, gy, gz);
+    }
+    const sc = det0 / det, xs = [xi, et, ze];
+    for (let m = 0; m < 3; m++) {
+      const f = sc * (-2 * xs[m]);
+      setCols(B, W, 24 + 3 * m, Ji0[3 * m] * f, Ji0[3 * m + 1] * f, Ji0[3 * m + 2] * f);
+    }
+    for (let i = 0; i < 6; i++) for (let j = 0; j < W; j++) {
+      let s = 0; for (let k = 0; k < 6; k++) s += D[i * 6 + k] * B[k * W + j];
+      DB[i * W + j] = s;
+    }
+    for (let i = 0; i < W; i++) for (let j = i; j < W; j++) {
+      let s = 0; for (let k = 0; k < 6; k++) s += B[k * W + i] * DB[k * W + j];
+      K[i * W + j] += s * det;
+    }
+  }
+  for (let i = 0; i < W; i++) for (let j = 0; j < i; j++) K[i * W + j] = K[j * W + i];
+  const Kaa = new Float64Array(81), Kau = new Float64Array(9 * 24);
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) Kaa[i * 9 + j] = K[(24 + i) * W + 24 + j];
+    for (let j = 0; j < 24; j++) Kau[i * 24 + j] = K[(24 + i) * W + j];
+  }
+  const Kai = invDense(Kaa, 9);
+  const T = new Float64Array(9 * 24);
+  for (let i = 0; i < 9; i++) for (let j = 0; j < 24; j++) {
+    let s = 0; for (let k = 0; k < 9; k++) s += Kai[i * 9 + k] * Kau[k * 24 + j];
+    T[i * 24 + j] = s;
+  }
+  const Ke = new Float64Array(576);
+  for (let i = 0; i < 24; i++) for (let j = 0; j < 24; j++) {
+    let s = K[i * W + j];
+    for (let k = 0; k < 9; k++) s -= K[i * W + 24 + k] * T[k * 24 + j];
+    Ke[i * 24 + j] = s;
+  }
+  return { Ke, T };
+};
+/* tensiuni și deformații în colțurile elementului; sig/eps: 48 valori (8 noduri × 6) */
+FEM.hexRecover = function (X, D, T, u, sig, eps) {
+  const dN = new Float64Array(24), J = new Float64Array(9), Ji = new Float64Array(9), J0 = new Float64Array(9), Ji0 = new Float64Array(9);
+  hexDN(0, 0, 0, dN); jac3(X, dN, J0);
+  const det0 = inv3(J0, Ji0);
+  const al = new Float64Array(9);
+  for (let i = 0; i < 9; i++) { let s = 0; for (let j = 0; j < 24; j++) s += T[i * 24 + j] * u[j]; al[i] = -s; }
+  for (let nd = 0; nd < 8; nd++) {
+    const xi = HXI[nd], et = HET[nd], ze = HZE[nd];
+    hexDN(xi, et, ze, dN); jac3(X, dN, J);
+    const det = inv3(J, Ji);
+    let e0 = 0, e1 = 0, e2 = 0, e3 = 0, e4 = 0, e5 = 0;
+    for (let n = 0; n < 8; n++) {
+      const a = dN[3 * n], b = dN[3 * n + 1], c = dN[3 * n + 2];
+      const gx = Ji[0] * a + Ji[3] * b + Ji[6] * c, gy = Ji[1] * a + Ji[4] * b + Ji[7] * c, gz = Ji[2] * a + Ji[5] * b + Ji[8] * c;
+      const ux = u[3 * n], uy = u[3 * n + 1], uz = u[3 * n + 2];
+      e0 += gx * ux; e1 += gy * uy; e2 += gz * uz;
+      e3 += gy * ux + gx * uy; e4 += gz * uy + gy * uz; e5 += gz * ux + gx * uz;
+    }
+    const sc = det0 / det, xs = [xi, et, ze];
+    for (let m = 0; m < 3; m++) {
+      const f = sc * (-2 * xs[m]);
+      const gx = Ji0[3 * m] * f, gy = Ji0[3 * m + 1] * f, gz = Ji0[3 * m + 2] * f;
+      const ax = al[3 * m], ay = al[3 * m + 1], az = al[3 * m + 2];
+      e0 += gx * ax; e1 += gy * ay; e2 += gz * az;
+      e3 += gy * ax + gx * ay; e4 += gz * ay + gy * az; e5 += gz * ax + gx * az;
+    }
+    const e = [e0, e1, e2, e3, e4, e5];
+    for (let i = 0; i < 6; i++) {
+      eps[nd * 6 + i] = e[i];
+      let s = 0; for (let k = 0; k < 6; k++) s += D[i * 6 + k] * e[k];
+      sig[nd * 6 + i] = s;
+    }
+  }
+};
+/* fețe hexaedru (orientate spre exterior) */
+FEM.HEX_FACES = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [3, 7, 6, 2], [0, 4, 7, 3], [1, 2, 6, 5]];
+const QG = [[-GP, -GP], [GP, -GP], [GP, GP], [-GP, GP]];
+function quadGeom(P, s, t) {
+  const N = [(1 - s) * (1 - t) / 4, (1 + s) * (1 - t) / 4, (1 + s) * (1 + t) / 4, (1 - s) * (1 + t) / 4];
+  const ds = [-(1 - t) / 4, (1 - t) / 4, (1 + t) / 4, -(1 + t) / 4];
+  const dt = [-(1 - s) / 4, -(1 + s) / 4, (1 + s) / 4, (1 - s) / 4];
+  let xs = [0, 0, 0], xt = [0, 0, 0];
+  for (let n = 0; n < 4; n++) for (let i = 0; i < 3; i++) { xs[i] += ds[n] * P[3 * n + i]; xt[i] += dt[n] * P[3 * n + i]; }
+  const nv = [xs[1] * xt[2] - xs[2] * xt[1], xs[2] * xt[0] - xs[0] * xt[2], xs[0] * xt[1] - xs[1] * xt[0]];
+  return { N, nv };
+}
+/* presiune p pe față (forță = -p n_ext), P: 12 coordonate (noduri în ordinea feței) */
+FEM.quadPressure = function (P, p) {
+  const f = new Float64Array(12);
+  for (const [s, t] of QG) {
+    const { N, nv } = quadGeom(P, s, t);
+    for (let n = 0; n < 4; n++) for (let i = 0; i < 3; i++) f[3 * n + i] += -p * N[n] * nv[i];
+  }
+  return f;
+};
+FEM.quadTraction = function (P, tv) {
+  const f = new Float64Array(12);
+  for (const [s, t] of QG) {
+    const { N, nv } = quadGeom(P, s, t);
+    const a = Math.hypot(nv[0], nv[1], nv[2]);
+    for (let n = 0; n < 4; n++) for (let i = 0; i < 3; i++) f[3 * n + i] += tv[i] * N[n] * a;
+  }
+  return f;
+};
+FEM.quadArea = function (P) {
+  let A = 0;
+  for (const [s, t] of QG) { const { nv } = quadGeom(P, s, t); A += Math.hypot(nv[0], nv[1], nv[2]); }
+  return A;
+};
+
+/* ============================================================
+   TRIUNGHI PĂTRATIC T6
+   ============================================================ */
+const _s15 = Math.sqrt(15);
+const TGP = (function () {
+  const a = (6 - _s15) / 21, b = (6 + _s15) / 21, wa = (155 - _s15) / 1200, wb = (155 + _s15) / 1200;
+  return [[1 / 3, 1 / 3, 9 / 40], [a, a, wa], [1 - 2 * a, a, wa], [a, 1 - 2 * a, wa], [b, b, wb], [1 - 2 * b, b, wb], [b, 1 - 2 * b, wb]];
+})();
+const T6NODES = [[1, 0], [0, 1], [0, 0], [.5, .5], [0, .5], [.5, 0]];   // (L1, L2) pentru nodurile 1..6
+function t6N(L1, L2, N, dxi, det) {
+  const L3 = 1 - L1 - L2;
+  N[0] = L1 * (2 * L1 - 1); N[1] = L2 * (2 * L2 - 1); N[2] = L3 * (2 * L3 - 1);
+  N[3] = 4 * L1 * L2; N[4] = 4 * L2 * L3; N[5] = 4 * L3 * L1;
+  dxi[0] = 4 * L1 - 1; det[0] = 0;
+  dxi[1] = 0; det[1] = 4 * L2 - 1;
+  dxi[2] = -(4 * L3 - 1); det[2] = -(4 * L3 - 1);
+  dxi[3] = 4 * L2; det[3] = 4 * L1;
+  dxi[4] = -4 * L2; det[4] = 4 * (L3 - L2);
+  dxi[5] = 4 * (L3 - L1); det[5] = -4 * L1;
+}
+const _N = new Float64Array(6), _dx = new Float64Array(6), _de = new Float64Array(6);
+const _gx = new Float64Array(6), _gy = new Float64Array(6);
+/* geometrie în punctul (L1,L2): întoarce det J; umple _N,_gx,_gy */
+function t6Geom(X, L1, L2) {
+  t6N(L1, L2, _N, _dx, _de);
+  let a = 0, b = 0, c = 0, d = 0;
+  for (let n = 0; n < 6; n++) { const x = X[2 * n], y = X[2 * n + 1]; a += x * _dx[n]; b += y * _dx[n]; c += x * _de[n]; d += y * _de[n]; }
+  const det = a * d - b * c;
+  const ia = d / det, ib = -b / det, ic = -c / det, id = a / det;
+  for (let n = 0; n < 6; n++) { _gx[n] = ia * _dx[n] + ib * _de[n]; _gy[n] = ic * _dx[n] + id * _de[n]; }
+  return det;
+}
+FEM.t6Area = function (X) { let A = 0; for (const [l1, l2, w] of TGP) A += w * 0.5 * t6Geom(X, l1, l2); return A; };
+FEM.t6Centroid = function (X) {
+  let A = 0, cx = 0, cy = 0;
+  for (const [l1, l2, w] of TGP) {
+    const det = t6Geom(X, l1, l2) * 0.5 * w; A += det;
+    for (let n = 0; n < 6; n++) { cx += det * _N[n] * X[2 * n]; cy += det * _N[n] * X[2 * n + 1]; }
+  }
+  return [cx / A, cy / A];
+};
+/* rigiditate T6; mode: 'ps' (grosime t) sau 'ax'. thermal0: aT (deformație termică izotropă în Gauss) — funcție (N)=>valoare */
+FEM.t6Static = function (X, mode, D, t, dTfun, alpha) {
+  const nb = mode === 'ps' ? 3 : 4;
+  const K = new Float64Array(144), B = new Float64Array(nb * 12), DB = new Float64Array(nb * 12);
+  const fth = dTfun ? new Float64Array(12) : null;
+  for (const [l1, l2, w] of TGP) {
+    const det = t6Geom(X, l1, l2);
+    let wt = w * 0.5 * det, r = 0;
+    if (mode === 'ax') { for (let n = 0; n < 6; n++) r += _N[n] * X[2 * n]; wt *= 2 * Math.PI * r; } else wt *= t;
+    B.fill(0);
+    for (let n = 0; n < 6; n++) {
+      if (mode === 'ps') {
+        B[2 * n] = _gx[n]; B[12 + 2 * n + 1] = _gy[n]; B[24 + 2 * n] = _gy[n]; B[24 + 2 * n + 1] = _gx[n];
+      } else {
+        B[2 * n] = _gx[n]; B[12 + 2 * n + 1] = _gy[n]; B[24 + 2 * n] = _N[n] / r;
+        B[36 + 2 * n] = _gy[n]; B[36 + 2 * n + 1] = _gx[n];
+      }
+    }
+    for (let i = 0; i < nb; i++) for (let j = 0; j < 12; j++) {
+      let s = 0; for (let k = 0; k < nb; k++) s += D[i * nb + k] * B[k * 12 + j];
+      DB[i * 12 + j] = s;
+    }
+    for (let i = 0; i < 12; i++) for (let j = i; j < 12; j++) {
+      let s = 0; for (let k = 0; k < nb; k++) s += B[k * 12 + i] * DB[k * 12 + j];
+      K[i * 12 + j] += s * wt;
+    }
+    if (fth) {
+      let dT = 0; for (let n = 0; n < 6; n++) dT += _N[n] * dTfun[n];
+      const e0 = alpha * dT;
+      // sigma0 = D * [e0,e0,0]  (ps)
+      const s0x = D[0] * e0 + D[1] * e0, s0y = D[3] * e0 + D[4] * e0;
+      for (let n = 0; n < 6; n++) {
+        fth[2 * n] += (_gx[n] * s0x) * wt; fth[2 * n + 1] += (_gy[n] * s0y) * wt;
+      }
+    }
+  }
+  for (let i = 0; i < 12; i++) for (let j = 0; j < i; j++) K[i * 12 + j] = K[j * 12 + i];
+  return { K, fth };
+};
+/* tensiuni și deformații în cele 6 noduri; întoarce {sig: 6*6 (x,y,z,xy,yz,zx), eps: 6*6} în convenția 3D */
+FEM.t6Recover = function (X, mode, D, u, dTnodal, alpha, nu) {
+  const sig = new Float64Array(36), eps = new Float64Array(36);
+  for (let nd = 0; nd < 6; nd++) {
+    const [l1, l2] = T6NODES[nd];
+    t6Geom(X, l1, l2);
+    let ex = 0, ey = 0, g = 0, et = 0, r = 0;
+    for (let n = 0; n < 6; n++) { r += _N[n] * X[2 * n]; }
+    for (let n = 0; n < 6; n++) {
+      const ux = u[2 * n], uy = u[2 * n + 1];
+      ex += _gx[n] * ux; ey += _gy[n] * uy; g += _gy[n] * ux + _gx[n] * uy;
+      if (mode === 'ax' && r > 1e-9) et += _N[n] * ux / r;
+    }
+    if (mode === 'ax' && r <= 1e-9) et = ex;
+    let sx, sy, sz = 0, sxy, ez = 0;
+    if (mode === 'ps') {
+      let e0 = 0;
+      if (dTnodal) { let dT = 0; for (let n = 0; n < 6; n++) dT += _N[n] * dTnodal[n]; e0 = alpha * dT; }
+      const mx = ex - e0, my = ey - e0;
+      const c = D[0] / 1;
+      sx = D[0] * mx + D[1] * my; sy = D[3] * mx + D[4] * my; sxy = D[8] * g;
+      ez = -nu / (1 - nu) * (mx + my) + e0;     // deformația în grosime (plan σz=0)
+      eps[nd * 6 + 2] = ez;
+    } else {
+      sx = D[0] * ex + D[1] * ey + D[2] * et; sy = D[4] * ex + D[5] * ey + D[6] * et; sz = D[8] * ex + D[9] * ey + D[10] * et; sxy = D[15] * g;
+      eps[nd * 6 + 2] = et;
+    }
+    sig[nd * 6] = sx; sig[nd * 6 + 1] = sy; sig[nd * 6 + 2] = sz; sig[nd * 6 + 3] = sxy;
+    eps[nd * 6] = ex; eps[nd * 6 + 1] = ey; eps[nd * 6 + 3] = g;
+  }
+  return { sig, eps };
+};
+/* termic */
+FEM.t6Thermal = function (X, kt, hA, qa, Tinf) {
+  const K = new Float64Array(36), f = new Float64Array(6);
+  for (const [l1, l2, w] of TGP) {
+    const det = t6Geom(X, l1, l2), wt = w * 0.5 * det;
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < 6; j++) K[i * 6 + j] += wt * (kt * (_gx[i] * _gx[j] + _gy[i] * _gy[j]) + hA * _N[i] * _N[j]);
+      f[i] += wt * (qa + hA * Tinf) * _N[i];
+    }
+  }
+  return { K, f };
+};
+/* integrale pe muchie pătratică (x1,y1, xm,ym, x2,y2) */
+const EG = [[-Math.sqrt(0.6), 5 / 9], [0, 8 / 9], [Math.sqrt(0.6), 5 / 9]];
+FEM.edgeInt = function (E, axi) {
+  const M = new Float64Array(9), v = new Float64Array(3);
+  let len = 0;
+  for (const [s, w] of EG) {
+    const N = [s * (s - 1) / 2, 1 - s * s, s * (s + 1) / 2], d = [s - 0.5, -2 * s, s + 0.5];
+    let tx = 0, ty = 0, r = 0;
+    for (let n = 0; n < 3; n++) { tx += d[n] * E[2 * n]; ty += d[n] * E[2 * n + 1]; r += N[n] * E[2 * n]; }
+    const ds = Math.hypot(tx, ty) * w * (axi ? 2 * Math.PI * r : 1);
+    len += Math.hypot(tx, ty) * w;
+    for (let i = 0; i < 3; i++) { v[i] += N[i] * ds; for (let j = 0; j < 3; j++) M[i * 3 + j] += N[i] * N[j] * ds; }
+  }
+  return { M, v, len };
+};
+/* forță nodală pe muchie: traction fix (tx,ty) sau presiune p (normală exterioară din traversarea CCW) */
+FEM.edgeLoad = function (E, axi, tx, ty, p) {
+  const f = new Float64Array(6);
+  for (const [s, w] of EG) {
+    const N = [s * (s - 1) / 2, 1 - s * s, s * (s + 1) / 2], d = [s - 0.5, -2 * s, s + 0.5];
+    let dx = 0, dy = 0, r = 0;
+    for (let n = 0; n < 3; n++) { dx += d[n] * E[2 * n]; dy += d[n] * E[2 * n + 1]; r += N[n] * E[2 * n]; }
+    const jw = w * (axi ? 2 * Math.PI * r : 1), sl = Math.hypot(dx, dy);
+    let fx = tx * sl, fy = ty * sl;
+    if (p) { fx += -p * dy; fy += p * dx; }     // -p * n_ext * |dx/ds| ; n_ext*|t| = (ty,-tx)
+    for (let i = 0; i < 3; i++) { f[2 * i] += N[i] * fx * jw; f[2 * i + 1] += N[i] * fy * jw; }
+  }
+  return f;
+};
+
+/* ============================================================
+   MESH 2D
+   ============================================================ */
+function delaunay(px, py) {
+  const n = px.length;
+  let x0 = 1e300, y0 = 1e300, x1 = -1e300, y1 = -1e300;
+  for (let i = 0; i < n; i++) { x0 = Math.min(x0, px[i]); x1 = Math.max(x1, px[i]); y0 = Math.min(y0, py[i]); y1 = Math.max(y1, py[i]); }
+  const dm = Math.max(x1 - x0, y1 - y0) * 20, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+  const X = new Float64Array(n + 3), Y = new Float64Array(n + 3);
+  X.set(px); Y.set(py);
+  X[n] = mx - dm; Y[n] = my - dm; X[n + 1] = mx + dm; Y[n + 1] = my - dm; X[n + 2] = mx; Y[n + 2] = my + dm;
+  const cap = 8 * n + 64;
+  const A = new Int32Array(cap), B = new Int32Array(cap), C = new Int32Array(cap);
+  const CX = new Float64Array(cap), CY = new Float64Array(cap), R2 = new Float64Array(cap), alive = new Uint8Array(cap);
+  let cnt = 0; const free = [];
+  function circ(t) {
+    const a = A[t], b = B[t], c = C[t];
+    const ax = X[a], ay = Y[a], bx = X[b] - ax, by = Y[b] - ay, cx = X[c] - ax, cy = Y[c] - ay;
+    const d = 2 * (bx * cy - by * cx);
+    const ux = (cy * (bx * bx + by * by) - by * (cx * cx + cy * cy)) / d, uy = (bx * (cx * cx + cy * cy) - cx * (bx * bx + by * by)) / d;
+    CX[t] = ax + ux; CY[t] = ay + uy; R2[t] = ux * ux + uy * uy;
+  }
+  function add(a, b, c) {
+    const t = free.length ? free.pop() : cnt++;
+    A[t] = a; B[t] = b; C[t] = c; alive[t] = 1; circ(t); return t;
+  }
+  add(n, n + 1, n + 2);
+  const bad = [];
+  for (let i = 0; i < n; i++) {
+    const x = X[i], y = Y[i];
+    bad.length = 0;
+    for (let t = 0; t < cnt; t++) {
+      if (!alive[t]) continue;
+      const dx = x - CX[t], dy = y - CY[t];
+      if (dx * dx + dy * dy < R2[t] * (1 - 1e-11)) bad.push(t);
+    }
+    const em = new Map();
+    for (const t of bad) {
+      const v = [A[t], B[t], C[t]];
+      for (let k = 0; k < 3; k++) {
+        const a = v[k], b = v[(k + 1) % 3], key = a < b ? a * (n + 3) + b : b * (n + 3) + a;
+        const o = em.get(key);
+        if (o) o.c++; else em.set(key, { a, b, c: 1 });
+      }
+    }
+    for (const t of bad) { alive[t] = 0; free.push(t); }
+    for (const e of em.values()) if (e.c === 1) add(e.a, e.b, i);
+  }
+  const tri = [];
+  for (let t = 0; t < cnt; t++) {
+    if (!alive[t]) continue;
+    if (A[t] >= n || B[t] >= n || C[t] >= n) continue;
+    tri.push(A[t], B[t], C[t]);
+  }
+  return tri;
+}
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+/* spec: { bpts:[{x,y,hb,arcs:[]}], arcs:{id:{cx,cy,r}}, inside(x,y), bbox:[x0,y0,x1,y1], hmax, grow }
+   întoarce {X (2*nn), conn (6*ne), nc: număr colțuri, ne, nn, bnodeIdx} */
+FEM.mesh2D = function (spec) {
+  const bp = spec.bpts, nb = bp.length;
+  const [bx0, by0, bx1, by1] = spec.bbox;
+  const hmax = spec.hmax, grow = spec.grow || 0.35;
+  let hmin = 1e9; for (const p of bp) hmin = Math.min(hmin, p.hb);
+  const pts = bp.map(p => [p.x, p.y]);
+  const rnd = rng(12345);
+  // distanță până la cel mai apropiat punct de frontieră + hb local
+  const lat = hmin * 0.5, nxl = Math.ceil((bx1 - bx0) / lat), nyl = Math.ceil((by1 - by0) / lat);
+  const cells = new Map(); const cs = hmin;
+  const key = (i, j) => i * 100003 + j;
+  function put(x, y, idx) { const i = Math.floor((x - bx0) / cs), j = Math.floor((y - by0) / cs), k = key(i, j); let a = cells.get(k); if (!a) cells.set(k, a = []); a.push(idx); }
+  for (let i = 0; i < nb; i++) put(pts[i][0], pts[i][1], i);
+  const cand = [];
+  for (let j = 0; j <= nyl; j++) for (let i = 0; i <= nxl; i++) {
+    const x = bx0 + i * lat + (rnd() - .5) * lat * .6, y = by0 + j * lat + (rnd() - .5) * lat * .6;
+    if (spec.inside(x, y)) cand.push([x, y]);
+  }
+  for (let i = cand.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = cand[i]; cand[i] = cand[j]; cand[j] = t; }
+  const interior = [];
+  for (const [x, y] of cand) {
+    let d = 1e9, hn = hmax;
+    for (let k = 0; k < nb; k++) { const dd = Math.hypot(x - bp[k].x, y - bp[k].y); if (dd < d) { d = dd; hn = bp[k].hb; } }
+    const r = Math.min(hmax, hn + grow * d) * 0.85;
+    if (d < 0.8 * hn) continue;
+    const ci = Math.floor((x - bx0) / cs), cj = Math.floor((y - by0) / cs), rr = Math.ceil(r / cs);
+    let ok = true;
+    outer: for (let a = ci - rr; a <= ci + rr; a++) for (let b = cj - rr; b <= cj + rr; b++) {
+      const arr = cells.get(key(a, b)); if (!arr) continue;
+      for (const idx of arr) { const q = idx < nb ? pts[idx] : interior[idx - nb]; if ((q[0] - x) ** 2 + (q[1] - y) ** 2 < r * r) { ok = false; break outer; } }
+    }
+    if (!ok) continue;
+    interior.push([x, y]);
+    const k = key(ci, cj); let arr = cells.get(k); if (!arr) cells.set(k, arr = []); arr.push(nb + interior.length - 1);
+  }
+  let all = pts.concat(interior);
+  let tri = null;
+  // smoothing Laplace al nodurilor interioare (de 3 ori)
+  for (let it = 0; it < 4; it++) {
+    const px = Float64Array.from(all, p => p[0]), py = Float64Array.from(all, p => p[1]);
+    tri = delaunay(px, py);
+    // filtrare după centroid
+    const keep = [];
+    for (let t = 0; t < tri.length; t += 3) {
+      const a = tri[t], b = tri[t + 1], c = tri[t + 2];
+      const cx = (px[a] + px[b] + px[c]) / 3, cy = (py[a] + py[b] + py[c]) / 3;
+      if (spec.inside(cx, cy)) keep.push(a, b, c);
+    }
+    tri = keep;
+    if (it === 3) break;
+    const sx = new Float64Array(all.length), sy = new Float64Array(all.length), sc = new Int32Array(all.length);
+    for (let t = 0; t < tri.length; t += 3) for (let k = 0; k < 3; k++) {
+      const a = tri[t + k], b = tri[t + (k + 1) % 3];
+      sx[a] += px[b]; sy[a] += py[b]; sc[a]++; sx[b] += px[a]; sy[b] += py[a]; sc[b]++;
+    }
+    for (let i = nb; i < all.length; i++) if (sc[i]) {
+      const nx = sx[i] / sc[i], ny = sy[i] / sc[i];
+      if (spec.inside(nx, ny)) all[i] = [0.5 * all[i][0] + 0.5 * nx, 0.5 * all[i][1] + 0.5 * ny];
+    }
+  }
+  // compactare noduri folosite; orientare CCW
+  const used = new Int32Array(all.length).fill(-1); let nc = 0; const cxs = [], cys = [], arcsOf = [];
+  const conn3 = [];
+  for (let t = 0; t < tri.length; t += 3) {
+    let [a, b, c] = [tri[t], tri[t + 1], tri[t + 2]];
+    const ar = (all[b][0] - all[a][0]) * (all[c][1] - all[a][1]) - (all[b][1] - all[a][1]) * (all[c][0] - all[a][0]);
+    if (Math.abs(ar) < 1e-12) continue;
+    if (ar < 0) { const s = b; b = c; c = s; }
+    for (const v of [a, b, c]) if (used[v] < 0) { used[v] = nc++; cxs.push(all[v][0]); cys.push(all[v][1]); arcsOf.push(v < nb ? bp[v].arcs : null); }
+    conn3.push(used[a], used[b], used[c]);
+  }
+  return FEM.toT6(cxs, cys, conn3, arcsOf, spec.arcs);
+};
+/* conversie T3 → T6 cu proiecție pe arce */
+FEM.toT6 = function (cx, cy, conn3, arcsOf, arcs) {
+  const nc = cx.length, ne = conn3.length / 3;
+  const X = [], mid = new Map(), count = new Map();
+  for (let i = 0; i < nc; i++) X.push(cx[i], cy[i]);
+  const conn = new Int32Array(6 * ne);
+  const ek = (a, b) => a < b ? a * (nc + 7) + b : b * (nc + 7) + a;
+  for (let e = 0; e < ne; e++) for (let k = 0; k < 3; k++) { const key = ek(conn3[3 * e + k], conn3[3 * e + (k + 1) % 3]); count.set(key, (count.get(key) || 0) + 1); }
+  for (let e = 0; e < ne; e++) {
+    for (let k = 0; k < 3; k++) conn[6 * e + k] = conn3[3 * e + k];
+    for (let k = 0; k < 3; k++) {
+      const a = conn3[3 * e + k], b = conn3[3 * e + (k + 1) % 3], key = ek(a, b);
+      let m = mid.get(key);
+      if (m === undefined) {
+        let mx = (cx[a] + cx[b]) / 2, my = (cy[a] + cy[b]) / 2;
+        if (arcsOf && arcsOf[a] && arcsOf[b] && count.get(key) === 1) {
+          for (const id of arcsOf[a]) if (arcsOf[b].includes(id)) {
+            const A = arcs[id], vx = mx - A.cx, vy = my - A.cy, l = Math.hypot(vx, vy);
+            if (l > 1e-12) { mx = A.cx + A.r * vx / l; my = A.cy + A.r * vy / l; }
+            break;
+          }
+        }
+        m = X.length / 2; X.push(mx, my); mid.set(key, m);
+      }
+      conn[6 * e + 3 + k] = m;
+    }
+  }
+  return { X: Float64Array.from(X), conn, nc, ne, nn: X.length / 2 };
+};
+/* rețea structurată dreptunghiulară (axisimetric) → T6 */
+FEM.meshRect = function (xs, ys, inside) {
+  const nx = xs.length - 1, ny = ys.length - 1, id = new Int32Array((nx + 1) * (ny + 1)).fill(-1);
+  const cx = [], cy = [], conn3 = [];
+  const vid = (i, j) => { const k = j * (nx + 1) + i; if (id[k] < 0) { id[k] = cx.length; cx.push(xs[i]); cy.push(ys[j]); } return id[k]; };
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    if (!inside((xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2)) continue;
+    const a = vid(i, j), b = vid(i + 1, j), c = vid(i + 1, j + 1), d = vid(i, j + 1);
+    if ((i + j) % 2 === 0) conn3.push(a, b, c, a, c, d); else conn3.push(a, b, d, b, c, d);
+  }
+  return FEM.toT6(cx, cy, conn3, null, null);
+};
+/* muchii de frontieră (un singur element) → listă {e,k,n:[n1,nm,n2]} */
+FEM.boundaryEdges = function (m) {
+  const map = new Map(), out = [], N = m.nn + 7;
+  for (let e = 0; e < m.ne; e++) for (let k = 0; k < 3; k++) {
+    const a = m.conn[6 * e + k], b = m.conn[6 * e + (k + 1) % 3], key = a < b ? a * N + b : b * N + a;
+    const o = map.get(key); if (o) o.c++; else map.set(key, { c: 1, e, k, a, b });
+  }
+  const list = [], inter = [];
+  const m2 = new Map();
+  for (let e = 0; e < m.ne; e++) for (let k = 0; k < 3; k++) {
+    const a = m.conn[6 * e + k], b = m.conn[6 * e + (k + 1) % 3], key = a < b ? a * N + b : b * N + a;
+    const o = map.get(key);
+    if (o.c === 1) list.push({ e, k, n: [a, m.conn[6 * e + 3 + k], b] });
+    else { const p = m2.get(key); if (p) inter.push({ e1: p.e, k1: p.k, e2: e, k2: k, n: [a, m.conn[6 * e + 3 + k], b] }); else m2.set(key, { e, k }); }
+  }
+  return { boundary: list, interface: inter };
+};
+
+/* ============================================================
+   POST-PROCESARE
+   ============================================================ */
+FEM.vonMises = function (s) {
+  const a = s[0], b = s[1], c = s[2], d = s[3], e = s[4], f = s[5];
+  return Math.sqrt(Math.max(0, 0.5 * ((a - b) ** 2 + (b - c) ** 2 + (c - a) ** 2) + 3 * (d * d + e * e + f * f)));
+};
+FEM.principal = function (s) {
+  const a = s[0], b = s[1], c = s[2], d = s[3], e = s[4], f = s[5];
+  const p1 = d * d + e * e + f * f;
+  const q = (a + b + c) / 3;
+  const p2 = (a - q) ** 2 + (b - q) ** 2 + (c - q) ** 2 + 2 * p1;
+  const p = Math.sqrt(p2 / 6);
+  if (p < 1e-30) return [q, q, q];
+  const B00 = (a - q) / p, B11 = (b - q) / p, B22 = (c - q) / p, B01 = d / p, B12 = e / p, B02 = f / p;
+  const det = B00 * (B11 * B22 - B12 * B12) - B01 * (B01 * B22 - B12 * B02) + B02 * (B01 * B12 - B11 * B02);
+  const r = Math.max(-1, Math.min(1, det / 2)), phi = Math.acos(r) / 3;
+  const e1 = q + 2 * p * Math.cos(phi), e3 = q + 2 * p * Math.cos(phi + 2 * Math.PI / 3);
+  return [e1, 3 * q - e1 - e3, e3];
+};
+FEM.eqStrain = function (e, nu) {          // deformație echivalentă (Ansys, ν efectiv)
+  const a = e[0], b = e[1], c = e[2], d = e[3] / 2, ee = e[4] / 2, f = e[5] / 2;
+  return 1 / (1 + nu) * Math.sqrt(0.5 * ((a - b) ** 2 + (b - c) ** 2 + (c - a) ** 2) + 3 * (d * d + ee * ee + f * f));
+};
+
+/* ============================================================
+   MESH HEXAEDRIC — structurat cu predicat
+   ============================================================ */
+FEM.voxelHex = function (xs, ys, zs, inside) {
+  const nx = xs.length - 1, ny = ys.length - 1, nz = zs.length - 1;
+  const id = new Int32Array((nx + 1) * (ny + 1) * (nz + 1)).fill(-1);
+  const X = [], el = [];
+  const vid = (i, j, k) => { const q = (k * (ny + 1) + j) * (nx + 1) + i; if (id[q] < 0) { id[q] = X.length / 3; X.push(xs[i], ys[j], zs[k]); } return id[q]; };
+  for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    if (!inside((xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2, (zs[k] + zs[k + 1]) / 2)) continue;
+    el.push(vid(i, j, k), vid(i + 1, j, k), vid(i + 1, j + 1, k), vid(i, j + 1, k),
+      vid(i, j, k + 1), vid(i + 1, j, k + 1), vid(i + 1, j + 1, k + 1), vid(i, j + 1, k + 1));
+  }
+  return { X: Float64Array.from(X), conn: Int32Array.from(el), nn: X.length / 3, ne: el.length / 8 };
+};
+/* fețe de frontieră ale unui mesh hex: [{e,f,n:[4 noduri]}] */
+FEM.hexBoundaryFaces = function (m) {
+  const map = new Map(), N = m.nn;
+  const keyOf = (n) => { const s = n.slice().sort((a, b) => a - b); return ((s[0] * N + s[1]) * N + s[2]) * N + s[3]; };
+  const faces = [];
+  for (let e = 0; e < m.ne; e++) for (let f = 0; f < 6; f++) {
+    const n = FEM.HEX_FACES[f].map(k => m.conn[8 * e + k]);
+    const key = keyOf(n), o = map.get(key);
+    if (o) o.c++; else { const r = { c: 1, e, f, n }; map.set(key, r); faces.push(r); }
+  }
+  return faces.filter(r => r.c === 1);
+};
+/* asamblare + rezolvare statică 3D. loads: funcție(sys, m, faces) opțional; fixedFn(x,y,z,node)→[bool,bool,bool] */
+FEM.solveHex = function (m, E, nu, fixed, loadFn) {
+  const D = FEM.D3(E, nu);
+  const sys = new FEM.BandSystem(m.nn, 3, m.conn, 8, fixed, m.X, 3);
+  const Ts = new Float64Array(m.ne * 216);
+  const Xe = new Float64Array(24), dofs = new Int32Array(24);
+  for (let e = 0; e < m.ne; e++) {
+    for (let a = 0; a < 8; a++) { const n = m.conn[8 * e + a]; for (let i = 0; i < 3; i++) { Xe[3 * a + i] = m.X[3 * n + i]; dofs[3 * a + i] = 3 * n + i; } }
+    const { Ke, T } = FEM.hexElem(Xe, D);
+    sys.addK(dofs, Ke); Ts.set(T, e * 216);
+  }
+  loadFn(sys);
+  const U = sys.solve();
+  // recuperare tensiuni
+  const sigN = new Float64Array(m.nn * 6), epsN = new Float64Array(m.nn * 6), cnt = new Float64Array(m.nn);
+  const sig = new Float64Array(48), eps = new Float64Array(48), ue = new Float64Array(24);
+  for (let e = 0; e < m.ne; e++) {
+    for (let a = 0; a < 8; a++) { const n = m.conn[8 * e + a]; for (let i = 0; i < 3; i++) { Xe[3 * a + i] = m.X[3 * n + i]; ue[3 * a + i] = U[3 * n + i]; } }
+    FEM.hexRecover(Xe, D, Ts.subarray(e * 216, e * 216 + 216), ue, sig, eps);
+    for (let a = 0; a < 8; a++) {
+      const n = m.conn[8 * e + a]; cnt[n]++;
+      for (let i = 0; i < 6; i++) { sigN[n * 6 + i] += sig[a * 6 + i]; epsN[n * 6 + i] += eps[a * 6 + i]; }
+    }
+  }
+  for (let n = 0; n < m.nn; n++) for (let i = 0; i < 6; i++) { sigN[n * 6 + i] /= cnt[n]; epsN[n * 6 + i] /= cnt[n]; }
+  return { U, sig: sigN, eps: epsN, residual: sys.residual, ndof: sys.n, bw: sys.bw };
+};
+
+root.FEM = FEM;
+if (typeof module !== 'undefined') module.exports = FEM;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ============================================================
+   Lucrările 1, 2, 5, 6, 8, 9 — modele fizice, discretizare, post-procesare
+   ============================================================ */
+(function (root) {
+'use strict';
+const FEM = root.FEM;
+const LABS = {};
+const PI = Math.PI;
+
+/* ---------- utilitare generale ---------- */
+const linspace = (a, b, n) => { const r = []; for (let i = 0; i <= n; i++) r.push(a + (b - a) * i / n); return r; };
+function segs(pts, counts) {
+  const r = [pts[0]];
+  for (let s = 0; s < counts.length; s++) for (let i = 1; i <= counts[s]; i++) r.push(pts[s] + (pts[s + 1] - pts[s]) * i / counts[s]);
+  return r;
+}
+const arcLen = (a0, a1, r) => Math.abs(a1 - a0) * r;
+function arcPts(cx, cy, r, a0, a1, hb, id, out) {
+  const n = Math.max(2, Math.ceil(arcLen(a0, a1, r) / hb));
+  for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / n; out.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), hb, arcs: [id] }); }
+}
+function linePts(x0, y0, x1, y1, hb, out) {
+  const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(L / hb));
+  for (let i = 0; i < n; i++) out.push({ x: x0 + (x1 - x0) * i / n, y: y0 + (y1 - y0) * i / n, hb, arcs: null });
+}
+function elemXY(m, e) { const X = new Float64Array(12); for (let a = 0; a < 6; a++) { const n = m.conn[6 * e + a]; X[2 * a] = m.X[2 * n]; X[2 * a + 1] = m.X[2 * n + 1]; } return X; }
+function bboxDiag(P) {
+  let a = [1e300, 1e300, 1e300], b = [-1e300, -1e300, -1e300];
+  for (let i = 0; i < P.length; i += 3) for (let k = 0; k < 3; k++) { a[k] = Math.min(a[k], P[i + k]); b[k] = Math.max(b[k], P[i + k]); }
+  return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+}
+
+/* ---------- muchii caracteristice (pentru contur) ---------- */
+function featureEdges(P, tri, angleDeg) {
+  const cosT = Math.cos((angleDeg || 35) * PI / 180);
+  const nv = P.length / 3;
+  let sz = 0; { const d = bboxDiag(P); sz = d || 1; }
+  const q = 1e6 / sz, pk = new Map(), vk = new Int32Array(nv);
+  for (let v = 0; v < nv; v++) {
+    const k = Math.round(P[3 * v] * q) + '|' + Math.round(P[3 * v + 1] * q) + '|' + Math.round(P[3 * v + 2] * q);
+    let id = pk.get(k); if (id === undefined) { id = pk.size; pk.set(k, id); } vk[v] = id;
+  }
+  const M = nv + 3, em = new Map();
+  for (let t = 0; t < tri.length; t += 3) {
+    const a = tri[t], b = tri[t + 1], c = tri[t + 2];
+    const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
+    const wx = P[3 * c] - P[3 * a], wy = P[3 * c + 1] - P[3 * a + 1], wz = P[3 * c + 2] - P[3 * a + 2];
+    let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+    const l = Math.hypot(nx, ny, nz); if (l < 1e-300) continue; nx /= l; ny /= l; nz /= l;
+    for (let k = 0; k < 3; k++) {
+      const v0 = tri[t + k], v1 = tri[t + (k + 1) % 3], k0 = vk[v0], k1 = vk[v1];
+      if (k0 === k1) continue;
+      const key = k0 < k1 ? k0 * M * 4 + k1 : k1 * M * 4 + k0;
+      const o = em.get(key);
+      if (!o) em.set(key, { v0, v1, n: [[nx, ny, nz]] }); else o.n.push([nx, ny, nz]);
+    }
+  }
+  const out = [];
+  for (const o of em.values()) {
+    if (o.n.length === 1) { out.push(o.v0, o.v1); continue; }
+    let sharp = false;
+    for (let i = 1; i < o.n.length && !sharp; i++) { const d = o.n[0][0] * o.n[i][0] + o.n[0][1] * o.n[i][1] + o.n[0][2] * o.n[i][2]; if (Math.abs(d) < cosT) sharp = true; }
+    if (sharp) out.push(o.v0, o.v1);
+  }
+  return Int32Array.from(out);
+}
+
+/* ---------- geometrii pentru randare ---------- */
+function hexView(m) {
+  const faces = FEM.hexBoundaryFaces(m);
+  const tri = [], wset = new Map(), wire = [];
+  for (const f of faces) {
+    const [a, b, c, d] = f.n; tri.push(a, b, c, a, c, d);
+    for (let k = 0; k < 4; k++) {
+      const u = f.n[k], v = f.n[(k + 1) % 4], key = u < v ? u * m.nn + v : v * m.nn + u;
+      if (!wset.has(key)) { wset.set(key, 1); wire.push(u, v); }
+    }
+  }
+  const vn = new Int32Array(m.nn); for (let i = 0; i < m.nn; i++) vn[i] = i;
+  const g = { P: Float64Array.from(m.X), vn, tri: Int32Array.from(tri), wire: Int32Array.from(wire), vphi: null };
+  g.feat = featureEdges(g.P, g.tri);
+  return { g, faces };
+}
+const SUB4 = [[0, 3, 5], [3, 1, 4], [5, 4, 2], [3, 4, 5]];     // sub-triunghiuri T6 (colțuri/mijloace)
+function plateView(m, te, zlow) {
+  const P = [], vn = [], vmap = new Map(), tri = [], wire = [], wmap = new Map();
+  const vert = (n, z) => {
+    const key = n + '|' + z.toFixed(9); let id = vmap.get(key);
+    if (id === undefined) { id = vn.length; vmap.set(key, id); P.push(m.X[2 * n], m.X[2 * n + 1], z); vn.push(n); }
+    return id;
+  };
+  for (let e = 0; e < m.ne; e++) {
+    const z = te[e], c = [];
+    for (let a = 0; a < 6; a++) c.push(m.conn[6 * e + a]);
+    for (const s of SUB4) {
+      tri.push(vert(c[s[0]], z), vert(c[s[1]], z), vert(c[s[2]], z));
+      tri.push(vert(c[s[0]], 0), vert(c[s[2]], 0), vert(c[s[1]], 0));
+    }
+    for (let k = 0; k < 3; k++) {
+      const a = c[k], md = c[3 + k], b = c[(k + 1) % 3];
+      for (const [u, v] of [[a, md], [md, b]]) {
+        const key = u < v ? u * m.nn + v : v * m.nn + u, prev = wmap.get(key);
+        if (prev === undefined || z > prev.z) wmap.set(key, { u, v, z });
+      }
+    }
+  }
+  for (const o of wmap.values()) wire.push(vert(o.u, o.z), vert(o.v, o.z));
+  const be = FEM.boundaryEdges(m);
+  const wall = (u, v, z0, z1) => {
+    const a = vert(u, z0), b = vert(v, z0), c = vert(v, z1), d = vert(u, z1);
+    tri.push(a, b, c, a, c, d);
+  };
+  for (const ed of be.boundary) for (let s = 0; s < 2; s++) wall(ed.n[s], ed.n[s + 1], 0, te[ed.e]);
+  for (const ed of be.interface) {
+    const z1 = te[ed.e1], z2 = te[ed.e2];
+    if (Math.abs(z1 - z2) > 1e-12) for (let s = 0; s < 2; s++) wall(ed.n[s], ed.n[s + 1], Math.min(z1, z2), Math.max(z1, z2));
+  }
+  const g = { P: Float64Array.from(P), vn: Int32Array.from(vn), tri: Int32Array.from(tri), wire: Int32Array.from(wire), vphi: null };
+  g.feat = featureEdges(g.P, g.tri);
+  return g;
+}
+/* revoluție: mode 'semi' (270°), 'full' (360°), 'sect' (secțiune meridiană plană) */
+function revolveView(m, mode, nphi) {
+  const P = [], vn = [], vphi = [], vmap = new Map(), tri = [], wire = [], wmap = new Map();
+  const vert = (n, ip, phi) => {
+    const key = n * 4096 + ip; let id = vmap.get(key);
+    if (id === undefined) {
+      id = vn.length; vmap.set(key, id);
+      const r = m.X[2 * n], z = m.X[2 * n + 1];
+      P.push(r * Math.cos(phi), z, r * Math.sin(phi)); vn.push(n); vphi.push(phi);
+    }
+    return id;
+  };
+  const flat = mode === 'sect';
+  const cut = (ip, phi) => {
+    for (let e = 0; e < m.ne; e++) {
+      const c = []; for (let a = 0; a < 6; a++) c.push(m.conn[6 * e + a]);
+      for (const s of SUB4) tri.push(vert(c[s[0]], ip, phi), vert(c[s[1]], ip, phi), vert(c[s[2]], ip, phi));
+      for (let k = 0; k < 3; k++) {
+        const a = c[k], md = c[3 + k], b = c[(k + 1) % 3];
+        for (const [u, v] of [[a, md], [md, b]]) {
+          const key = (u < v ? u * m.nn + v : v * m.nn + u) * 4096 + ip;
+          if (!wmap.has(key)) { wmap.set(key, 1); wire.push(vert(u, ip, phi), vert(v, ip, phi)); }
+        }
+      }
+    }
+  };
+  if (flat) cut(0, 0);
+  else {
+    const phi0 = mode === 'semi' ? PI / 2 : 0, span = mode === 'semi' ? 1.5 * PI : 2 * PI;
+    const ns = nphi, be = FEM.boundaryEdges(m).boundary;
+    for (let i = 0; i < ns; i++) {
+      const p0 = phi0 + span * i / ns, p1 = phi0 + span * (i + 1) / ns;
+      for (const ed of be) for (let s = 0; s < 2; s++) {
+        const u = ed.n[s], v = ed.n[s + 1];
+        if (m.X[2 * u] < 1e-12 && m.X[2 * v] < 1e-12) continue;      // pe axă
+        const a = vert(u, i, p0), b = vert(v, i, p0), c = vert(v, i + 1, p1), d = vert(u, i + 1, p1);
+        tri.push(a, b, c, a, c, d);
+        if (s === 0 || true) { if (i % 1 === 0) wire.push(a, d); }
+      }
+    }
+    if (mode === 'semi') { cut(0, phi0); cut(ns, phi0 + span); }
+  }
+  const g = { P: Float64Array.from(P), vn: Int32Array.from(vn), tri: Int32Array.from(tri), wire: Int32Array.from(wire), vphi: flat ? null : Float64Array.from(vphi) };
+  g.feat = featureEdges(g.P, g.tri, 40);
+  return g;
+}
+
+/* ---------- câmpuri nodale ---------- */
+function buildFields(o) {
+  const { nn, U3, sig, eps, nu, sy } = o;
+  const f = {}; const mk = n => new Float64Array(n);
+  f.umag = mk(nn); f.ux = mk(nn); f.uy = mk(nn); f.uz = mk(nn);
+  f.svm = mk(nn); f.s1 = mk(nn); f.s3 = mk(nn); f.sx = mk(nn); f.sy = mk(nn); f.sz = mk(nn); f.sxy = mk(nn); f.eeq = mk(nn); f.sf = mk(nn);
+  for (let n = 0; n < nn; n++) {
+    const ux = U3[3 * n], uy = U3[3 * n + 1], uz = U3[3 * n + 2];
+    f.ux[n] = ux; f.uy[n] = uy; f.uz[n] = uz; f.umag[n] = Math.hypot(ux, uy, uz);
+    const s = sig.subarray(6 * n, 6 * n + 6), e = eps.subarray(6 * n, 6 * n + 6);
+    const vm = FEM.vonMises(s), pr = FEM.principal(s);
+    f.svm[n] = vm; f.s1[n] = pr[0]; f.s3[n] = pr[2]; f.sx[n] = s[0]; f.sy[n] = s[1]; f.sz[n] = s[2]; f.sxy[n] = s[3];
+    f.eeq[n] = FEM.eqStrain(e, nu);
+    f.sf[n] = sy ? Math.min(15, vm > 1e-9 ? sy / vm : 15) : 15;
+  }
+  const L = [
+    { key: 'umag', label: 'Deplasare totală |u|', kind: 'len' }, { key: 'ux', label: 'Deplasare u_x', kind: 'len' },
+    { key: 'uy', label: 'Deplasare u_y', kind: 'len' }, { key: 'uz', label: 'Deplasare u_z', kind: 'len' },
+    { key: 'svm', label: 'Tensiune echivalentă von Mises σ_vM', kind: 'stress' }, { key: 's1', label: 'Tensiune principală maximă σ₁', kind: 'stress' },
+    { key: 's3', label: 'Tensiune principală minimă σ₃', kind: 'stress' }, { key: 'sx', label: 'Tensiune normală σ_x', kind: 'stress' },
+    { key: 'sy', label: 'Tensiune normală σ_y', kind: 'stress' }, { key: 'sz', label: 'Tensiune normală σ_z', kind: 'stress' },
+    { key: 'sxy', label: 'Tensiune tangențială τ_xy', kind: 'stress' }, { key: 'eeq', label: 'Deformație specifică echivalentă ε_eq', kind: 'strain' }];
+  if (sy) L.push({ key: 'sf', label: 'Coeficient de siguranță σ_c / σ_vM', kind: 'ratio' });
+  for (const x of L) x.arr = f[x.key];
+  return L;
+}
+const maxAbs = a => { let m = 0; for (let i = 0; i < a.length; i++) { const v = Math.abs(a[i]); if (v > m) m = v; } return m; };
+function tagArcs(bp, arcs) {
+  for (const q of bp) for (const id in arcs) {
+    const A = arcs[id];
+    if (Math.abs(Math.hypot(q.x - A.cx, q.y - A.cy) - A.r) < 1e-9 * Math.max(1, A.r * 1e3)) { if (!q.arcs) q.arcs = []; if (!q.arcs.includes(+id)) q.arcs.push(+id); }
+  }
+}
+function extremum(arr) {
+  let mn = 1e300, mx = -1e300, imn = 0, imx = 0;
+  for (let i = 0; i < arr.length; i++) { if (arr[i] < mn) { mn = arr[i]; imn = i; } if (arr[i] > mx) { mx = arr[i]; imx = i; } }
+  return { mn, mx, imn, imx };
+}
+/* localizare punct într-un mesh T6 */
+function makeLocator(m) {
+  const bb = new Float64Array(4 * m.ne);
+  for (let e = 0; e < m.ne; e++) {
+    let x0 = 1e300, y0 = 1e300, x1 = -1e300, y1 = -1e300;
+    for (let k = 0; k < 6; k++) { const n = m.conn[6 * e + k], x = m.X[2 * n], y = m.X[2 * n + 1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    bb[4 * e] = x0; bb[4 * e + 1] = y0; bb[4 * e + 2] = x1; bb[4 * e + 3] = y1;
+  }
+  return function (x, y, arr) {
+    let best = -1, bl = [0, 0], bm = -1e9;
+    for (let e = 0; e < m.ne; e++) {
+      const tol = 1e-9 + 1e-6 * (bb[4 * e + 2] - bb[4 * e]);
+      if (x < bb[4 * e] - tol || x > bb[4 * e + 2] + tol || y < bb[4 * e + 1] - tol || y > bb[4 * e + 3] + tol) continue;
+      const a = m.conn[6 * e], b = m.conn[6 * e + 1], c = m.conn[6 * e + 2];
+      const x1 = m.X[2 * a], y1 = m.X[2 * a + 1], x2 = m.X[2 * b], y2 = m.X[2 * b + 1], x3 = m.X[2 * c], y3 = m.X[2 * c + 1];
+      const d = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+      const l1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / d, l2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / d, l3 = 1 - l1 - l2;
+      const mn = Math.min(l1, l2, l3);
+      if (mn > bm) { bm = mn; best = e; bl = [l1, l2]; }
+      if (mn >= -1e-9) break;
+    }
+    if (best < 0 || bm < -0.05) return NaN;
+    const L1 = bl[0], L2 = bl[1], L3 = 1 - L1 - L2, c = [];
+    for (let k = 0; k < 6; k++) c.push(m.conn[6 * best + k]);
+    const N = [L1 * (2 * L1 - 1), L2 * (2 * L2 - 1), L3 * (2 * L3 - 1), 4 * L1 * L2, 4 * L2 * L3, 4 * L3 * L1];
+    let v = 0; for (let k = 0; k < 6; k++) v += N[k] * arr[c[k]];
+    return v;
+  };
+}
+function lineSample(loc, arr, p0, p1, n) {
+  const xs = [], ys = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, x = p0[0] + (p1[0] - p0[0]) * t, y = p0[1] + (p1[1] - p0[1]) * t;
+    const v = loc(x, y, arr);
+    xs.push(Math.hypot(x - p0[0], y - p0[1])); ys.push(v);
+  }
+  return { x: xs, y: ys };
+}
+
+/* ---------- asamblare plan / axisimetric ---------- */
+function solve2D(m, o) {
+  const D = o.mode === 'ps' ? FEM.Dps(o.E, o.nu) : FEM.Dax(o.E, o.nu);
+  const sys = new FEM.BandSystem(m.nn, 2, m.conn, 6, o.fixed, m.X, 2);
+  const dofs = new Int32Array(12);
+  for (let e = 0; e < m.ne; e++) {
+    const X = elemXY(m, e);
+    let dTe = null;
+    if (o.dT) { dTe = new Float64Array(6); for (let a = 0; a < 6; a++) dTe[a] = o.dT[m.conn[6 * e + a]]; }
+    const { K, fth } = FEM.t6Static(X, o.mode, D, o.te ? o.te[e] : 1, dTe, o.alpha || 0);
+    for (let a = 0; a < 6; a++) { const n = m.conn[6 * e + a]; dofs[2 * a] = 2 * n; dofs[2 * a + 1] = 2 * n + 1; }
+    sys.addK(dofs, K); if (fth) sys.addF(dofs, fth);
+  }
+  o.loads(sys);
+  const U = sys.solve();
+  const sig = new Float64Array(m.nn * 6), eps = new Float64Array(m.nn * 6), cnt = new Float64Array(m.nn), ue = new Float64Array(12);
+  for (let e = 0; e < m.ne; e++) {
+    const X = elemXY(m, e); let dTe = null;
+    for (let a = 0; a < 6; a++) { const n = m.conn[6 * e + a]; ue[2 * a] = U[2 * n]; ue[2 * a + 1] = U[2 * n + 1]; }
+    if (o.dT) { dTe = new Float64Array(6); for (let a = 0; a < 6; a++) dTe[a] = o.dT[m.conn[6 * e + a]]; }
+    const r = FEM.t6Recover(X, o.mode, D, ue, dTe, o.alpha || 0, o.nu);
+    for (let a = 0; a < 6; a++) {
+      const n = m.conn[6 * e + a]; cnt[n]++;
+      for (let i = 0; i < 6; i++) { sig[n * 6 + i] += r.sig[a * 6 + i]; eps[n * 6 + i] += r.eps[a * 6 + i]; }
+    }
+  }
+  for (let n = 0; n < m.nn; n++) for (let i = 0; i < 6; i++) { sig[n * 6 + i] /= cnt[n]; eps[n * 6 + i] /= cnt[n]; }
+  return { U, sig, eps, residual: sys.residual, ndof: sys.n, bw: sys.bw };
+}
+const edgeCoords = (m, ed) => { const E = new Float64Array(6); for (let i = 0; i < 3; i++) { E[2 * i] = m.X[2 * ed.n[i]]; E[2 * i + 1] = m.X[2 * ed.n[i] + 1]; } return E; };
+const addEdgeF = (sys, ed, f) => { const d = []; for (let i = 0; i < 3; i++) d.push(2 * ed.n[i], 2 * ed.n[i] + 1); sys.addF(d, f); };
+
+/* ============================================================
+   LUCRAREA 1 și 2 — grinzi (hexaedre)
+   ============================================================ */
+function beamModel(p, kind) {
+  const t0 = performance.now();
+  const E = p.E * 1e9, nu = p.nu, sy = p.sy * 1e6;
+  let xs, ys, zs, inside, A, Iz, Iy, H, Bw, shearArea, Lm;
+  if (kind === 'rect') {
+    const L = p.L / 100, h = p.h / 100, b = p.b / 100; Lm = L; H = h; Bw = b;
+    xs = linspace(0, L, p.nx); ys = linspace(0, h, p.ny); zs = linspace(0, b, p.nz);
+    inside = () => true;
+    A = b * h; Iz = b * h ** 3 / 12; Iy = h * b ** 3 / 12; shearArea = 5 / 6 * A;
+  } else {
+    const L = p.L / 100, bf = p.bf / 100, tf = p.tf / 100, hw = p.hw / 100, tw = p.tw / 100; Lm = L; H = hw + 2 * tf; Bw = bf;
+    xs = linspace(0, L, p.nx);
+    ys = segs([0, tf, tf + hw, H], [p.nyf, p.nyw, p.nyf]);
+    zs = segs([-bf / 2, -tw / 2, tw / 2, bf / 2], [p.nzf, p.nzw, p.nzf]);
+    inside = (x, y, z) => (y < tf || y > tf + hw) ? true : Math.abs(z) < tw / 2;
+    A = 2 * bf * tf + hw * tw; Iz = bf * H ** 3 / 12 - (bf - tw) * hw ** 3 / 12; Iy = 2 * tf * bf ** 3 / 12 + hw * tw ** 3 / 12;
+    shearArea = tw * H;
+  }
+  const m = FEM.voxelHex(xs, ys, zs, inside);
+  const fixed = new Uint8Array(m.nn * 3);
+  for (let n = 0; n < m.nn; n++) if (m.X[3 * n] < 1e-9) { fixed[3 * n] = fixed[3 * n + 1] = fixed[3 * n + 2] = 1; }
+  const { g, faces } = hexView(m);
+  const ends = []; let Aend = 0;
+  for (const f of faces) {
+    if (f.n.every(n => Math.abs(m.X[3 * n] - Lm) < 1e-9)) {
+      const P = []; for (const n of f.n) P.push(m.X[3 * n], m.X[3 * n + 1], m.X[3 * n + 2]);
+      ends.push([f, P]); Aend += FEM.quadArea(P);
+    }
+  }
+  const Fy = p.Fy, Fz = p.Fz;
+  const r = FEM.solveHex(m, E, nu, fixed, sys => {
+    for (const [f, P] of ends) {
+      const fe = FEM.quadTraction(P, [0, Fy / Aend, Fz / Aend]); const d = [];
+      for (const n of f.n) d.push(3 * n, 3 * n + 1, 3 * n + 2);
+      sys.addF(d, fe);
+    }
+  });
+  const fields = buildFields({ nn: m.nn, U3: r.U, sig: r.sig, eps: r.eps, nu, sy });
+  const F = Object.fromEntries(fields.map(f => [f.key, f.arr]));
+  // --- analitic
+  const G = E / (2 * (1 + nu));
+  const dE = Math.abs(Fy) * Lm ** 3 / (3 * E * Iz), dT = dE + Math.abs(Fy) * Lm / (G * shearArea);
+  const dEz = Math.abs(Fz) * Lm ** 3 / (3 * E * Iy);
+  const cy = H / 2, cz = Bw / 2;
+  const sigAn = Math.abs(Fy) * Lm * cy / Iz + Math.abs(Fz) * Lm * cz / Iy;
+  // --- statistici
+  const ex = extremum(F.umag), sv = extremum(F.svm);
+  let uyTip = 0, nt = 0;
+  for (let n = 0; n < m.nn; n++) if (Math.abs(m.X[3 * n] - Lm) < 1e-9) { uyTip += r.U[3 * n + 1]; nt++; }
+  uyTip /= nt;
+  // --- grafic: săgeată pe lungime (medie pe secțiune)
+  const xsU = xs.slice(), uyAvg = new Float64Array(xs.length), uzAvg = new Float64Array(xs.length), cntX = new Float64Array(xs.length);
+  for (let n = 0; n < m.nn; n++) {
+    const i = Math.round(xs.length > 1 ? m.X[3 * n] / Lm * (xs.length - 1) : 0);
+    uyAvg[i] += r.U[3 * n + 1]; uzAvg[i] += r.U[3 * n + 2]; cntX[i]++;
+  }
+  const fy = [], an1 = [], an2 = [];
+  for (let i = 0; i < xs.length; i++) {
+    fy.push(uyAvg[i] / cntX[i] * 1e3);
+    const x = xs[i];
+    const euler = Fy * (3 * Lm * x * x - x ** 3) / (6 * E * Iz) * 1e3;
+    const shear = Fy * x / (G * shearArea) * 1e3;
+    an1.push(euler); an2.push(euler + shear);
+  }
+  // --- grafic: σx pe înălțime la secțiunea xs
+  const xsec = Math.round(p.xsec * (xs.length - 1)), xS = xs[xsec];
+  const zc = kind === 'rect' ? Bw / 2 : 0;
+  let best = 1e9;
+  for (let n = 0; n < m.nn; n++) if (Math.abs(m.X[3 * n] - xS) < 1e-9) best = Math.min(best, Math.abs(m.X[3 * n + 2] - zc));
+  const prof = [], seenY = new Set();
+  for (let n = 0; n < m.nn; n++) if (Math.abs(m.X[3 * n] - xS) < 1e-9 && Math.abs(m.X[3 * n + 2] - zc) < best + 1e-12) {
+    const yk = m.X[3 * n + 1].toFixed(9); if (seenY.has(yk)) continue; seenY.add(yk); prof.push([m.X[3 * n + 1], F.sx[n]]);
+  }
+  prof.sort((a, b) => a[0] - b[0]);
+  const yc = H / 2;
+  const profAn = prof.map(q => -Fy * (Lm - xS) * (q[0] - yc) / Iz);
+  const Ref = kind === 'rect' ? { umax: 15.456e-3, sig: null } : { umax: 0.17e-3, sig: 9.42e6 };
+  const rows = [
+    { label: 'Deformație totală maximă |u|_max', val: ex.mx, kind: 'len', ref: Ref.umax },
+    { label: 'Săgeată la capătul liber (medie pe secțiune)', val: Math.abs(uyTip), kind: 'len', ref: null },
+    { label: 'Tensiune echivalentă von Mises maximă', val: sv.mx, kind: 'stress', ref: Ref.sig },
+    { label: 'Tensiune principală maximă σ₁', val: extremum(F.s1).mx, kind: 'stress', ref: null }];
+  if (sy) rows.push({ label: 'Coeficient de siguranță minim σ_c/σ_vM', val: extremum(F.sf).mn, kind: 'ratio', ref: null });
+  const checks = [
+    { label: 'Săgeată Euler–Bernoulli  δ = F·L³ / (3·E·I)', ana: dE, fem: Math.abs(uyTip), kind: 'len' },
+    { label: 'Săgeată Timoshenko  δ = F·L³/(3EI) + F·L/(G·A_s)', ana: dT, fem: Math.abs(uyTip), kind: 'len' },
+    { label: 'Tensiune la încastrare  σ = M·c / I', ana: sigAn, fem: maxAbs(F.sx), kind: 'stress' }];
+  if (Math.abs(Fz) > 0) checks.push({ label: 'Săgeată în direcția z (Euler)', ana: dEz, fem: Math.abs(uzAvg[xs.length - 1] / cntX[xs.length - 1]), kind: 'len' });
+  const charts = [
+    { id: 'c1', title: 'Săgeata grinzii pe lungime  u_y(x)', xl: 'x [cm]', yl: 'u_y [mm]', xs: xs.map(v => v * 100),
+      series: [{ n: 'MEF (medie pe secțiune)', y: fy, c: 0, m: true }, { n: 'Euler–Bernoulli', y: an1, c: 1, d: true }, { n: 'Timoshenko', y: an2, c: 2, d: true }] },
+    { id: 'c2', title: `Tensiunea σ_x pe înălțime, la x = ${(xS * 100).toFixed(1)} cm`, xl: 'y [cm]', yl: 'σ_x [MPa]', xs: prof.map(q => q[0] * 100),
+      series: [{ n: 'MEF (valori nodale)', y: prof.map(q => q[1] / 1e6), c: 0, m: true }, { n: 'M·y/I (analitic)', y: profAn.map(v => v / 1e6), c: 1, d: true }] }];
+  const geo = kind === 'rect' ? `L×h×b = ${p.L}×${p.h}×${p.b} cm` : `I ${p.bf}×${H * 100}, L = ${p.L} cm`;
+  return {
+    kind: 'hex', nn: m.nn, ne: m.ne, ndof: r.ndof, bw: r.bw, res: r.residual, ms: performance.now() - t0, elem: 'SOLID 8 noduri cu moduri incompatibile (Wilson–Taylor)',
+    geom: g, U3: r.U, fields, defaultField: 'svm', rows, checks, charts, geo,
+    props: [['Aria secțiunii A', A, 'm²'], ['Moment de inerție I_z', Iz, 'm⁴'], ['Modul de forfecare G', G, 'Pa'], ['Arie la forfecare A_s', shearArea, 'm²']],
+    notes: sy && extremum(F.sf).mn < 1 ? [`Analiză liniar-elastică: σ_vM,max depășește σ_c = ${p.sy} MPa (coeficient minim ${extremum(F.sf).mn.toFixed(2)}). Structura ar curge local; rezultatul liniar este orientativ.`] : [],
+    maxNode: { u: ex.imx, s: sv.imx }
+  };
+}
+LABS.l1 = {
+  id: 'l1', nr: 1, name: 'Placă 3D', full: 'Analiza statică a unei plăci 3D', module: 'Static Structural',
+  tema: 'Placă de oțel încastrată la un capăt, încărcată cu o forță F = 10 kN la capătul opus. Se determină deformația totală maximă și tensiunea echivalentă von Mises.',
+  params: [
+    { k: 'E', l: 'Modul de elasticitate E', u: 'GPa', v: 200, min: 1, max: 500, step: 1, st: 0 },
+    { k: 'nu', l: 'Coeficient Poisson ν', u: '', v: 0.3, min: 0.05, max: 0.49, step: 0.01, st: 0 },
+    { k: 'rho', l: 'Densitate ρ', u: 'kg/m³', v: 7850, min: 1000, max: 20000, step: 10, st: 0 },
+    { k: 'sy', l: 'Limită de curgere σ_c (ipoteză)', u: 'MPa', v: 250, min: 50, max: 1500, step: 5, st: 0 },
+    { k: 'L', l: 'Lungime L', u: 'cm', v: 20, min: 5, max: 60, step: 0.5, st: 1 },
+    { k: 'h', l: 'Înălțime h (grosime)', u: 'cm', v: 1, min: 0.2, max: 6, step: 0.1, st: 1 },
+    { k: 'b', l: 'Lățime b (δ)', u: 'cm', v: 10, min: 1, max: 30, step: 0.5, st: 1 },
+    { k: 'nx', l: 'Elemente pe lungime', u: '', v: 24, min: 4, max: 80, step: 1, st: 2, int: 1 },
+    { k: 'ny', l: 'Elemente pe înălțime', u: '', v: 4, min: 1, max: 12, step: 1, st: 2, int: 1 },
+    { k: 'nz', l: 'Elemente pe lățime', u: '', v: 4, min: 1, max: 12, step: 1, st: 2, int: 1 },
+    { k: 'Fy', l: 'Forță F_y la capătul liber', u: 'N', v: -10000, min: -50000, max: 50000, step: 100, st: 3 },
+    { k: 'Fz', l: 'Forță F_z la capătul liber', u: 'N', v: 0, min: -50000, max: 50000, step: 100, st: 3 },
+    { k: 'xsec', l: 'Secțiune de verificare x/L', u: '', v: 0.5, min: 0, max: 0.95, step: 0.05, st: 5 }],
+  stageText: [
+    'Material: oțel (E = 2·10¹¹ N/m², ν = 0,3, ρ = 7850 kg/m³), conform enunțului.',
+    'Placă dreptunghiulară 20 × 1 cm, extrudată pe o grosime δ = 10 cm (Design Modeler, planul XY → Extrude).',
+    'Rețea de elemente hexaedrice structurată (Generate Mesh). Mărește numărul de elemente pentru a studia convergența.',
+    'Suport fix pe fața din x = 0 și forță F = 10⁴ N pe fața opusă, orientată în sens negativ (Defined by Components).',
+    'Se rezolvă sistemul liniar [K]{u} = {F} cu solver direct în bandă (Cholesky) și reordonare RCM.',
+    'Se urmăresc deformația totală și tensiunea echivalentă von Mises (Solution → Insert).'],
+  run: p => beamModel(p, 'rect'),
+  meshLevels: (p, i) => { const s = [0.4, 0.6, 1, 1.4][i]; return { ...p, nx: Math.max(4, Math.round(p.nx * s)), ny: Math.max(1, Math.round(p.ny * s)), nz: Math.max(1, Math.round(p.nz * s)) }; },
+  convMetric: { label: '|u|_max', kind: 'len', ref: 15.456e-3, pick: r => r.rows[0].val }
+};
+LABS.l2 = {
+  id: 'l2', nr: 2, name: 'Grindă cu secțiune I', full: 'Analiza statică a unei structuri de tip grindă', module: 'Static Structural',
+  tema: 'Grindă cu secțiune dublu T (I), încastrată la un capăt, încărcată cu F = 10 kN la capătul liber. Se determină deformația maximă și tensiunea echivalentă.',
+  params: [
+    { k: 'E', l: 'Modul de elasticitate E', u: 'GPa', v: 200, min: 1, max: 500, step: 1, st: 0 },
+    { k: 'nu', l: 'Coeficient Poisson ν', u: '', v: 0.3, min: 0.05, max: 0.49, step: 0.01, st: 0 },
+    { k: 'rho', l: 'Densitate ρ', u: 'kg/m³', v: 7850, min: 1000, max: 20000, step: 10, st: 0 },
+    { k: 'sy', l: 'Limită de curgere σ_c (ipoteză)', u: 'MPa', v: 250, min: 50, max: 1500, step: 5, st: 0 },
+    { k: 'L', l: 'Lungime grindă L', u: 'cm', v: 150, min: 30, max: 400, step: 5, st: 1 },
+    { k: 'bf', l: 'Lățime talpă b_f', u: 'cm', v: 20, min: 8, max: 40, step: 0.5, st: 1 },
+    { k: 'tf', l: 'Grosime talpă t_f', u: 'cm', v: 5, min: 1, max: 10, step: 0.5, st: 1 },
+    { k: 'hw', l: 'Înălțime inimă h_w', u: 'cm', v: 20, min: 6, max: 50, step: 0.5, st: 1 },
+    { k: 'tw', l: 'Grosime inimă t_w', u: 'cm', v: 7, min: 1, max: 15, step: 0.5, st: 1 },
+    { k: 'nx', l: 'Elemente pe lungime', u: '', v: 30, min: 6, max: 80, step: 1, st: 2, int: 1 },
+    { k: 'nyf', l: 'Elemente pe înălțime talpă', u: '', v: 2, min: 1, max: 5, step: 1, st: 2, int: 1 },
+    { k: 'nyw', l: 'Elemente pe înălțime inimă', u: '', v: 6, min: 2, max: 14, step: 1, st: 2, int: 1 },
+    { k: 'nzf', l: 'Elemente pe lățime talpă (fiecare parte)', u: '', v: 3, min: 1, max: 8, step: 1, st: 2, int: 1 },
+    { k: 'nzw', l: 'Elemente pe grosime inimă', u: '', v: 2, min: 1, max: 6, step: 1, st: 2, int: 1 },
+    { k: 'Fy', l: 'Forță F_y la capătul liber', u: 'N', v: -10000, min: -100000, max: 100000, step: 500, st: 3 },
+    { k: 'Fz', l: 'Forță F_z la capătul liber', u: 'N', v: 0, min: -100000, max: 100000, step: 500, st: 3 },
+    { k: 'xsec', l: 'Secțiune de verificare x/L', u: '', v: 0.5, min: 0, max: 0.95, step: 0.05, st: 5 }],
+  stageText: [
+    'Material: oțel (E = 2·10¹¹ N/m², ν = 0,3, ρ = 7850 kg/m³).',
+    'Profil I (talpă 20 × 5 cm, inimă 7 × 20 cm), extrudat pe lungimea de 150 cm (multi-linie + Dimensions + Extrude).',
+    'Rețea hexaedrică structurată, aliniată cu muchiile profilului, deci geometria este reprodusă exact.',
+    'Suport fix la x = 0 și forță F = 10⁴ N pe fața opusă, în sens negativ.',
+    'Rezolvare liniar-elastică cu solver direct în bandă.',
+    'Deformația totală și tensiunea echivalentă von Mises.'],
+  run: p => beamModel(p, 'I'),
+  meshLevels: (p, i) => { const s = [0.5, 0.75, 1, 1.4][i]; const f = v => Math.max(1, Math.round(v * s)); return { ...p, nx: Math.max(6, Math.round(p.nx * s)), nyf: f(p.nyf), nyw: Math.max(2, f(p.nyw)), nzf: f(p.nzf), nzw: f(p.nzw) }; },
+  convMetric: { label: '|u|_max', kind: 'len', ref: 0.17e-3, pick: r => r.rows[0].val }
+};
+
+/* ============================================================
+   LUCRAREA 5 — bridă (stare plană de tensiuni, T6)
+   ============================================================ */
+function flangeModel(p) {
+  const t0 = performance.now();
+  const Lr = p.Lr / 1000, H = p.H / 1000, rc = p.rc / 1000, dh = p.dh / 1000, a = p.a / 1000, Dm = p.D / 1000, t = p.t / 1000, h = p.h / 1000;
+  const E = p.E * 1e9, nu = p.nu, sy = p.sy * 1e6;
+  const R = H / 2, cx = Lr, cy = H / 2;
+  if (Dm / 2 >= R - 0.5e-3) throw new Error('Gaura mare este prea mare pentru raza exterioară (D/2 trebuie să fie < H/2 − 0,5 mm).');
+  if (a - dh / 2 < 0.5e-3 || a + dh / 2 > Lr - 2e-3) throw new Error('Găurile mici ies din contur: mărește poziția a sau micșorează diametrul.');
+  const hb = h, hs = Math.max(h * 0.4, 0.5e-3);
+  const bp = [], arcs = {};
+  const rcc = Math.max(rc, 0);
+  arcs[1] = { cx, cy, r: R }; arcs[4] = { cx, cy, r: Dm / 2 };
+  arcs[5] = { cx: a, cy: a, r: dh / 2 }; arcs[6] = { cx: a, cy: H - a, r: dh / 2 };
+  if (rcc > 1e-6) { arcs[2] = { cx: rcc, cy: H - rcc, r: rcc }; arcs[3] = { cx: rcc, cy: rcc, r: rcc }; }
+  linePts(rcc, 0, Lr, 0, hb, bp);
+  arcPts(cx, cy, R, -PI / 2, PI / 2, hb, 1, bp);
+  linePts(Lr, H, rcc, H, hb, bp);
+  if (rcc > 1e-6) arcPts(rcc, H - rcc, rcc, PI / 2, PI, hs, 2, bp);
+  linePts(0, H - rcc, 0, rcc, hb, bp);
+  if (rcc > 1e-6) arcPts(rcc, rcc, rcc, PI, 1.5 * PI, hs, 3, bp);
+  arcPts(cx, cy, Dm / 2, 0, 2 * PI, hb * 0.8, 4, bp);
+  arcPts(a, a, dh / 2, 0, 2 * PI, hs, 5, bp); arcPts(a, H - a, dh / 2, 0, 2 * PI, hs, 6, bp);
+  const inside = (x, y) => {
+    let ok;
+    if (x >= Lr) ok = (x - cx) ** 2 + (y - cy) ** 2 <= R * R;
+    else {
+      ok = x >= 0 && y >= 0 && y <= H;
+      if (rcc > 1e-6 && x < rcc && y < rcc) ok = ok && (x - rcc) ** 2 + (y - rcc) ** 2 <= rcc * rcc;
+      if (rcc > 1e-6 && x < rcc && y > H - rcc) ok = ok && (x - rcc) ** 2 + (y - (H - rcc)) ** 2 <= rcc * rcc;
+    }
+    if (!ok) return false;
+    if ((x - cx) ** 2 + (y - cy) ** 2 < (Dm / 2) ** 2) return false;
+    if ((x - a) ** 2 + (y - a) ** 2 < (dh / 2) ** 2) return false;
+    if ((x - a) ** 2 + (y - (H - a)) ** 2 < (dh / 2) ** 2) return false;
+    return true;
+  };
+  tagArcs(bp, arcs);
+  const m = FEM.mesh2D({ bpts: bp, arcs, inside, bbox: [0, 0, Lr + R, H], hmax: h * 1.1, grow: 0.4 });
+  const tol = 1e-7;
+  const fixed = new Uint8Array(m.nn * 2);
+  for (let n = 0; n < m.nn; n++) {
+    const x = m.X[2 * n], y = m.X[2 * n + 1];
+    if (Math.abs(Math.hypot(x - a, y - a) - dh / 2) < tol || Math.abs(Math.hypot(x - a, y - (H - a)) - dh / 2) < tol) { fixed[2 * n] = fixed[2 * n + 1] = 1; }
+  }
+  const be = FEM.boundaryEdges(m).boundary;
+  const loadEdges = be.filter(ed => ed.n.every(n => Math.abs(Math.hypot(m.X[2 * n] - cx, m.X[2 * n + 1] - cy) - Dm / 2) < tol));
+  let Ltot = 0; for (const ed of loadEdges) Ltot += FEM.edgeInt(edgeCoords(m, ed), false).len;
+  const th = p.ang * PI / 180, Fx = p.F * Math.cos(th), Fyv = p.F * Math.sin(th);
+  const r = solve2D(m, {
+    mode: 'ps', E, nu, fixed, te: new Float64Array(m.ne).fill(t),
+    loads: sys => { for (const ed of loadEdges) addEdgeF(sys, ed, FEM.edgeLoad(edgeCoords(m, ed), false, Fx / Ltot, Fyv / Ltot, 0)); }
+  });
+  const U3 = new Float64Array(m.nn * 3);
+  for (let n = 0; n < m.nn; n++) { U3[3 * n] = r.U[2 * n]; U3[3 * n + 1] = r.U[2 * n + 1]; }
+  const fields = buildFields({ nn: m.nn, U3, sig: r.sig, eps: r.eps, nu, sy });
+  const F = Object.fromEntries(fields.map(f => [f.key, f.arr]));
+  const te = new Float64Array(m.ne).fill(t);
+  const g = plateView(m, te);
+  const ex = extremum(F.umag), sv = extremum(F.svm);
+  // reacțiuni (suma forțelor)
+  const loc = makeLocator(m);
+  const ln = lineSample(loc, F.svm, [0, cy], [Lr + R, cy], 160), lu = lineSample(loc, F.umag, [0, cy], [Lr + R, cy], 160);
+  const lux = lineSample(loc, F.ux, [0, cy], [Lr + R, cy], 160);
+  // VM pe conturul găurii mari
+  const ring = [];
+  for (let n = 0; n < m.nn; n++) { const x = m.X[2 * n], y = m.X[2 * n + 1]; if (Math.abs(Math.hypot(x - cx, y - cy) - Dm / 2) < tol) ring.push([Math.atan2(y - cy, x - cx) * 180 / PI, F.svm[n], n]); }
+  ring.sort((u, v) => u[0] - v[0]);
+  const ringW = R - Dm / 2, snom = p.F / (2 * ringW * t);
+  const Aarea = (() => { let s = 0; for (let e = 0; e < m.ne; e++) s += FEM.t6Area(elemXY(m, e)); return s; })();
+  const rows = [
+    { label: 'Deformație totală maximă |u|_max', val: ex.mx, kind: 'len', ref: 1.25e-4 },
+    { label: 'Tensiune echivalentă von Mises maximă', val: sv.mx, kind: 'stress', ref: 1.51e8 },
+    { label: 'Deplasarea medie a găurii încărcate', val: loadEdges.length ? loadEdges.reduce((s, ed) => s + Math.hypot(r.U[2 * ed.n[1]], r.U[2 * ed.n[1] + 1]), 0) / loadEdges.length : 0, kind: 'len', ref: null },
+    { label: 'Tensiune principală maximă σ₁', val: extremum(F.s1).mx, kind: 'stress', ref: null }];
+  if (sy) rows.push({ label: 'Coeficient de siguranță minim σ_c/σ_vM', val: extremum(F.sf).mn, kind: 'ratio', ref: null });
+  const checks = [
+    { label: 'Aria secțiunii plane (verificare mesh)', ana: Lr * H - 2 * rcc * rcc * (1 - PI / 4) + PI * R * R / 2 - PI * (Dm / 2) ** 2 - 2 * PI * (dh / 2) ** 2, fem: Aarea, kind: 'area' },
+    { label: 'Tensiune nominală în inel  σ_nom = F / (2·(R−r)·t)', ana: snom, fem: sv.mx, kind: 'stress', note: 'Raport K_t = σ_max/σ_nom' }];
+  const charts = [
+    { id: 'c1', title: 'Tensiunea von Mises pe axa y = H/2', xl: 's [mm]', yl: 'σ_vM [MPa]', xs: ln.x.map(v => v * 1000), series: [{ n: 'σ_vM (nodal)', y: ln.y.map(v => v / 1e6), c: 0 }] },
+    { id: 'c2', title: 'Deplasarea pe axa y = H/2', xl: 's [mm]', yl: 'u [µm]', xs: lu.x.map(v => v * 1000), series: [{ n: '|u|', y: lu.y.map(v => v * 1e6), c: 0 }, { n: 'u_x', y: lux.y.map(v => v * 1e6), c: 1, d: true }] },
+    { id: 'c3', title: 'Tensiunea von Mises pe conturul găurii mari', xl: 'θ [°]', yl: 'σ_vM [MPa]', xs: ring.map(q => q[0]), series: [{ n: 'σ_vM pe contur', y: ring.map(q => q[1] / 1e6), c: 0 }] }];
+  const maxA = sv.imx;
+  return {
+    kind: 'plate', nn: m.nn, ne: m.ne, ndof: r.ndof, bw: r.bw, res: r.residual, ms: performance.now() - t0, elem: 'PLANE 6 noduri (T6), stare plană de tensiuni, grosime constantă',
+    geom: g, U3, fields, defaultField: 'svm', rows, checks, charts, props: [['Aria plăcii A', Aarea, 'm²'], ['Lungime încărcată', Ltot, 'm'], ['Σ forță aplicată', p.F, 'N']],
+    notes: [`Raport de concentrare K_t = σ_max/σ_nom = ${(sv.mx / snom).toFixed(2)}. Tensiunea maximă apare la marginea găurilor fixate (blocare totală a conturului).`],
+    ext: { snom }
+  };
+}
+LABS.l5 = {
+  id: 'l5', nr: 5, name: 'Bridă', full: 'Analiza statică a unui element de tip bridă', module: 'Static Structural',
+  tema: 'Bridă de oțel fixată prin două găuri, încărcată cu o forță F = 1000 N pe suprafața interioară a găurii mari. Grosime 3 mm.',
+  params: [
+    { k: 'E', l: 'Modul de elasticitate E', u: 'GPa', v: 200, min: 1, max: 500, step: 1, st: 0 },
+    { k: 'nu', l: 'Coeficient Poisson ν', u: '', v: 0.3, min: 0.05, max: 0.49, step: 0.01, st: 0 },
+    { k: 'rho', l: 'Densitate ρ', u: 'kg/m³', v: 7850, min: 1000, max: 20000, step: 10, st: 0 },
+    { k: 'sy', l: 'Limită de curgere σ_c (ipoteză)', u: 'MPa', v: 250, min: 50, max: 1500, step: 5, st: 0 },
+    { k: 'Lr', l: 'Lungime parte dreptunghiulară', u: 'mm', v: 80, min: 40, max: 160, step: 1, st: 1 },
+    { k: 'H', l: 'Lățime / diametru semicerc', u: 'mm', v: 50, min: 30, max: 100, step: 1, st: 1 },
+    { k: 'rc', l: 'Rază de racordare colțuri r₁', u: 'mm', v: 5, min: 0, max: 12, step: 0.5, st: 1 },
+    { k: 'dh', l: 'Diametru găuri mici d_i', u: 'mm', v: 5, min: 2, max: 10, step: 0.5, st: 1 },
+    { k: 'a', l: 'Poziția găurilor mici față de margini', u: 'mm', v: 5, min: 3, max: 15, step: 0.5, st: 1 },
+    { k: 'D', l: 'Diametru gaură mare D_i1', u: 'mm', v: 40, min: 10, max: 80, step: 1, st: 1 },
+    { k: 't', l: 'Grosime placă δ', u: 'mm', v: 3, min: 0.5, max: 10, step: 0.5, st: 1 },
+    { k: 'h', l: 'Dimensiune element h', u: 'mm', v: 2.4, min: 0.8, max: 5, step: 0.1, st: 2 },
+    { k: 'F', l: 'Forță totală F', u: 'N', v: 1000, min: 10, max: 10000, step: 10, st: 3 },
+    { k: 'ang', l: 'Direcția forței (față de axa x; 90° = axa y)', u: '°', v: 90, min: -180, max: 180, step: 5, st: 3 }],
+  stageText: [
+    'Material: oțel (E = 2·10¹¹ N/m², ν = 0,3, ρ = 7850 kg/m³).',
+    'Contur din dreptunghi 80 × 50 mm și semicerc Ø50, colțuri rotunjite r₁ = 5 mm, două găuri Ø5 și o gaură Ø40; grosime 3 mm.',
+    'Rețea triunghiulară pătratică (T6) generată automat, rafinată în jurul găurilor mici.',
+    'Suport fix pe suprafețele interioare ale celor două găuri mici; forță F = 1000 N distribuită uniform pe gaura mare.',
+    'Stare plană de tensiuni (placă subțire); sistem rezolvat cu solver direct în bandă.',
+    'Se urmăresc deformația totală și tensiunea echivalentă von Mises.'],
+  run: flangeModel,
+  meshLevels: (p, i) => ({ ...p, h: p.h * [2.2, 1.6, 1, 0.75][i] }),
+  convMetric: { label: 'σ_vM,max', kind: 'stress', ref: 1.51e8, pick: r => r.rows[1].val }
+};
+
+/* ============================================================
+   LUCRAREA 6 — conductă curbată sub presiune (hexaedre, sweep)
+   ============================================================ */
+function pipeModel(p) {
+  const t0 = performance.now();
+  const E = p.E * 1e9, nu = p.nu, sy = p.sy * 1e6;
+  const L1 = p.L1 / 1000, L2 = p.L2 / 1000, Rb = p.R / 1000, th = p.th * PI / 180, ro = p.Do / 2000, ri = p.Di / 2000, pr = p.p;
+  if (ri >= ro - 1e-4) throw new Error('Diametrul interior trebuie să fie mai mic decât cel exterior.');
+  const nR = p.nR, nT = p.nT, n1 = p.nS1, na = p.nSa;
+  // cale: inele (centru, unghi tangentă)
+  const rings = [];
+  for (let i = 0; i <= n1; i++) rings.push({ c: [L1 * i / n1, 0], al: 0, s: L1 * i / n1 });
+  const C1 = [L1, Rb];
+  for (let i = 1; i <= na; i++) { const al = th * i / na; rings.push({ c: [C1[0] + Rb * Math.sin(al), C1[1] - Rb * Math.cos(al)], al, s: L1 + Rb * al }); }
+  const P1 = [C1[0] + Rb * Math.sin(th), C1[1] - Rb * Math.cos(th)];
+  const C2 = [P1[0] + Rb * Math.sin(th), P1[1] - Rb * Math.cos(th)];
+  for (let i = 1; i <= na; i++) { const al = th * (1 - i / na); rings.push({ c: [C2[0] - Rb * Math.sin(al), C2[1] + Rb * Math.cos(al)], al, s: L1 + Rb * th + Rb * th * i / na }); }
+  const P2 = rings[rings.length - 1].c, s0 = L1 + 2 * Rb * th;
+  for (let i = 1; i <= p.nS2; i++) rings.push({ c: [P2[0] + L2 * i / p.nS2, P2[1]], al: 0, s: s0 + L2 * i / p.nS2 });
+  const nk = rings.length, per = (nR + 1) * nT;
+  const X = new Float64Array(nk * per * 3);
+  for (let k = 0; k < nk; k++) {
+    const { c, al } = rings[k], Nx = -Math.sin(al), Ny = Math.cos(al);
+    for (let a = 0; a <= nR; a++) for (let b = 0; b < nT; b++) {
+      const rr = ri + (ro - ri) * a / nR, ph = 2 * PI * b / nT, id = k * per + a * nT + b;
+      X[3 * id] = c[0] + rr * Math.cos(ph) * Nx; X[3 * id + 1] = c[1] + rr * Math.cos(ph) * Ny; X[3 * id + 2] = rr * Math.sin(ph);
+    }
+  }
+  const conn = [];
+  for (let k = 0; k < nk - 1; k++) for (let a = 0; a < nR; a++) for (let b = 0; b < nT; b++) {
+    const b1 = (b + 1) % nT, id = (kk, aa, bb) => kk * per + aa * nT + bb;
+    conn.push(id(k, a, b), id(k, a + 1, b), id(k, a + 1, b1), id(k, a, b1), id(k + 1, a, b), id(k + 1, a + 1, b), id(k + 1, a + 1, b1), id(k + 1, a, b1));
+  }
+  const m = { X, conn: Int32Array.from(conn), nn: nk * per, ne: conn.length / 8 };
+  const fixed = new Uint8Array(m.nn * 3);
+  const ringOf = n => Math.floor(n / per);
+  for (let n = 0; n < m.nn; n++) {
+    const k = ringOf(n);
+    if (k === 0 || (p.bc === 'both' && k === nk - 1)) { fixed[3 * n] = fixed[3 * n + 1] = fixed[3 * n + 2] = 1; }
+  }
+  const { g, faces } = hexView(m);
+  const inner = faces.filter(f => f.n.every(n => Math.floor((n % per) / nT) === 0));
+  const r = FEM.solveHex(m, E, nu, fixed, sys => {
+    for (const f of inner) {
+      const P = []; for (const n of f.n) P.push(m.X[3 * n], m.X[3 * n + 1], m.X[3 * n + 2]);
+      const fe = FEM.quadPressure(P, pr), d = [];
+      for (const n of f.n) d.push(3 * n, 3 * n + 1, 3 * n + 2);
+      sys.addF(d, fe);
+    }
+  });
+  const fields = buildFields({ nn: m.nn, U3: r.U, sig: r.sig, eps: r.eps, nu, sy });
+  const F = Object.fromEntries(fields.map(f => [f.key, f.arr]));
+  const ex = extremum(F.umag), sv = extremum(F.svm);
+  // Lamé (secțiune dreaptă, deformație axială blocată)
+  const Kp = pr * ri * ri / (ro * ro - ri * ri);
+  const lam = rr => ({ st: Kp * (1 + ro * ro / (rr * rr)), sr: Kp * (1 - ro * ro / (rr * rr)) });
+  const li = lam(ri), szL = nu * (li.st + li.sr);
+  const vmL = FEM.vonMises([li.sr, li.st, szL, 0, 0, 0]);
+  // grafic per inel
+  const sArr = [], vmRing = [], uRing = [];
+  for (let k = 0; k < nk; k++) {
+    let vm = 0, um = 0;
+    for (let q = 0; q < per; q++) { vm = Math.max(vm, F.svm[k * per + q]); um = Math.max(um, F.umag[k * per + q]); }
+    sArr.push(rings[k].s * 1000); vmRing.push(vm); uRing.push(um);
+  }
+  // profil prin grosime, secțiune dreaptă la mijlocul primului tronson (φ=0 → direcția N=y)
+  const kmid = Math.floor(n1 / 2), pr_r = [], sth = [], srd = [], sax = [];
+  for (let a = 0; a <= nR; a++) { const n = kmid * per + a * nT; pr_r.push((ri + (ro - ri) * a / nR) * 1000); sth.push(F.sz[n]); srd.push(F.sy[n]); sax.push(F.sx[n]); }
+  const rl = linspace(ri, ro, 40);
+  const rows = [
+    { label: 'Deformație totală maximă |u|_max', val: ex.mx, kind: 'len', ref: 9.3e-10 },
+    { label: 'Tensiune echivalentă von Mises maximă', val: sv.mx, kind: 'stress', ref: 5201.5 },
+    { label: 'Tensiune principală maximă σ₁', val: extremum(F.s1).mx, kind: 'stress', ref: null }];
+  if (sy) rows.push({ label: 'Coeficient de siguranță minim σ_c/σ_vM', val: extremum(F.sf).mn, kind: 'ratio', ref: null });
+  const checks = [
+    { label: 'Hoop la interior – Lamé: σ_θ(r_i) = p(r_o²+r_i²)/(r_o²−r_i²)', ana: li.st, fem: sth[0], kind: 'stress' },
+    { label: 'Radial la interior: σ_r(r_i) = −p', ana: li.sr, fem: srd[0], kind: 'stress' },
+    { label: 'von Mises la interior, secțiune dreaptă (Lamé, ε_z = 0)', ana: vmL, fem: F.svm[kmid * per], kind: 'stress' }];
+  const charts = [
+    { id: 'c1', title: 'Tensiunea von Mises maximă pe fiecare inel, de-a lungul axei conductei', xl: 's [mm]', yl: 'σ_vM [Pa]', xs: sArr, series: [{ n: 'σ_vM,max pe secțiune', y: vmRing, c: 0 }] },
+    { id: 'c2', title: 'Deplasarea totală maximă pe fiecare inel', xl: 's [mm]', yl: '|u| [nm]', xs: sArr, series: [{ n: '|u|_max pe secțiune', y: uRing.map(v => v * 1e9), c: 0 }] },
+    { id: 'c3', title: 'Distribuția tensiunilor prin grosimea peretelui (tronson drept)', xl: 'r [mm]', yl: 'σ [Pa]', xs: pr_r,
+      series: [{ n: 'σ_θ MEF', y: sth, c: 0, m: true }, { n: 'σ_r MEF', y: srd, c: 1, m: true }, { n: 'σ_θ Lamé', xs: rl.map(v => v * 1000), y: rl.map(v => lam(v).st), c: 0, d: true }, { n: 'σ_r Lamé', xs: rl.map(v => v * 1000), y: rl.map(v => lam(v).sr), c: 1, d: true }] }];
+  return {
+    kind: 'hex', nn: m.nn, ne: m.ne, ndof: r.ndof, bw: r.bw, res: r.residual, ms: performance.now() - t0, elem: 'SOLID 8 noduri cu moduri incompatibile (sweep inelar)',
+    geom: g, U3: r.U, fields, defaultField: 'svm', rows, checks, charts,
+    props: [['Lungime axă conductă', s0 / 1 + L2, 'm'], ['Săgeată verticală a axei Δy', 2 * Rb * (1 - Math.cos(th)), 'm'], ['Presiune interioară p', pr, 'Pa']],
+    notes: ['Unghiul arcelor nu este cotat în figura din lucrare (Fig. 6.7 cotează doar H₁, H₂, R₃, R₄); valoarea implicită de 70° este o ipoteză (reproduce deformația maximă din carte) și poate fi modificată.'],
+  };
+}
+LABS.l6 = {
+  id: 'l6', nr: 6, name: 'Conductă curbată', full: 'Analiza statică a unei conducte curbate sub presiune', module: 'Static Structural',
+  tema: 'Conductă de oțel în formă de S, încastrată pe cele două porțiuni drepte, solicitată de presiunea interioară p. Se urmăresc deformația totală și tensiunea von Mises.',
+  params: [
+    { k: 'E', l: 'Modul de elasticitate E', u: 'GPa', v: 200, min: 1, max: 500, step: 1, st: 0 },
+    { k: 'nu', l: 'Coeficient Poisson ν', u: '', v: 0.3, min: 0.05, max: 0.49, step: 0.01, st: 0 },
+    { k: 'rho', l: 'Densitate ρ', u: 'kg/m³', v: 7850, min: 1000, max: 20000, step: 10, st: 0 },
+    { k: 'sy', l: 'Limită de curgere σ_c (ipoteză)', u: 'MPa', v: 250, min: 50, max: 1500, step: 5, st: 0 },
+    { k: 'L1', l: 'Tronson drept stânga H₁', u: 'mm', v: 100, min: 30, max: 300, step: 5, st: 1 },
+    { k: 'L2', l: 'Tronson drept dreapta H₂', u: 'mm', v: 100, min: 30, max: 300, step: 5, st: 1 },
+    { k: 'R', l: 'Raza de curbură a axei R₃ = R₄', u: 'mm', v: 150, min: 60, max: 400, step: 5, st: 1 },
+    { k: 'th', l: 'Unghiul fiecărui arc (ipoteză)', u: '°', v: 70, min: 10, max: 90, step: 1, st: 1 },
+    { k: 'Do', l: 'Diametru exterior', u: 'mm', v: 80, min: 20, max: 200, step: 1, st: 1 },
+    { k: 'Di', l: 'Diametru interior', u: 'mm', v: 60, min: 10, max: 190, step: 1, st: 1 },
+    { k: 'nR', l: 'Elemente prin grosimea peretelui', u: '', v: 2, min: 1, max: 5, step: 1, st: 2, int: 1 },
+    { k: 'nT', l: 'Elemente pe circumferință', u: '', v: 16, min: 8, max: 40, step: 2, st: 2, int: 1 },
+    { k: 'nS1', l: 'Elemente pe tronsonul stâng', u: '', v: 4, min: 2, max: 16, step: 1, st: 2, int: 1 },
+    { k: 'nS2', l: 'Elemente pe tronsonul drept', u: '', v: 4, min: 2, max: 16, step: 1, st: 2, int: 1 },
+    { k: 'nSa', l: 'Elemente pe fiecare arc', u: '', v: 9, min: 3, max: 30, step: 1, st: 2, int: 1 },
+    { k: 'p', l: 'Presiune interioară p', u: 'Pa', v: 1000, min: 10, max: 1e6, step: 10, st: 3, log: 1 },
+    { k: 'bc', l: 'Fixare capete', u: '', v: 'both', type: 'sel', opts: [['both', 'Ambele capete încastrate'], ['left', 'Doar capătul stâng (consolă)']], st: 3 }],
+  stageText: [
+    'Material: oțel (E = 2·10¹¹ N/m², ν = 0,3, ρ = 7850 kg/m³).',
+    'Profil: două cercuri concentrice (Ø80 / Ø60 mm), parcurs de-a lungul unei traiectorii cu două linii drepte (100 mm) și două arce de rază 150 mm (comanda Sweep).',
+    'Rețea hexaedrică generată prin baleiere a secțiunii inelare pe traiectorie.',
+    'Suport fix pe porțiunile drepte (capetele); presiunea p = 1000 Pa pe suprafața interioară (în carte figura indică 100 Pa, textul 1000 Pa).',
+    'Solver direct în bandă pentru sistemul [K]{u} = {F}.',
+    'Se urmăresc deformația totală și tensiunea echivalentă von Mises.'],
+  run: pipeModel,
+  meshLevels: (p, i) => { const s = [0.5, 0.75, 1, 1.4][i]; const f = v => Math.max(2, Math.round(v * s)); return { ...p, nT: Math.max(8, Math.round(p.nT * s / 2) * 2), nS1: f(p.nS1), nS2: f(p.nS2), nSa: f(p.nSa), nR: Math.max(1, Math.round(p.nR * Math.min(s, 1.4))) }; },
+  convMetric: { label: 'σ_vM,max', kind: 'stress', ref: 5201.5, pick: r => r.rows[1].val }
+};
+
+/* ============================================================
+   LUCRAREA 8 — recipient sub presiune (axisimetric, T6)
+   ============================================================ */
+function vesselModel(p) {
+  const t0 = performance.now();
+  const E = p.E * 1e9, nu = p.nu, sy = p.sy * 1e6;
+  const Ro = p.Ro / 100, Ri = p.Ri / 100, Hh = p.H / 100, hin = p.hin / 100, tl = p.tl / 100, pr = p.p;
+  const tb = Hh - hin;
+  if (Ri >= Ro - 1e-3) throw new Error('Raza interioară trebuie să fie mai mică decât cea exterioară.');
+  if (tb <= 1e-3) throw new Error('Adâncimea interioară trebuie să fie mai mică decât înălțimea corpului.');
+  const rs = segs([0, Ri, Ro], [p.nrI, p.nrW]), zs = segs([0, tb, Hh, Hh + tl], [p.nzB, p.nzW, p.nzL]);
+  const inside = (r, z) => z < tb ? r < Ro : (z < Hh ? r > Ri : r < Ro);
+  const m = FEM.meshRect(rs, zs, inside);
+  const tol = 1e-9;
+  const fixed = new Uint8Array(m.nn * 2);
+  for (let n = 0; n < m.nn; n++) {
+    const r = m.X[2 * n], z = m.X[2 * n + 1];
+    if (z < tol) { fixed[2 * n] = fixed[2 * n + 1] = 1; }
+    if (r < tol) fixed[2 * n] = 1;
+  }
+  const be = FEM.boundaryEdges(m).boundary;
+  const pe = be.filter(ed => {
+    const [a, , b] = ed.n, ra = m.X[2 * a], rb = m.X[2 * b], za = m.X[2 * a + 1], zb = m.X[2 * b + 1];
+    if (Math.abs(ra - Ri) < tol && Math.abs(rb - Ri) < tol && za >= tb - tol && zb <= Hh + tol && zb >= tb - tol && za <= Hh + tol) return true;
+    if (Math.abs(za - tb) < tol && Math.abs(zb - tb) < tol && ra <= Ri + tol && rb <= Ri + tol) return true;
+    if (Math.abs(za - Hh) < tol && Math.abs(zb - Hh) < tol && ra <= Ri + tol && rb <= Ri + tol) return true;
+    return false;
+  });
+  const r = solve2D(m, {
+    mode: 'ax', E, nu, fixed,
+    loads: sys => { for (const ed of pe) addEdgeF(sys, ed, FEM.edgeLoad(edgeCoords(m, ed), true, 0, 0, pr)); }
+  });
+  const U3 = new Float64Array(m.nn * 3);
+  for (let n = 0; n < m.nn; n++) { U3[3 * n] = r.U[2 * n]; U3[3 * n + 1] = r.U[2 * n + 1]; }
+  const fields = buildFields({ nn: m.nn, U3, sig: r.sig, eps: r.eps, nu, sy });
+  // în axisimetric: x=r, y=z, z=θ ; etichete adaptate
+  for (const f of fields) {
+    const map = { ux: 'Deplasare radială u_r', uy: 'Deplasare axială u_z', uz: 'Deplasare tangențială u_θ (=0)', sx: 'Tensiune radială σ_r', sy: 'Tensiune axială σ_z', sz: 'Tensiune circumferențială σ_θ', sxy: 'Tensiune tangențială τ_rz' };
+    if (map[f.key]) f.label = map[f.key];
+  }
+  const F = Object.fromEntries(fields.map(f => [f.key, f.arr]));
+  const loc = makeLocator(m);
+  const ex = extremum(F.umag), sv = extremum(F.svm);
+  const zm = (tb + Hh) / 2;
+  const lamK = pr * Ri * Ri / (Ro * Ro - Ri * Ri);
+  const lam = rr => ({ st: lamK * (1 + Ro * Ro / (rr * rr)), sr: lamK * (1 - Ro * Ro / (rr * rr)) });
+  const szL = lamK, li = lam(Ri), vmL = FEM.vonMises([li.sr, szL, li.st, 0, 0, 0]);
+  const nPts = 60;
+  const lsth = lineSample(loc, F.sz, [Ri, zm], [Ro, zm], nPts), lsr = lineSample(loc, F.sx, [Ri, zm], [Ro, zm], nPts), lsz = lineSample(loc, F.sy, [Ri, zm], [Ro, zm], nPts);
+  const rr = lsth.x.map(v => Ri + v);
+  const lvm = lineSample(loc, F.svm, [Ri + 1e-9, tb], [Ri + 1e-9, Hh], 100);
+  const lur = lineSample(loc, F.ux, [Ro - 1e-9, 0], [Ro - 1e-9, Hh], 100);
+  const rows = [
+    { label: 'Deformație totală maximă |u|_max', val: ex.mx, kind: 'len', ref: 2.52e-9 },
+    { label: 'Tensiune echivalentă von Mises maximă', val: sv.mx, kind: 'stress', ref: 3984 },
+    { label: 'Tensiune principală maximă σ₁', val: extremum(F.s1).mx, kind: 'stress', ref: null },
+    { label: 'Deplasare radială maximă u_r', val: maxAbs(F.ux), kind: 'len', ref: null }];
+  if (sy) rows.push({ label: 'Coeficient de siguranță minim σ_c/σ_vM', val: extremum(F.sf).mn, kind: 'ratio', ref: null });
+  const imid = lsth.y[0];
+  const checks = [
+    { label: 'Hoop la interior (Lamé): σ_θ(R_i) = p(R_o²+R_i²)/(R_o²−R_i²)', ana: li.st, fem: lsth.y[0], kind: 'stress' },
+    { label: 'Axială (capete închise): σ_z = p·R_i²/(R_o²−R_i²)', ana: szL, fem: lsz.y[Math.floor(nPts / 2)], kind: 'stress' },
+    { label: 'Radială la interior: σ_r(R_i) = −p', ana: -pr, fem: lsr.y[0], kind: 'stress' },
+    { label: 'von Mises la interior, la jumătatea înălțimii (Lamé)', ana: vmL, fem: lvm.y[Math.floor(lvm.y.length / 2)], kind: 'stress' },
+    { label: 'Deplasare radială la exterior, zonă centrală (Lamé): u_r(R_o) = R_o·σ_θ(R_o)(2−ν)/(2E)', ana: Ro * lamK * (2 - nu) / E, fem: lur.y[Math.floor(lur.y.length / 2)], kind: 'len' }];
+  const charts = [
+    { id: 'c1', title: `Tensiuni prin grosimea peretelui, la z = ${(zm * 100).toFixed(1)} cm`, xl: 'r [cm]', yl: 'σ [Pa]', xs: rr.map(v => v * 100),
+      series: [{ n: 'σ_θ MEF', y: lsth.y, c: 0, m: true }, { n: 'σ_r MEF', y: lsr.y, c: 1, m: true }, { n: 'σ_θ Lamé', y: rr.map(v => lam(v).st), c: 0, d: true }, { n: 'σ_r Lamé', y: rr.map(v => lam(v).sr), c: 1, d: true }] },
+    { id: 'c2', title: 'Tensiunea von Mises pe peretele interior (r = R_i)', xl: 'z [cm]', yl: 'σ_vM [Pa]', xs: lvm.x.map(v => (tb + v) * 100), series: [{ n: 'σ_vM MEF', y: lvm.y, c: 0 }, { n: 'Lamé (zonă centrală)', y: lvm.y.map(() => vmL), c: 1, d: true }] },
+    { id: 'c3', title: 'Deplasarea radială a peretelui exterior (r = R_o)', xl: 'z [cm]', yl: 'u_r [nm]', xs: lur.x.map(v => v * 100), series: [{ n: 'u_r MEF', y: lur.y.map(v => v * 1e9), c: 0 }, { n: 'u_r Lamé (zonă centrală)', y: lur.y.map(() => 0), c: 1, d: true }] }];
+  // Lamé: u_r(Ro) deformație plană generalizată (ε_z liber, capete închise)
+  const urLame = Ro * lamK * (2 - nu) / E;
+  charts[2].series[1].y = lur.y.map(() => urLame * 1e9);
+  const view = p.vw || 'semi';
+  const g = revolveView(m, view, 36);
+  return {
+    kind: 'axi', nn: m.nn, ne: m.ne, ndof: r.ndof, bw: r.bw, res: r.residual, ms: performance.now() - t0, elem: 'PLANE 6 noduri (T6), axisimetric', view,
+    geom: g, U3, fields, defaultField: 'svm', rows, checks, charts, flat: view === 'sect',
+    props: [['Grosime fund', tb, 'm'], ['Volum material', (() => { let v = 0; for (let e = 0; e < m.ne; e++) { const X = elemXY(m, e); const c = FEM.t6Centroid(X); v += FEM.t6Area(X) * 2 * PI * c[0]; } return v; })(), 'm³'], ['Presiune p', pr, 'Pa']],
+    notes: ['Corpul și capacul sunt tratate ca un singur corp cu contact legat (Bonded), ca în Ansys pentru corpuri tăiate cu Slice. Tensiunea maximă apare în colțul interior (singularitate), deci depinde de rafinarea rețelei.', 'Deformația maximă din carte (2,52·10⁻⁹ m) nu rezultă din datele enunțului: soluția analitică Lamé dă u_r ≈ 1,0·10⁻⁹ m la peretele interior, în acord cu rezultatul MEF de aici.']
+  };
+}
+LABS.l8 = {
+  id: 'l8', nr: 8, name: 'Recipient sub presiune', full: 'Analiza statică a unui recipient sub presiune', module: 'Static Structural',
+  tema: 'Recipient cilindric de oțel cu capac, supus presiunii interioare p = 1000 Pa, fixat pe suprafața inferioară. Model axisimetric.',
+  params: [
+    { k: 'E', l: 'Modul de elasticitate E', u: 'GPa', v: 200, min: 1, max: 500, step: 1, st: 0 },
+    { k: 'nu', l: 'Coeficient Poisson ν', u: '', v: 0.3, min: 0.05, max: 0.49, step: 0.01, st: 0 },
+    { k: 'rho', l: 'Densitate ρ', u: 'kg/m³', v: 7850, min: 1000, max: 20000, step: 10, st: 0 },
+    { k: 'sy', l: 'Limită de curgere σ_c (ipoteză)', u: 'MPa', v: 250, min: 50, max: 1500, step: 5, st: 0 },
+    { k: 'Ro', l: 'Raza exterioară R_o (Ø20 → 10)', u: 'cm', v: 10, min: 4, max: 30, step: 0.5, st: 1 },
+    { k: 'Ri', l: 'Raza interioară R_i (Ø14 → 7)', u: 'cm', v: 7, min: 2, max: 28, step: 0.5, st: 1 },
+    { k: 'H', l: 'Înălțimea corpului', u: 'cm', v: 30, min: 8, max: 80, step: 1, st: 1 },
+    { k: 'hin', l: 'Adâncimea interioară', u: 'cm', v: 27, min: 4, max: 78, step: 1, st: 1 },
+    { k: 'tl', l: 'Grosime capac δ', u: 'cm', v: 5, min: 1, max: 15, step: 0.5, st: 1 },
+    { k: 'nrI', l: 'Elemente radiale (zona centrală)', u: '', v: 8, min: 3, max: 24, step: 1, st: 2, int: 1 },
+    { k: 'nrW', l: 'Elemente radiale în perete', u: '', v: 4, min: 2, max: 14, step: 1, st: 2, int: 1 },
+    { k: 'nzB', l: 'Elemente axiale în fund', u: '', v: 3, min: 1, max: 12, step: 1, st: 2, int: 1 },
+    { k: 'nzW', l: 'Elemente axiale în perete', u: '', v: 16, min: 4, max: 50, step: 1, st: 2, int: 1 },
+    { k: 'nzL', l: 'Elemente axiale în capac', u: '', v: 4, min: 1, max: 14, step: 1, st: 2, int: 1 },
+    { k: 'p', l: 'Presiune interioară p', u: 'Pa', v: 1000, min: 10, max: 1e7, step: 10, st: 3, log: 1 },
+    { k: 'vw', l: 'Vizualizare', u: '', v: 'semi', type: 'sel', opts: [['semi', 'Semi-secțiune 3D (270°)'], ['full', 'Revoluție completă 360°'], ['sect', 'Secțiune meridiană 2D']], st: 5 }],
+  stageText: [
+    'Material: oțel (E = 2·10¹¹ N/m², ν = 0,3, ρ = 7850 kg/m³).',
+    'Profil în L rotit cu 360° (Revolve): Ø20 exterior, Ø14 interior, înălțime 30 cm, adâncime interioară 27 cm; capac extrudat 5 cm.',
+    'Rețea structurată în planul meridian (r, z); fiecare celulă este împărțită în două elemente T6.',
+    'Suport fix pe suprafața inferioară; presiunea p = 1000 Pa pe peretele interior, fundul interior și fața inferioară a capacului.',
+    'Problema este axisimetrică: deformațiile ε_r, ε_z, ε_θ = u_r/r și γ_rz; solver direct în bandă.',
+    'Se urmăresc deformația totală și tensiunea echivalentă von Mises; vizualizare prin revoluția rezultatelor.'],
+  run: vesselModel,
+  meshLevels: (p, i) => { const s = [0.4, 0.6, 1, 1.5][i]; const f = v => Math.max(1, Math.round(v * s)); return { ...p, nrI: Math.max(3, f(p.nrI)), nrW: Math.max(2, f(p.nrW)), nzB: f(p.nzB), nzW: Math.max(4, f(p.nzW)), nzL: f(p.nzL) }; },
+  convMetric: { label: 'σ_vM,max', kind: 'stress', ref: 3984, pick: r => r.rows[1].val }
+};
+
+/* ============================================================
+   LUCRAREA 9 — placă cu componentă electronică (termic + structural)
+   ============================================================ */
+function boardModel(p) {
+  const t0 = performance.now();
+  const W = p.W / 1000, Hh = p.Hh / 1000, tp = p.tp / 1000, tc = p.tc / 1000, cw = p.cw / 1000, ch = p.ch / 1000;
+  const ccx = p.ccx / 1000, ccy = p.ccy / 1000, dh = p.dh / 1000, off = p.off / 1000, rc = p.rc / 1000, h = p.h / 1000;
+  const E = p.E * 1e9, nu = p.nu, k = p.k, alpha = p.alpha * 1e-6, Tinf = p.Tinf, Tref = p.Tref, hc = p.hc, qv = p.qv;
+  if (ccx - cw / 2 < 12e-3 || ccx + cw / 2 > W - 12e-3 || ccy - ch / 2 < 12e-3 || ccy + ch / 2 > Hh - 12e-3) throw new Error('Componenta electronică este prea aproape de margine sau de orificii.');
+  if (off - dh / 2 < 0.5e-3) throw new Error('Orificiile ies din contur.');
+  const arcs = {}, bp = [];
+  const cr = [[rc, rc], [W - rc, rc], [W - rc, Hh - rc], [rc, Hh - rc]];
+  if (rc > 1e-6) cr.forEach((c, i) => arcs[i + 1] = { cx: c[0], cy: c[1], r: rc });
+  const hc_ = [[off, off], [W - off, off], [W - off, Hh - off], [off, Hh - off]];
+  hc_.forEach((c, i) => arcs[5 + i] = { cx: c[0], cy: c[1], r: dh / 2 });
+  const hb = h, hh = h * 0.5, hq = h * 0.6;
+  linePts(rc, 0, W - rc, 0, hb, bp); if (rc > 1e-6) arcPts(W - rc, rc, rc, -PI / 2, 0, hb * 0.7, 2, bp);
+  linePts(W, rc, W, Hh - rc, hb, bp); if (rc > 1e-6) arcPts(W - rc, Hh - rc, rc, 0, PI / 2, hb * 0.7, 3, bp);
+  linePts(W - rc, Hh, rc, Hh, hb, bp); if (rc > 1e-6) arcPts(rc, Hh - rc, rc, PI / 2, PI, hb * 0.7, 4, bp);
+  linePts(0, Hh - rc, 0, rc, hb, bp); if (rc > 1e-6) arcPts(rc, rc, rc, PI, 1.5 * PI, hb * 0.7, 1, bp);
+  hc_.forEach((c, i) => arcPts(c[0], c[1], dh / 2, 0, 2 * PI, hh, 5 + i, bp));
+  const x0 = ccx - cw / 2, x1 = ccx + cw / 2, y0 = ccy - ch / 2, y1 = ccy + ch / 2;
+  linePts(x0, y0, x1, y0, hq, bp); linePts(x1, y0, x1, y1, hq, bp); linePts(x1, y1, x0, y1, hq, bp); linePts(x0, y1, x0, y0, hq, bp);
+  const inside = (x, y) => {
+    if (x < 0 || y < 0 || x > W || y > Hh) return false;
+    if (rc > 1e-6) {
+      if (x < rc && y < rc && (x - rc) ** 2 + (y - rc) ** 2 > rc * rc) return false;
+      if (x > W - rc && y < rc && (x - (W - rc)) ** 2 + (y - rc) ** 2 > rc * rc) return false;
+      if (x > W - rc && y > Hh - rc && (x - (W - rc)) ** 2 + (y - (Hh - rc)) ** 2 > rc * rc) return false;
+      if (x < rc && y > Hh - rc && (x - rc) ** 2 + (y - (Hh - rc)) ** 2 > rc * rc) return false;
+    }
+    for (const [cx, cy] of hc_) if ((x - cx) ** 2 + (y - cy) ** 2 < (dh / 2) ** 2) return false;
+    return true;
+  };
+  tagArcs(bp, arcs);
+  const m = FEM.mesh2D({ bpts: bp, arcs, inside, bbox: [0, 0, W, Hh], hmax: h * 1.8, grow: 0.35 });
+  const inC = new Uint8Array(m.ne), te = new Float64Array(m.ne);
+  for (let e = 0; e < m.ne; e++) {
+    const c = FEM.t6Centroid(elemXY(m, e));
+    inC[e] = (c[0] > x0 && c[0] < x1 && c[1] > y0 && c[1] < y1) ? 1 : 0;
+    te[e] = inC[e] ? tp + tc : tp;
+  }
+  // ---- termic
+  const hFace = p.cv === 'top' ? hc : 2 * hc, edgeOn = p.cv !== 'top';
+  const thSys = new FEM.BandSystem(m.nn, 1, m.conn, 6, new Uint8Array(m.nn), m.X, 2);
+  const dofs6 = new Int32Array(6);
+  let Qgen = 0, Acomp = 0;
+  for (let e = 0; e < m.ne; e++) {
+    const X = elemXY(m, e), A = FEM.t6Area(X);
+    const { K, f } = FEM.t6Thermal(X, k * te[e], hFace, inC[e] ? qv * tc : 0, Tinf);
+    for (let a = 0; a < 6; a++) dofs6[a] = m.conn[6 * e + a];
+    thSys.addK(dofs6, K); thSys.addF(dofs6, f);
+    if (inC[e]) { Qgen += qv * tc * A; Acomp += A; }
+  }
+  const eds = FEM.boundaryEdges(m);
+  const edgeConv = [];
+  if (edgeOn) {
+    for (const ed of eds.boundary) edgeConv.push({ n: ed.n, c: hc * te[ed.e] });
+    for (const ed of eds.interface) if (inC[ed.e1] !== inC[ed.e2]) edgeConv.push({ n: ed.n, c: hc * tc });
+  }
+  for (const ec of edgeConv) {
+    const E3 = edgeCoords(m, ec), { M, v } = FEM.edgeInt(E3, false);
+    const Ke = new Float64Array(9), fe = new Float64Array(3);
+    for (let i = 0; i < 9; i++) Ke[i] = M[i] * ec.c;
+    for (let i = 0; i < 3; i++) fe[i] = v[i] * ec.c * Tinf;
+    thSys.addK(ec.n, Ke); thSys.addF(ec.n, fe);
+  }
+  const Tn = thSys.solve();
+  // bilanț termic
+  let Qconv = 0;
+  for (let e = 0; e < m.ne; e++) {
+    const X = elemXY(m, e); let s = 0;
+    // ∫ (T - Tinf) dA prin cuadratură: folosim funcțiile T6 (vezi FEM.t6Thermal cu hA=1,k=0)
+    const { K, f } = FEM.t6Thermal(X, 0, 1, 0, 0);
+    const Te = new Float64Array(6); for (let a = 0; a < 6; a++) Te[a] = Tn[m.conn[6 * e + a]] - Tinf;
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) s += Te[i] * K[i * 6 + j];
+    // s = Σ Te_i ∫N_i N_j (1) ... (suma după j, cu Σ_j N_j = 1 ⇒ ∫ N_i)
+    Qconv += hFace * s;
+  }
+  for (const ec of edgeConv) {
+    const { v } = FEM.edgeInt(edgeCoords(m, ec), false);
+    for (let i = 0; i < 3; i++) Qconv += ec.c * v[i] * (Tn[ec.n[i]] - Tinf);
+  }
+  // ---- structural
+  const dT = new Float64Array(m.nn); for (let n = 0; n < m.nn; n++) dT[n] = Tn[n] - Tref;
+  const tol = 1e-7, fixed = new Uint8Array(m.nn * 2);
+  for (let n = 0; n < m.nn; n++) { const x = m.X[2 * n], y = m.X[2 * n + 1]; for (const [cx, cy] of hc_) if (Math.abs(Math.hypot(x - cx, y - cy) - dh / 2) < tol) fixed[2 * n] = fixed[2 * n + 1] = 1; }
+  const r = solve2D(m, { mode: 'ps', E, nu, fixed, te, dT, alpha, loads: () => { } });
+  const U3 = new Float64Array(m.nn * 3);
+  for (let n = 0; n < m.nn; n++) { U3[3 * n] = r.U[2 * n]; U3[3 * n + 1] = r.U[2 * n + 1]; }
+  const fields = buildFields({ nn: m.nn, U3, sig: r.sig, eps: r.eps, nu, sy: null });
+  fields.unshift({ key: 'T', label: 'Temperatură T', kind: 'temp', arr: Tn });
+  const F = Object.fromEntries(fields.map(f => [f.key, f.arr]));
+  const g = plateView(m, te);
+  const loc = makeLocator(m);
+  const ex = extremum(F.umag), sv = extremum(F.svm), tm = extremum(Tn);
+  const N = 200;
+  const lT = lineSample(loc, Tn, [0, ccy], [W, ccy], N), lU = lineSample(loc, F.umag, [0, ccy], [W, ccy], N), lS = lineSample(loc, F.svm, [0, ccy], [W, ccy], N);
+  const lTy = lineSample(loc, Tn, [ccx, 0], [ccx, Hh], N);
+  const Atot = (() => { let s = 0; for (let e = 0; e < m.ne; e++) s += FEM.t6Area(elemXY(m, e)); return s; })();
+  const Aexact = W * Hh - (rc > 1e-6 ? 4 * rc * rc * (1 - PI / 4) : 0) - 4 * PI * (dh / 2) ** 2;
+  const ThAvg = Tinf + Qgen / (hFace * Atot);
+  const rows = [
+    { label: 'Temperatură maximă T_max', val: tm.mx, kind: 'temp', ref: 38.6 },
+    { label: 'Deformație totală maximă |u|_max', val: ex.mx, kind: 'len', ref: 0.026e-3 },
+    { label: 'Tensiune echivalentă von Mises maximă', val: sv.mx, kind: 'stress', ref: 1.48e8 },
+    { label: 'Temperatură minimă T_min', val: tm.mn, kind: 'temp', ref: null },
+    { label: 'Puterea termică generată Q = q_v·V', val: Qgen, kind: 'power', ref: null }];
+  const checks = [
+    { label: 'Bilanț termic: Q_convecție = Q_generat', ana: Qgen, fem: Qconv, kind: 'power' },
+    { label: 'Aria plăcii (verificare mesh)', ana: Aexact, fem: Atot, kind: 'area' },
+    { label: 'Temperatură medie estimată T∞ + Q/(2·h·A) (limită inferioară pentru T_max)', ana: ThAvg, fem: tm.mx, kind: 'temp', note: 'T_max ≥ valoarea medie' }];
+  const charts = [
+    { id: 'c1', title: `Temperatura pe linia y = ${(ccy * 1000).toFixed(0)} mm (prin componentă)`, xl: 'x [mm]', yl: 'T [°C]', xs: lT.x.map(v => v * 1000), series: [{ n: 'T(x)', y: lT.y, c: 0 }, { n: 'T pe linia x = ' + (ccx * 1000).toFixed(0) + ' mm (în y)', xs: lTy.x.map(v => v * 1000), y: lTy.y, c: 1, d: true }] },
+    { id: 'c2', title: 'Deplasarea totală pe aceeași linie', xl: 'x [mm]', yl: '|u| [µm]', xs: lU.x.map(v => v * 1000), series: [{ n: '|u|(x)', y: lU.y.map(v => v * 1e6), c: 0 }] },
+    { id: 'c3', title: 'Tensiunea von Mises pe aceeași linie', xl: 'x [mm]', yl: 'σ_vM [MPa]', xs: lS.x.map(v => v * 1000), series: [{ n: 'σ_vM(x)', y: lS.y.map(v => v / 1e6), c: 0 }] }];
+  return {
+    kind: 'plate', nn: m.nn, ne: m.ne, ndof: r.ndof, bw: r.bw, res: r.residual, ms: performance.now() - t0, elem: 'PLANE 6 noduri (T6): termic cu grosime efectivă + stare plană termo-elastică',
+    geom: g, U3, fields, defaultField: 'T', rows, checks, charts, noSF: true,
+    props: [['Aria componentei', Acomp, 'm²'], ['Volum componentă', Acomp * tc, 'm³'], ['Σ lungime muchii convective', edgeConv.length, '']],
+    notes: ['Cartea nu precizează conductivitatea termică și coeficientul de dilatare ale materialului; valorile implicite (k = 60,5 W/m·K, α = 12·10⁻⁶ 1/K, T_ref = 22 °C) sunt cele ale oțelului structural din Ansys și sunt modificabile.',
+      'Modelul termic este redus pe grosime (Bi = h·t/k ≪ 1): placa are grosime efectivă 2 mm, iar în zona componentei 5 mm; convecția acționează pe ambele fețe.',
+      'Enunțul indică h = 20 W/m²K în text și 30 W/m²K în figură; se folosește valoarea 20, modificabilă.']
+  };
+}
+LABS.l9 = {
+  id: 'l9', nr: 9, name: 'Placă electronică', full: 'Analiza mixtă termică – statică a unei plăci cu o componentă electronică', module: 'Steady-State Thermal → Static Structural',
+  tema: 'Placă de siliciu cu o componentă electronică care generează căldură q_v = 7·10⁵ W/m³, fixată prin patru orificii. Câmpul termic se transferă ca încărcare termică în analiza structurală.',
+  params: [
+    { k: 'E', l: 'Modul de elasticitate E', u: 'GPa', v: 162, min: 10, max: 500, step: 1, st: 0 },
+    { k: 'nu', l: 'Coeficient Poisson ν', u: '', v: 0.22, min: 0.05, max: 0.49, step: 0.01, st: 0 },
+    { k: 'rho', l: 'Densitate ρ', u: 'kg/m³', v: 2330, min: 500, max: 20000, step: 10, st: 0 },
+    { k: 'k', l: 'Conductivitate termică k (ipoteză)', u: 'W/m·K', v: 60.5, min: 1, max: 400, step: 0.5, st: 0 },
+    { k: 'alpha', l: 'Coeficient de dilatare α (ipoteză)', u: '10⁻⁶/K', v: 12, min: 0.5, max: 30, step: 0.1, st: 0 },
+    { k: 'Tref', l: 'Temperatură de referință T_ref', u: '°C', v: 22, min: -20, max: 80, step: 1, st: 0 },
+    { k: 'W', l: 'Lungime placă', u: 'mm', v: 200, min: 80, max: 400, step: 5, st: 1 },
+    { k: 'Hh', l: 'Lățime placă', u: 'mm', v: 150, min: 60, max: 300, step: 5, st: 1 },
+    { k: 'tp', l: 'Grosime placă δ', u: 'mm', v: 2, min: 0.5, max: 10, step: 0.5, st: 1 },
+    { k: 'rc', l: 'Rază de racordare colțuri', u: 'mm', v: 10, min: 0, max: 20, step: 1, st: 1 },
+    { k: 'dh', l: 'Diametru orificii', u: 'mm', v: 10, min: 3, max: 16, step: 0.5, st: 1 },
+    { k: 'off', l: 'Poziția orificiilor față de margini', u: 'mm', v: 10, min: 6, max: 25, step: 0.5, st: 1 },
+    { k: 'cw', l: 'Componentă: dimensiune pe x', u: 'mm', v: 40, min: 10, max: 100, step: 1, st: 1 },
+    { k: 'ch', l: 'Componentă: dimensiune pe y', u: 'mm', v: 40, min: 10, max: 80, step: 1, st: 1 },
+    { k: 'tc', l: 'Componentă: grosime', u: 'mm', v: 3, min: 0.5, max: 10, step: 0.5, st: 1 },
+    { k: 'ccx', l: 'Centrul componentei x', u: 'mm', v: 100, min: 40, max: 360, step: 1, st: 1 },
+    { k: 'ccy', l: 'Centrul componentei y', u: 'mm', v: 75, min: 30, max: 270, step: 1, st: 1 },
+    { k: 'h', l: 'Dimensiune element h', u: 'mm', v: 6, min: 2.5, max: 12, step: 0.5, st: 2 },
+    { k: 'qv', l: 'Densitate volumică de căldură q_v', u: 'W/m³', v: 7e5, min: 1e4, max: 5e6, step: 1e4, st: 3 },
+    { k: 'hc', l: 'Coeficient de convecție α', u: 'W/m²K', v: 20, min: 1, max: 200, step: 1, st: 3 },
+    { k: 'cv', l: 'Suprafețe cu convecție', u: '', v: 'top', type: 'sel', opts: [['both', 'Ambele fețe + muchii'], ['top', 'Doar fața superioară']], st: 3 },
+    { k: 'Tinf', l: 'Temperatura mediului t_a', u: '°C', v: 30, min: -20, max: 80, step: 1, st: 3 }],
+  stageText: [
+    'Siliciu: E = 1,62·10¹¹ N/m², ν = 0,22, ρ = 2330 kg/m³. Proprietățile termice nu sunt date în carte.',
+    'Placă 200 × 150 × 2 mm, colțuri rotunjite, patru orificii Ø10, componentă 40 × 40 × 3 mm (Extrude + Freeze + Slice).',
+    'Rețea triunghiulară pătratică (T6), rafinată în jurul orificiilor și al conturului componentei.',
+    'Termic: convecție α = 20 W/m²K, t_a = 30 °C, sursă q_v = 7·10⁵ W/m³ în componentă. Structural: suport fix pe cele patru orificii.',
+    'Se rezolvă întâi problema termică staționară, apoi cea structurală cu deformația termică ε_th = α(T − T_ref).',
+    'Temperatura, deformația totală și tensiunea von Mises (câmpul de temperatură este importat în analiza structurală).'],
+  run: boardModel,
+  meshLevels: (p, i) => ({ ...p, h: p.h * [2, 1.5, 1, 0.75][i] }),
+  convMetric: { label: 'T_max', kind: 'temp', ref: 38.6, pick: r => r.rows[0].val }
+};
+
+root.LABS = LABS;
+root.FEMLAB = { extremum, buildFields };
+if (typeof module !== 'undefined') module.exports = LABS;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ============================================================
+   Randare 3D software (z-buffer, interpolare Gouraud a câmpului scalar),
+   bară de culori, grafice, formatare numerică
+   ============================================================ */
+(function (root) {
+'use strict';
+
+/* ---------- formatare ---------- */
+const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+function fmt(v, sig) {
+  sig = sig || 4;
+  if (v === null || v === undefined || !isFinite(v)) return '–';
+  if (v === 0) return '0';
+  const a = Math.abs(v);
+  if (a >= 1e5 || a < 1e-3) {
+    let [m, e] = v.toExponential(sig - 1).split('e'); e = parseInt(e, 10);
+    if (m.includes('.')) m = m.replace(/0+$/, '').replace(/\.$/, '');
+    return m.replace('.', ',') + '·10' + String(e).split('').map(c => SUP[c] || c).join('');
+  }
+  let s = v.toPrecision(sig);
+  if (s.includes('e')) s = String(Math.round(v));
+  if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return s.replace('.', ',');
+}
+const UNITS = {
+  len: [[1e-9, 'nm'], [1e-6, 'µm'], [1e-3, 'mm'], [1, 'm']],
+  stress: [[1, 'Pa'], [1e3, 'kPa'], [1e6, 'MPa'], [1e9, 'GPa']],
+  power: [[1e-3, 'mW'], [1, 'W']],
+  area: [[1e-6, 'mm²'], [1e-4, 'cm²'], [1, 'm²']],
+  temp: [[1, '°C']], strain: [[1, '']], ratio: [[1, '']]
+};
+function unitFor(kind, maxAbs) {
+  const L = UNITS[kind] || [[1, '']];
+  if (L.length === 1) return { f: L[0][0], u: L[0][1] };
+  let pick = L[0];
+  for (const e of L) if (maxAbs >= e[0] * 0.999) pick = e;
+  return { f: pick[0], u: pick[1] };
+}
+function fmtQ(v, kind, sig) {
+  if (v === null || v === undefined || !isFinite(v)) return '–';
+  if (kind === 'temp') return fmt(v, sig || 4) + ' °C';
+  if (kind === 'ratio' || kind === 'strain') return fmt(v, sig || 4);
+  const { f, u } = unitFor(kind, Math.abs(v));
+  return fmt(v / f, sig || 4) + ' ' + u;
+}
+root.fmt = fmt; root.fmtQ = fmtQ; root.unitFor = unitFor;
+
+/* ---------- hărți de culoare ---------- */
+const CMAPS = {
+  ansys: [[0, 0, 0, 255], [.2, 0, 160, 255], [.35, 0, 255, 230], [.5, 60, 235, 40], [.65, 225, 235, 0], [.8, 255, 150, 0], [1, 235, 20, 20]],
+  viridis: [[0, 68, 1, 84], [.25, 59, 82, 139], [.5, 33, 145, 140], [.75, 94, 201, 98], [1, 253, 231, 37]],
+  inferno: [[0, 0, 0, 4], [.25, 87, 16, 110], [.5, 188, 55, 84], [.75, 249, 142, 9], [1, 252, 255, 164]],
+  coolwarm: [[0, 59, 76, 192], [.5, 221, 221, 221], [1, 180, 4, 38]]
+};
+function buildLUT(name) {
+  const st = CMAPS[name] || CMAPS.ansys, N = 1024, R = new Uint8Array(N), G = new Uint8Array(N), B = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1); let k = 0;
+    while (k < st.length - 2 && t > st[k + 1][0]) k++;
+    const a = st[k], b = st[k + 1], u = Math.max(0, Math.min(1, (t - a[0]) / (b[0] - a[0])));
+    R[i] = a[1] + (b[1] - a[1]) * u; G[i] = a[2] + (b[2] - a[2]) * u; B[i] = a[3] + (b[3] - a[3]) * u;
+  }
+  return { R, G, B };
+}
+root.CMAPS = CMAPS; root.buildLUT = buildLUT;
+
+function cssVar(name, fb) { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fb; }
+function parseColor(c) {
+  const ctx = parseColor.ctx || (parseColor.ctx = document.createElement('canvas').getContext('2d'));
+  ctx.fillStyle = '#000'; ctx.fillStyle = c; const s = ctx.fillStyle;
+  if (s[0] === '#') return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
+  const m = s.match(/\d+(\.\d+)?/g) || [0, 0, 0]; return [+m[0], +m[1], +m[2]];
+}
+
+/* ============================================================
+   VIEWER
+   ============================================================ */
+class Viewer {
+  constructor(canvas, onProbe) {
+    this.cv = canvas; this.ctx = canvas.getContext('2d');
+    this.yaw = -0.55; this.pitch = 0.42; this.zoom = 1; this.panx = 0; this.pany = 0;
+    this.opts = { wire: true, outline: true, bands: 0, markers: true, cmap: 'ansys', axes: true };
+    this.lut = buildLUT('ansys'); this.scale = 0; this.res = null; this.field = null; this.range = [0, 1];
+    this.onProbe = onProbe; this.animating = false; this.period = 2600; this.t0 = 0; this.dpr = 1; this.W = 0; this.H = 0; this._raf = 0;
+    this.bind();
+  }
+  bind() {
+    const cv = this.cv; let drag = null;
+    cv.style.touchAction = 'none';
+    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey || e.button === 1 }; });
+    cv.addEventListener('pointermove', e => {
+      if (drag) {
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+        if (drag.pan) { this.panx += dx * this.dpr; this.pany += dy * this.dpr; }
+        else { this.yaw += dx * 0.008; this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch + dy * 0.008)); }
+        this.draw();
+      } else this.probe(e);
+    });
+    const up = e => { drag = null; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('pointerleave', () => { if (this.onProbe) this.onProbe(null); });
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    cv.addEventListener('wheel', e => { e.preventDefault(); this.zoomBy(Math.exp(-e.deltaY * 0.0012)); }, { passive: false });
+    cv.addEventListener('dblclick', () => this.setView('iso'));
+    if (window.ResizeObserver) new ResizeObserver(() => this.resize()).observe(cv.parentElement);
+  }
+  zoomBy(f) { this.zoom = Math.max(0.2, Math.min(40, this.zoom * f)); this.draw(); }
+  setView(name) {
+    const flat = this.res && (this.res.kind === 'plate' || this.res.flat);
+    const V = { iso: [-0.55, 0.42], front: [0, 0], top: [0, 1.5707], right: [-1.5707, 0] };
+    if (name === 'iso' && this.res && this.res.flat) { this.yaw = 0; this.pitch = 0; }
+    else if (name === 'iso' && flat) { this.yaw = -0.35; this.pitch = 0.55; }
+    else { const v = V[name] || V.iso; this.yaw = v[0]; this.pitch = v[1]; }
+    this.zoom = 1; this.panx = 0; this.pany = 0; this.draw();
+  }
+  resize() {
+    const r = this.cv.parentElement.getBoundingClientRect();
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = Math.max(40, Math.round(r.width * dpr)), H = Math.max(40, Math.round(r.height * dpr));
+    if (W * H > 1.8e6) { const k = Math.sqrt(1.8e6 / (W * H)); W = Math.round(W * k); H = Math.round(H * k); dpr *= k; }
+    if (W === this.W && H === this.H) return;
+    this.W = W; this.H = H; this.dpr = dpr; this.cv.width = W; this.cv.height = H;
+    this.img = this.ctx.createImageData(W, H); this.pix = new Uint32Array(this.img.data.buffer);
+    this.zb = new Float32Array(W * H); this.vb = new Float32Array(W * H);
+    this.makeBg(); this.draw();
+  }
+  makeBg() {
+    const W = this.W, H = this.H, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, cssVar('--vp-top', '#dfe8f1')); g.addColorStop(1, cssVar('--vp-bot', '#f8fafc'));
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    this.bg32 = new Uint32Array(x.getImageData(0, 0, W, H).data.buffer);
+  }
+  themeChanged() { if (this.W) { this.makeBg(); this.draw(); } }
+  setResult(res, keepView) {
+    this.res = res; const g = res.geom, nv = g.vn.length;
+    let mn = [1e300, 1e300, 1e300], mx = [-1e300, -1e300, -1e300];
+    for (let v = 0; v < nv; v++) for (let k = 0; k < 3; k++) { const q = g.P[3 * v + k]; if (q < mn[k]) mn[k] = q; if (q > mx[k]) mx[k] = q; }
+    this.ctr = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
+    this.diag = Math.hypot(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]) || 1;
+    this.nodeVertex = new Int32Array(res.nn).fill(-1);
+    for (let v = nv - 1; v >= 0; v--) this.nodeVertex[g.vn[v]] = v;
+    this.SX = new Float32Array(nv); this.SY = new Float32Array(nv); this.SZ = new Float32Array(nv); this.VV = new Float32Array(nv);
+    this.DP = new Float32Array(3 * nv);
+    // sugestie de scară pentru deformație
+    let um = 0; for (let n = 0; n < res.nn; n++) um = Math.max(um, Math.hypot(res.U3[3 * n], res.U3[3 * n + 1], res.U3[3 * n + 2]));
+    res.umax = um; this.autoScale = um > 0 ? 0.07 * this.diag / um : 1;
+    if (!keepView) { this.setView('iso'); }
+  }
+  setField(key, fixedRange) {
+    const f = this.res.fields.find(x => x.key === key) || this.res.fields[0];
+    this.field = f; let mn = 1e300, mx = -1e300;
+    for (let i = 0; i < f.arr.length; i++) { const v = f.arr[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+    if (mx - mn < 1e-300 * 0 + Math.max(1e-30, Math.abs(mx) * 1e-9)) { mx = mn + Math.max(1e-30, Math.abs(mn) * 1e-6 + 1e-30); }
+    this.range = fixedRange || [mn, mx]; this.fmin = mn; this.fmax = mx;
+    this.draw();
+  }
+  setCmap(n) { this.opts.cmap = n; this.lut = buildLUT(n); this.draw(); }
+  draw() { if (this._raf) return; this._raf = requestAnimationFrame(() => { this._raf = 0; this.render(); }); }
+  /* proiecție */
+  project(scale) {
+    const res = this.res, g = res.geom, nv = g.vn.length, U = res.U3, vn = g.vn, P = g.P, vphi = g.vphi;
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    const k = Math.min(this.W, this.H) * 0.78 / this.diag * this.zoom;
+    const ox = this.W / 2 + this.panx, oy = this.H / 2 + this.pany, c = this.ctr, f = this.field.arr;
+    const SX = this.SX, SY = this.SY, SZ = this.SZ, VV = this.VV, DP = this.DP;
+    for (let v = 0; v < nv; v++) {
+      const n = vn[v]; let dx = U[3 * n], dy = U[3 * n + 1], dz = U[3 * n + 2];
+      if (vphi) { const ph = vphi[v]; const ur = dx; dx = ur * Math.cos(ph); dz = ur * Math.sin(ph); }
+      const x = P[3 * v] + scale * dx - c[0], y = P[3 * v + 1] + scale * dy - c[1], z = P[3 * v + 2] + scale * dz - c[2];
+      const x1 = cy * x + sy * z, z1 = -sy * x + cy * z, y2 = cp * y - sp * z1, z2 = sp * y + cp * z1;
+      DP[3 * v] = x1; DP[3 * v + 1] = y2; DP[3 * v + 2] = z2;
+      SX[v] = ox + k * x1; SY[v] = oy - k * y2; SZ[v] = z2; VV[v] = f[n];
+    }
+    return k;
+  }
+  render(scaleOverride) {
+    if (!this.res || !this.field || !this.W) return;
+    const W = this.W, H = this.H, pix = this.pix, zb = this.zb, vb = this.vb;
+    const scale = this.animating ? this.scale * (0.5 - 0.5 * Math.cos((performance.now() - this.t0) / this.period * 6.2832)) : this.scale;
+    const k = this.project(scale);
+    pix.set(this.bg32); zb.fill(-1e30); vb.fill(NaN);
+    const g = this.res.geom, tri = g.tri, SX = this.SX, SY = this.SY, SZ = this.SZ, VV = this.VV, DP = this.DP;
+    const vmin = this.range[0], rng = this.range[1] - this.range[0], invr = rng > 0 ? 1 / rng : 0, bands = this.opts.bands;
+    const LR = this.lut.R, LG = this.lut.G, LB = this.lut.B;
+    const Lx = -0.35, Ly = 0.5, Lz = 0.79, ll = Math.hypot(Lx, Ly, Lz);
+    for (let t = 0; t < tri.length; t += 3) {
+      const a = tri[t], b = tri[t + 1], c = tri[t + 2];
+      const x0 = SX[a], y0 = SY[a], x1 = SX[b], y1 = SY[b], x2 = SX[c], y2 = SY[c];
+      const area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+      if (area > -1e-9 && area < 1e-9) continue;
+      // normală în spațiul vederii pentru umbrire
+      const ux = DP[3 * b] - DP[3 * a], uy = DP[3 * b + 1] - DP[3 * a + 1], uz = DP[3 * b + 2] - DP[3 * a + 2];
+      const wx = DP[3 * c] - DP[3 * a], wy = DP[3 * c + 1] - DP[3 * a + 1], wz = DP[3 * c + 2] - DP[3 * a + 2];
+      let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      const sh = 0.5 + 0.5 * Math.abs((nx * Lx + ny * Ly + nz * Lz) / (nl * ll));
+      const minx = Math.max(0, Math.floor(Math.min(x0, x1, x2))), maxx = Math.min(W - 1, Math.ceil(Math.max(x0, x1, x2)));
+      const miny = Math.max(0, Math.floor(Math.min(y0, y1, y2))), maxy = Math.min(H - 1, Math.ceil(Math.max(y0, y1, y2)));
+      if (minx > maxx || miny > maxy) continue;
+      const z0 = SZ[a], z1 = SZ[b], z2 = SZ[c], v0 = VV[a], v1 = VV[b], v2 = VV[c], inv = 1 / area;
+      for (let y = miny; y <= maxy; y++) {
+        const py = y + 0.5;
+        for (let x = minx; x <= maxx; x++) {
+          const px = x + 0.5;
+          const w0 = ((x1 - px) * (y2 - py) - (x2 - px) * (y1 - py)) * inv;
+          const w1 = ((x2 - px) * (y0 - py) - (x0 - px) * (y2 - py)) * inv;
+          const w2 = 1 - w0 - w1;
+          if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
+          const z = w0 * z0 + w1 * z1 + w2 * z2, idx = y * W + x;
+          if (z <= zb[idx]) continue;
+          zb[idx] = z;
+          const val = w0 * v0 + w1 * v1 + w2 * v2; vb[idx] = val;
+          let tt = rng > 0 ? (val - vmin) * invr : 0.5;
+          if (tt < 0) tt = 0; else if (tt > 1) tt = 1;
+          if (bands > 0) tt = (Math.min(bands - 1, Math.floor(tt * bands)) + 0.5) / bands;
+          const li = (tt * 1023) | 0;
+          pix[idx] = 0xFF000000 | ((LB[li] * sh) << 16) | ((LG[li] * sh) << 8) | (LR[li] * sh);
+        }
+      }
+    }
+    // linii (cu test de adâncime)
+    const eps = this.diag * k / Math.min(W, H) * 0 + this.diag * 0.004;
+    const tone = this.dark ? 255 : 20;
+    const line = (a, b, alpha) => {
+      let xa = SX[a], ya = SY[a], za = SZ[a], xb = SX[b], yb = SY[b], zb_ = SZ[b];
+      const n = Math.ceil(Math.max(Math.abs(xb - xa), Math.abs(yb - ya)));
+      if (n > 4000) return;
+      for (let i = 0; i <= n; i++) {
+        const u = n ? i / n : 0, x = Math.round(xa + (xb - xa) * u), y = Math.round(ya + (yb - ya) * u);
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const idx = y * W + x, z = za + (zb_ - za) * u;
+        if (z + eps < zb[idx]) continue;
+        const p = pix[idx], r = p & 255, gg = (p >> 8) & 255, bb = (p >> 16) & 255;
+        pix[idx] = 0xFF000000 | (((bb * (1 - alpha) + tone * alpha) | 0) << 16) | (((gg * (1 - alpha) + tone * alpha) | 0) << 8) | ((r * (1 - alpha) + tone * alpha) | 0);
+      }
+    };
+    if (this.opts.wire && g.wire) for (let i = 0; i < g.wire.length; i += 2) line(g.wire[i], g.wire[i + 1], 0.28);
+    if (g.feat) for (let i = 0; i < g.feat.length; i += 2) line(g.feat[i], g.feat[i + 1], 0.7);
+    this.ctx.putImageData(this.img, 0, 0);
+    this.overlay(scale, k);
+  }
+  overlay(scale, k) {
+    const ctx = this.ctx, g = this.res.geom, W = this.W, H = this.H, d = this.dpr;
+    // contur nedeformat
+    if (this.opts.outline && scale > 0 && g.feat) {
+      const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+      const ox = W / 2 + this.panx, oy = H / 2 + this.pany, c = this.ctr, P = g.P;
+      const pr = v => { const x = P[3 * v] - c[0], y = P[3 * v + 1] - c[1], z = P[3 * v + 2] - c[2]; const x1 = cy * x + sy * z, z1 = -sy * x + cy * z, y2 = cp * y - sp * z1; return [ox + k * x1, oy - k * y2]; };
+      ctx.save(); ctx.strokeStyle = this.dark ? 'rgba(235,240,245,.55)' : 'rgba(30,40,50,.5)'; ctx.lineWidth = Math.max(1, d); ctx.setLineDash([5 * d, 4 * d]); ctx.beginPath();
+      for (let i = 0; i < g.feat.length; i += 2) { const a = pr(g.feat[i]), b = pr(g.feat[i + 1]); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+      ctx.stroke(); ctx.restore();
+    }
+    // marcaje min / max
+    if (this.opts.markers) {
+      const f = this.field, arr = f.arr; let imn = 0, imx = 0;
+      for (let i = 0; i < arr.length; i++) { if (arr[i] < arr[imn]) imn = i; if (arr[i] > arr[imx]) imx = i; }
+      const mk = (n, label, col) => {
+        const v = this.nodeVertex[n]; if (v < 0) return;
+        const x = this.SX[v], y = this.SY[v];
+        ctx.save(); ctx.fillStyle = col; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * d;
+        ctx.beginPath(); ctx.arc(x, y, 4 * d, 0, 6.2832); ctx.fill(); ctx.stroke();
+        ctx.font = `600 ${11 * d}px "IBM Plex Mono", ui-monospace, monospace`; ctx.textBaseline = 'bottom';
+        const tx = label; const w = ctx.measureText(tx).width;
+        let lx = x + 7 * d, ly = y - 5 * d; if (lx + w + 8 * d > W) lx = x - w - 12 * d;
+        ctx.fillStyle = this.dark ? 'rgba(10,16,22,.82)' : 'rgba(255,255,255,.88)'; ctx.fillRect(lx - 3 * d, ly - 13 * d, w + 6 * d, 16 * d);
+        ctx.fillStyle = col; ctx.fillText(tx, lx, ly + 1 * d); ctx.restore();
+      };
+      const unit = this.unitInfo();
+      mk(imx, 'Max ' + fmt(arr[imx] / unit.f, 4) + ' ' + unit.u, '#c0261c');
+      mk(imn, 'Min ' + fmt(arr[imn] / unit.f, 4) + ' ' + unit.u, '#1b4fb5');
+    }
+    // axe
+    if (this.opts.axes) {
+      const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch), L = 26 * d, o = [34 * d, H - 34 * d];
+      const ax = [[1, 0, 0, '#d4322c', 'x'], [0, 1, 0, '#2a9d4a', 'y'], [0, 0, 1, '#2f62d0', 'z']];
+      ctx.save(); ctx.lineWidth = 2 * d; ctx.font = `600 ${11 * d}px "IBM Plex Sans", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (const [x, y, z, col, lb] of ax) {
+        const x1 = cy * x + sy * z, z1 = -sy * x + cy * z, y2 = cp * y - sp * z1;
+        ctx.strokeStyle = col; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(o[0] + L * x1, o[1] - L * y2); ctx.stroke();
+        ctx.fillText(lb, o[0] + (L + 8 * d) * x1, o[1] - (L + 8 * d) * y2);
+      }
+      ctx.restore();
+    }
+  }
+  unitInfo() {
+    const f = this.field, m = Math.max(Math.abs(this.range[0]), Math.abs(this.range[1]));
+    if (f.kind === 'temp') return { f: 1, u: '°C' };
+    if (f.kind === 'ratio' || f.kind === 'strain') return { f: 1, u: '' };
+    return unitFor(f.kind, m);
+  }
+  probe(e) {
+    if (!this.onProbe || !this.vb) return;
+    const r = this.cv.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) * this.W / r.width), y = Math.floor((e.clientY - r.top) * this.H / r.height);
+    if (x < 0 || y < 0 || x >= this.W || y >= this.H) return this.onProbe(null);
+    const v = this.vb[y * this.W + x];
+    this.onProbe(Number.isNaN(v) ? null : v);
+  }
+}
+root.Viewer = Viewer;
+
+/* ============================================================
+   GRAFICE LINIARE
+   ============================================================ */
+function niceTicks(a, b, n) {
+  if (!(b > a)) { b = a + 1; }
+  const span = b - a, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), nm = raw / mag;
+  const step = (nm < 1.5 ? 1 : nm < 3 ? 2 : nm < 7 ? 5 : 10) * mag;
+  const t0 = Math.ceil(a / step - 1e-9) * step, out = [];
+  for (let v = t0; v <= b + step * 1e-6; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return { ticks: out, step };
+}
+class LineChart {
+  constructor(canvas) {
+    this.cv = canvas; this.ctx = canvas.getContext('2d'); this.spec = null; this.hover = null;
+    canvas.addEventListener('pointermove', e => { const r = canvas.getBoundingClientRect(); this.hover = (e.clientX - r.left); this.draw(); });
+    canvas.addEventListener('pointerleave', () => { this.hover = null; this.draw(); });
+    if (window.ResizeObserver) new ResizeObserver(() => this.draw()).observe(canvas.parentElement);
+  }
+  set(spec) { this.spec = spec; this.draw(); }
+  draw() {
+    const s = this.spec; if (!s) return;
+    const cv = this.cv, par = cv.parentElement, r = par.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = Math.max(200, r.width), H = Math.max(160, r.height);
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const ctx = this.ctx; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    const ink = cssVar('--ink', '#14202b'), mute = cssVar('--mute', '#5b6b7a'), grid = cssVar('--grid', '#dfe5ea');
+    const cols = [cssVar('--c0', '#1f5fae'), cssVar('--c1', '#c4501b'), cssVar('--c2', '#23805a'), cssVar('--c3', '#7a4bb0')];
+    const m = { l: 56, r: 12, t: 10, b: 36 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    let xmin = 1e300, xmax = -1e300, ymin = 1e300, ymax = -1e300;
+    const data = s.series.map(q => {
+      const xs = q.xs || s.xs, pts = [];
+      for (let i = 0; i < xs.length; i++) { const y = q.y[i]; if (y === undefined || !isFinite(y) || !isFinite(xs[i])) continue; pts.push([xs[i], y]); xmin = Math.min(xmin, xs[i]); xmax = Math.max(xmax, xs[i]); ymin = Math.min(ymin, y); ymax = Math.max(ymax, y); }
+      return pts;
+    });
+    if (!isFinite(xmin)) return;
+    if (ymax - ymin < 1e-12 * Math.max(1, Math.abs(ymax))) { ymax += Math.abs(ymax) * 0.1 + 1e-9; ymin -= Math.abs(ymin) * 0.1 + 1e-9; }
+    const padY = (ymax - ymin) * 0.06; ymin -= padY; ymax += padY;
+    const tx = niceTicks(xmin, xmax, Math.max(3, Math.floor(pw / 90))), ty = niceTicks(ymin, ymax, Math.max(3, Math.floor(ph / 46)));
+    ymin = Math.min(ymin, ty.ticks[0]); ymax = Math.max(ymax, ty.ticks[ty.ticks.length - 1]);
+    const X = v => m.l + (v - xmin) / (xmax - xmin || 1) * pw, Y = v => m.t + ph - (v - ymin) / (ymax - ymin || 1) * ph;
+    ctx.font = '11px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillStyle = mute; ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const v of ty.ticks) { const y = Math.round(Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(W - m.r, y); ctx.stroke(); ctx.fillText(fmt(v, 3), m.l - 6, y); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const v of tx.ticks) { const x = Math.round(X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke(); ctx.fillText(fmt(v, 3), x, m.t + ph + 5); }
+    ctx.strokeStyle = mute; ctx.beginPath(); ctx.moveTo(m.l + 0.5, m.t); ctx.lineTo(m.l + 0.5, m.t + ph + 0.5); ctx.lineTo(W - m.r, m.t + ph + 0.5); ctx.stroke();
+    ctx.fillStyle = mute; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.font = '11px "IBM Plex Sans", sans-serif';
+    ctx.fillText(s.xl || '', m.l + pw / 2, H - 2);
+    ctx.save(); ctx.translate(11, m.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'top'; ctx.fillText(s.yl || '', 0, -3); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t - 2, pw, ph + 4); ctx.clip();
+    s.series.forEach((q, i) => {
+      const pts = data[i]; if (!pts.length) return;
+      const col = cols[(q.c || 0) % cols.length];
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = q.d ? 1.6 : 2.2; ctx.setLineDash(q.d ? [6, 4] : []); ctx.lineJoin = 'round';
+      ctx.beginPath(); pts.forEach((p, j) => j ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke(); ctx.setLineDash([]);
+      if (q.m && pts.length < 80) pts.forEach(p => { ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 2.6, 0, 6.3); ctx.fill(); });
+    });
+    ctx.restore();
+    // legendă
+    ctx.font = '11px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    let lx = m.l + 8; const ly = m.t + 8;
+    const bg = cssVar('--panel', '#fff');
+    const items = s.series.filter(q => q.n);
+    let totW = 0; items.forEach(q => totW += ctx.measureText(q.n).width + 34);
+    if (totW < pw) {
+      ctx.fillStyle = bg; ctx.globalAlpha = 0.82; ctx.fillRect(lx - 4, ly - 9, totW + 4, 18); ctx.globalAlpha = 1;
+      items.forEach(q => {
+        const col = cols[(q.c || 0) % cols.length]; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash(q.d ? [4, 3] : []);
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 18, ly); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = ink; ctx.fillText(q.n, lx + 23, ly); lx += ctx.measureText(q.n).width + 34;
+      });
+    } else {
+      let yy = ly; items.forEach(q => { const col = cols[(q.c || 0) % cols.length]; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash(q.d ? [4, 3] : []); ctx.beginPath(); ctx.moveTo(m.l + 8, yy); ctx.lineTo(m.l + 26, yy); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = ink; ctx.fillText(q.n, m.l + 31, yy); yy += 15; });
+    }
+    // cursor
+    if (this.hover !== null && this.hover >= m.l && this.hover <= W - m.r) {
+      const xv = xmin + (this.hover - m.l) / pw * (xmax - xmin);
+      ctx.strokeStyle = mute; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(this.hover, m.t); ctx.lineTo(this.hover, m.t + ph); ctx.stroke(); ctx.setLineDash([]);
+      const lines = [s.xl.split(' ')[0] + ' = ' + fmt(xv, 4)];
+      s.series.forEach((q, i) => {
+        const pts = data[i]; if (!pts.length) return;
+        let best = pts[0]; for (const p of pts) if (Math.abs(p[0] - xv) < Math.abs(best[0] - xv)) best = p;
+        const col = cols[(q.c || 0) % cols.length];
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(best[0]), Y(best[1]), 3.5, 0, 6.3); ctx.fill();
+        lines.push(q.n + ': ' + fmt(best[1], 4));
+      });
+      ctx.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+      const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 12, h = lines.length * 15 + 8;
+      let bx = this.hover + 12; if (bx + w > W - 4) bx = this.hover - w - 12;
+      ctx.fillStyle = cssVar('--tip', 'rgba(20,32,43,.94)'); ctx.fillRect(bx, m.t + 24, w, h);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      lines.forEach((l, i) => ctx.fillText(l, bx + 6, m.t + 28 + i * 15));
+    }
+  }
+}
+root.LineChart = LineChart;
+})(window);
+
+</script>
+<script>
+/* ============================================================
+   Aplicația: etape Workbench, parametri, rezultate, grafice, raport
+   ============================================================ */
+(function () {
+'use strict';
+const $ = s => document.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const STAGES = [['Date inginerești', 'Engineering Data'], ['Geometrie', 'Design Modeler'], ['Discretizare', 'Mesh'], ['Condiții la limită', 'Setup'], ['Soluție', 'Solution'], ['Rezultate', 'Results']];
+const LIST = ['l1', 'l2', 'l5', 'l6', 'l8', 'l9'];
+const SHORT = { umag: '|u|', ux: 'u_x', uy: 'u_y', uz: 'u_z', svm: 'σ_vM', s1: 'σ₁', s3: 'σ₃', sx: 'σ_x', sy: 'σ_y', sz: 'σ_z', sxy: 'τ_xy', eeq: 'ε_eq', sf: 'n_s', T: 'T' };
+
+const S = { lab: 'l1', stage: 3, P: {}, res: {}, field: {}, auto: true, pct: 100, real: false, conv: {}, dirtyFrom: {}, viewInit: {}, timer: 0, busy: false, theme: 'auto', chartSig: '', charts: [] };
+for (const id of LIST) { S.P[id] = {}; for (const q of LABS[id].params) S.P[id][q.k] = q.v; S.dirtyFrom[id] = 99; }
+
+const viewer = new Viewer($('#vpCanvas'), v => {
+  const pr = $('#probe');
+  if (v === null || !viewer.field) { pr.classList.remove('on'); return; }
+  const u = viewer.unitInfo(); pr.textContent = (SHORT[viewer.field.key] || '') + ' = ' + fmt(v / u.f, 4) + ' ' + u.u; pr.classList.add('on');
+});
+
+/* ---------- temă ---------- */
+function isDark() {
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t === 'dark') return true; if (t === 'light') return false;
+  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function applyTheme(mode) {
+  S.theme = mode;
+  if (mode === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', mode);
+  $('#themeBtn').textContent = 'Temă: ' + (mode === 'auto' ? 'automată' : mode === 'light' ? 'luminoasă' : 'întunecată');
+  try { localStorage.setItem('mef-theme', mode); } catch (e) { }
+  viewer.dark = isDark();
+  requestAnimationFrame(() => { viewer.themeChanged(); updateColorbar(); S.charts.forEach(c => c.chart.draw()); });
+}
+$('#themeBtn').addEventListener('click', () => applyTheme(S.theme === 'auto' ? 'light' : S.theme === 'light' ? 'dark' : 'auto'));
+if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (S.theme === 'auto') applyTheme('auto'); });
+
+/* ---------- tab-uri și etape ---------- */
+function buildTabs() {
+  const nav = $('#labTabs');
+  for (const id of LIST) {
+    const L = LABS[id], b = el('button', 'lab-tab', `<small>Lucrarea ${L.nr}</small><b>${L.name}</b>`);
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.id = id;
+    b.addEventListener('click', () => selectLab(id)); nav.appendChild(b);
+  }
+  const st = $('#stages');
+  STAGES.forEach((s, i) => {
+    const b = el('button', 'stg', `<b>${i + 1}. ${s[0]}</b><small>${s[1]}</small><span class="st">✓</span>`);
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.i = i;
+    b.addEventListener('click', () => { S.stage = i; updateStages(); renderControls(); }); st.appendChild(b);
+  });
+}
+function updateStages() {
+  document.querySelectorAll('.lab-tab').forEach(b => b.setAttribute('aria-selected', b.dataset.id === S.lab));
+  const df = S.dirtyFrom[S.lab], solved = !!S.res[S.lab];
+  document.querySelectorAll('.stg').forEach(b => {
+    const i = +b.dataset.i;
+    b.setAttribute('aria-selected', i === S.stage);
+    b.classList.toggle('busy', S.busy && i >= Math.min(df, 4));
+    b.classList.toggle('dirty', !S.busy && i >= df);
+    b.classList.toggle('done', !S.busy && solved && i < df);
+  });
+}
+
+/* ---------- parametri ---------- */
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function paramRow(q) {
+  const P = S.P[S.lab], id = 'p_' + q.k, row = el('div', 'prm');
+  row.appendChild(el('label', '', q.l)).setAttribute('for', id);
+  if (q.type === 'sel') {
+    const sel = el('select'); sel.id = id;
+    for (const [v, t] of q.opts) { const o = el('option', '', t); o.value = v; if (P[q.k] === v) o.selected = true; sel.appendChild(o); }
+    sel.addEventListener('change', () => { P[q.k] = sel.value; changed(q); });
+    row.appendChild(sel); return row;
+  }
+  const r = el('div', 'prm-row'), num = el('input'), unit = el('span', 'u', q.u), rg = el('input');
+  num.type = 'number'; num.id = id; num.step = q.step; num.min = q.min; num.max = q.max; num.inputMode = 'decimal';
+  rg.type = 'range'; rg.setAttribute('aria-label', q.l);
+  const toS = v => q.log ? Math.round(Math.log(v / q.min) / Math.log(q.max / q.min) * 1000) : v;
+  const fromS = s => q.log ? q.min * Math.pow(q.max / q.min, s / 1000) : s;
+  if (q.log) { rg.min = 0; rg.max = 1000; rg.step = 1; } else { rg.min = q.min; rg.max = q.max; rg.step = q.step; }
+  const show = () => { num.value = +(+P[q.k]).toPrecision(8); rg.value = toS(P[q.k]); };
+  show();
+  num.addEventListener('input', () => {
+    const v = parseFloat(num.value.replace(',', '.'));
+    if (isFinite(v) && v >= q.min && v <= q.max) { P[q.k] = q.int ? Math.round(v) : v; rg.value = toS(P[q.k]); changed(q); }
+  });
+  num.addEventListener('change', () => { let v = parseFloat(num.value.replace(',', '.')); if (!isFinite(v)) v = P[q.k]; v = clamp(v, q.min, q.max); P[q.k] = q.int ? Math.round(v) : v; show(); changed(q); });
+  rg.addEventListener('input', () => {
+    let v = fromS(+rg.value); if (q.log) v = +v.toPrecision(3); else v = Math.round(v / q.step) * q.step;
+    P[q.k] = q.int ? Math.round(v) : +v.toPrecision(10); num.value = +(+P[q.k]).toPrecision(8); changed(q);
+  });
+  r.append(num, unit, rg); row.appendChild(r); return row;
+}
+function changed(q) {
+  const id = S.lab; delete S.conv[id];
+  S.dirtyFrom[id] = Math.min(S.dirtyFrom[id], q.st);
+  updateStages();
+  if (S.auto) { clearTimeout(S.timer); S.timer = setTimeout(runSolve, 260); }
+}
+function renderControls() {
+  const L = LABS[S.lab], box = $('#controls'); box.innerHTML = '';
+  const h = el('h2', '', `${STAGES[S.stage][0]} <small>${STAGES[S.stage][1]}</small>`); box.appendChild(h);
+  box.appendChild(el('div', 'book', `<i>Din lucrare</i>${L.stageText[S.stage]}`));
+  const ps = L.params.filter(q => q.st === S.stage);
+  if (S.stage === 2) {
+    const r = S.res[S.lab];
+    if (r) box.appendChild(infoList([['Noduri', r.nn], ['Elemente', r.ne], ['Grade de libertate', r.ndof], ['Tip element', r.elem]]));
+  }
+  if (S.stage === 0) {
+    const P = S.P[S.lab];
+    if (P.E && P.nu) {
+      const G = P.E * 1e9 / (2 * (1 + P.nu)), K = P.E * 1e9 / (3 * (1 - 2 * P.nu));
+      const d = infoList([['Modul de forfecare G = E/2(1+ν)', fmtQ(G, 'stress')], ['Modul de compresibilitate K', fmtQ(K, 'stress')], ['Densitatea intervine doar la masă; analiza statică nu depinde de ρ', '']]);
+      box.appendChild(d);
+    }
+  }
+  if (ps.length) {
+    ps.forEach(q => box.appendChild(paramRow(q)));
+  }
+  if (S.stage === 4) renderSolutionPanel(box);
+  if (S.stage === 5) renderResultsPanel(box);
+}
+function infoList(rows) {
+  const dl = el('dl', 'info');
+  rows.forEach(([a, b]) => { dl.appendChild(el('dt', '', a)); dl.appendChild(el('dd', '', String(b))); });
+  return dl;
+}
+function renderSolutionPanel(box) {
+  const r = S.res[S.lab];
+  box.appendChild(el('div', 'grp', 'Solver'));
+  if (r) box.appendChild(infoList([['Metodă', 'Cholesky în bandă + RCM'], ['Noduri', r.nn], ['Elemente', r.ne], ['Ecuații (GDL libere)', r.ndof], ['Lățime de bandă', r.bw], ['Reziduu relativ', r.res.toExponential(1)], ['Timp de calcul', Math.round(r.ms) + ' ms']]));
+  const lbl = el('label', 'chk', '<input type="checkbox" id="autoChk"> Recalculare automată la modificarea parametrilor');
+  lbl.firstChild.checked = S.auto; lbl.firstChild.addEventListener('change', e => { S.auto = e.target.checked; if (S.auto && S.dirtyFrom[S.lab] < 99) runSolve(); });
+  box.appendChild(lbl);
+  const row = el('div', 'row');
+  const b1 = el('button', 'btn primary', 'Rezolvă'); b1.type = 'button'; b1.addEventListener('click', () => { clearTimeout(S.timer); runSolve(); });
+  const b2 = el('button', 'btn', 'Studiu de convergență'); b2.type = 'button'; b2.id = 'convBtn'; b2.addEventListener('click', runStudy);
+  row.append(b1, b2); box.appendChild(row);
+  const out = el('div'); out.id = 'convOut'; box.appendChild(out); renderConv();
+}
+function renderConv() {
+  const out = $('#convOut'); if (!out) return;
+  const c = S.conv[S.lab], L = LABS[S.lab];
+  if (!c) { out.innerHTML = '<p class="foot">Rezolvă aceeași problemă pe patru rețele (aprox. 0,4× … 1,5× densitatea curentă) și compară rezultatul cu referința.</p>'; return; }
+  const k = L.convMetric.kind;
+  let h = `<table><thead><tr><th>Rețea</th><th class="n">Elem.</th><th class="n">GDL</th><th class="n">${L.convMetric.label}</th><th class="n">ms</th></tr></thead><tbody>`;
+  c.forEach((o, i) => { h += o.err ? `<tr><td>${i + 1}</td><td colspan="4">${o.err}</td></tr>` : `<tr><td>${i + 1}</td><td class="n">${o.ne}</td><td class="n">${o.dof}</td><td class="n">${fmtQ(o.val, k)}</td><td class="n">${Math.round(o.ms)}</td></tr>`; });
+  out.innerHTML = h + '</tbody></table>';
+}
+async function runStudy() {
+  const L = LABS[S.lab], id = L.id, P = S.P[id], btn = $('#convBtn'), out = [];
+  if (btn) btn.disabled = true;
+  for (let i = 0; i < 4; i++) {
+    if (btn) btn.textContent = `Rețea ${i + 1} din 4…`;
+    await new Promise(r => setTimeout(r, 30));
+    try { const r = L.run(L.meshLevels(P, i)); out.push({ dof: r.ndof, ne: r.ne, ms: r.ms, val: L.convMetric.pick(r) }); }
+    catch (e) { out.push({ err: e.message }); }
+  }
+  S.conv[id] = out;
+  if (btn) { btn.disabled = false; btn.textContent = 'Studiu de convergență'; }
+  if (S.lab === id) { renderConv(); renderCharts(); }
+}
+function renderResultsPanel(box) {
+  const r = S.res[S.lab];
+  box.appendChild(el('div', 'grp', 'Afișare'));
+  const f = el('div', 'prm', '<label for="fieldSel2">Mărime afișată</label>'); const sel = el('select', 'sel'); sel.id = 'fieldSel2'; f.appendChild(sel); box.appendChild(f);
+  fillFieldSelect(sel);
+  sel.addEventListener('change', () => setField(sel.value));
+  const c = el('div', 'prm', '<label for="cmapSel">Paletă de culori</label>'); const cs = el('select', 'sel'); cs.id = 'cmapSel';
+  [['ansys', 'Curcubeu (stil Ansys)'], ['viridis', 'Viridis'], ['inferno', 'Inferno'], ['coolwarm', 'Divergentă albastru–roșu']].forEach(([v, t]) => { const o = el('option', '', t); o.value = v; if (viewer.opts.cmap === v) o.selected = true; cs.appendChild(o); });
+  cs.addEventListener('change', () => { viewer.setCmap(cs.value); updateColorbar(); }); c.appendChild(cs); box.appendChild(c);
+  const b = el('div', 'prm', '<label for="bandSel">Aspectul gradientului</label>'); const bs = el('select', 'sel'); bs.id = 'bandSel';
+  [[0, 'Continuu'], [9, '9 benzi'], [12, '12 benzi'], [20, '20 benzi']].forEach(([v, t]) => { const o = el('option', '', t); o.value = v; if (viewer.opts.bands === v) o.selected = true; bs.appendChild(o); });
+  bs.addEventListener('change', () => { viewer.opts.bands = +bs.value; viewer.draw(); updateColorbar(); }); b.appendChild(bs); box.appendChild(b);
+  [['markers', 'Marcaje Max / Min pe model'], ['outline', 'Contur nedeformat (linie întreruptă)'], ['axes', 'Triedru de axe']].forEach(([k, t]) => {
+    const l = el('label', 'chk', `<input type="checkbox"> ${t}`); l.firstChild.checked = viewer.opts[k];
+    l.firstChild.addEventListener('change', e => { viewer.opts[k] = e.target.checked; viewer.draw(); }); box.appendChild(l);
+  });
+  const L = LABS[S.lab];
+  const extra = L.params.filter(q => q.st === 5);
+  if (extra.length) { box.appendChild(el('div', 'grp', 'Parametri de postprocesare')); extra.forEach(q => box.appendChild(paramRow(q))); }
+  if (r) {
+    box.appendChild(el('div', 'grp', 'Valori extreme (toate mărimile)'));
+    const rows = r.fields.map(fl => { const e = FEMLAB.extremum(fl.arr); const u = fl.kind === 'temp' ? { f: 1, u: '°C' } : (fl.kind === 'ratio' || fl.kind === 'strain') ? { f: 1, u: '' } : unitFor(fl.kind, Math.max(Math.abs(e.mn), Math.abs(e.mx))); return [`${SHORT[fl.key] || fl.key} (min / max)`, `${fmt(e.mn / u.f, 3)} / ${fmt(e.mx / u.f, 3)} ${u.u}`]; });
+    box.appendChild(infoList(rows));
+  }
+}
+
+/* ---------- câmpuri, scară, bară de culori ---------- */
+function fillFieldSelect(sel) {
+  const r = S.res[S.lab]; sel.innerHTML = ''; if (!r) return;
+  r.fields.forEach(f => { const o = el('option', '', f.label); o.value = f.key; sel.appendChild(o); });
+  sel.value = viewer.field ? viewer.field.key : r.defaultField;
+}
+function setField(key) {
+  S.field[S.lab] = key; viewer.setField(key); updateColorbar();
+  ['#fieldSel', '#fieldSel2'].forEach(s => { const e = $(s); if (e) e.value = key; });
+}
+function updateScale() {
+  viewer.scale = S.real ? 1 : viewer.autoScale * S.pct / 100;
+  $('#sclVal').textContent = '×' + fmt(viewer.scale, 3);
+  $('#realBtn').setAttribute('aria-pressed', S.real);
+  viewer.draw();
+}
+function updateColorbar() {
+  if (!viewer.field) return;
+  const f = viewer.field, [a, b] = viewer.range, u = viewer.unitInfo();
+  $('#cbTitle').innerHTML = `<b>${SHORT[f.key] || ''}</b>${u.u ? '[' + u.u + ']' : ''}<br>${f.label.length > 34 ? '' : ''}`;
+  const cv = $('#cbCanvas'), ctx = cv.getContext('2d'); cv.width = 1; cv.height = 256;
+  const img = ctx.createImageData(1, 256), lut = viewer.lut, bands = viewer.opts.bands;
+  for (let y = 0; y < 256; y++) {
+    let t = 1 - y / 255; if (bands > 0) t = (Math.min(bands - 1, Math.floor(t * bands)) + 0.5) / bands;
+    const i = (t * 1023) | 0; img.data[4 * y] = lut.R[i]; img.data[4 * y + 1] = lut.G[i]; img.data[4 * y + 2] = lut.B[i]; img.data[4 * y + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const T = $('#cbTicks'); T.innerHTML = '';
+  const N = 5;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, v = b - (b - a) * t, s = el('span', '', fmt(v / u.f, 3)); s.style.top = (t * 100) + '%';
+    if (i === 0) s.style.transform = 'translateY(0)'; if (i === N) s.style.transform = 'translateY(-100%)';
+    T.appendChild(s);
+  }
+}
+
+/* ---------- rezolvare ---------- */
+function showErr(msg) { const e = $('#err'); e.textContent = msg || ''; e.classList.toggle('on', !!msg); }
+function runSolve() {
+  const L = LABS[S.lab], id = L.id; S.busy = true; $('#busy').classList.add('on'); updateStages();
+  requestAnimationFrame(() => setTimeout(() => {
+    try {
+      const res = L.run(JSON.parse(JSON.stringify(S.P[id])));
+      S.res[id] = res; S.dirtyFrom[id] = 99; showErr(null);
+      if (S.lab === id) applyResult(res);
+    } catch (e) { console.error(e); if (S.lab === id) showErr(e.message || String(e)); }
+    S.busy = false; $('#busy').classList.remove('on'); updateStages();
+    if (S.stage === 2 || S.stage === 4) { const sc = $('#controls').scrollTop; renderControls(); $('#controls').scrollTop = sc; }
+  }, 0));
+}
+function applyResult(res) {
+  const id = S.lab, first = !S.viewInit[id];
+  viewer.setResult(res, !first); S.viewInit[id] = true;
+  const key = res.fields.some(f => f.key === S.field[id]) ? S.field[id] : res.defaultField;
+  const sel = $('#fieldSel'); fillFieldSelect(sel); sel.onchange = () => setField(sel.value);
+  viewer.dark = isDark();
+  setField(key);
+  updateScale();
+  $('#vpFoot').innerHTML = `<span>Noduri <b>${res.nn}</b></span><span>Elemente <b>${res.ne}</b></span><span>GDL <b>${res.ndof}</b></span><span>Bandă <b>${res.bw}</b></span><span>Reziduu <b>${res.res.toExponential(1)}</b></span><span>Timp <b>${Math.round(res.ms)} ms</b></span><span>${res.elem}</span>`;
+  renderKpis(res); renderTables(res); renderNotes(res); renderCharts(); renderReport(res);
+}
+function devPill(v, ref) {
+  if (ref === null || ref === undefined || !isFinite(ref) || ref === 0) return '';
+  const d = (v - ref) / ref * 100, a = Math.abs(d), c = a <= 5 ? 'ok' : a <= 25 ? 'mid' : 'far';
+  return `<span class="pill ${c}">${d > 0 ? '+' : ''}${fmt(d, 3)} %</span>`;
+}
+function renderKpis(res) {
+  const rows = res.rows, pick = [rows.find(r => r.kind === 'len'), rows.find(r => r.kind === 'stress'), rows.find(r => r.kind === 'temp') || rows.find(r => r.kind === 'ratio')].filter(Boolean);
+  $('#kpis').innerHTML = pick.map(r => `<div class="kpi"><div class="l">${r.label}</div><div class="v">${fmtQ(r.val, r.kind)}</div><div class="r">${r.ref !== null && r.ref !== undefined ? `<span>Carte: <span class="mono">${fmtQ(r.ref, r.kind)}</span></span>${devPill(r.val, r.ref)}` : '<span>fără valoare de referință în carte</span>'}</div></div>`).join('');
+}
+function renderTables(res) {
+  let h = '<table><thead><tr><th>Mărime</th><th class="n">Simulator</th><th class="n">Carte</th><th class="n">Abatere</th></tr></thead><tbody>';
+  for (const r of res.rows) h += `<tr><td>${r.label}</td><td class="n">${fmtQ(r.val, r.kind)}</td><td class="n">${r.ref !== null && r.ref !== undefined ? fmtQ(r.ref, r.kind) : '–'}</td><td class="n">${devPill(r.val, r.ref) || '–'}</td></tr>`;
+  $('#tblRes').innerHTML = h + '</tbody></table>';
+  let c = '<table><thead><tr><th>Relație</th><th class="n">Analitic</th><th class="n">MEF</th><th class="n">MEF / analitic</th></tr></thead><tbody>';
+  for (const r of res.checks) {
+    const q = r.fem / r.ana;
+    c += `<tr><td>${r.label}${r.note ? `<br><small style="color:var(--mute)">${r.note}</small>` : ''}</td><td class="n">${fmtQ(r.ana, r.kind)}</td><td class="n">${fmtQ(r.fem, r.kind)}</td><td class="n">${isFinite(q) ? fmt(q, 3) : '–'}</td></tr>`;
+  }
+  $('#tblChk').innerHTML = c + '</tbody></table>';
+}
+function renderNotes(res) { $('#notes').innerHTML = (res.notes || []).map(n => `<div class="note">${n}</div>`).join(''); }
+function renderCharts() {
+  const res = S.res[S.lab]; if (!res) return;
+  const specs = res.charts.map(c => ({ id: c.id, title: c.title, xl: c.xl, yl: c.yl, xs: c.xs, series: c.series.map(s => ({ n: s.n, y: s.y, xs: s.xs, c: s.c, d: s.d, m: s.m })) }));
+  const cv = S.conv[S.lab];
+  if (cv && cv.some(o => !o.err)) {
+    const L = LABS[S.lab], ok = cv.filter(o => !o.err), u = unitFor(L.convMetric.kind, Math.max(...ok.map(o => Math.abs(o.val))));
+    const fct = L.convMetric.kind === 'temp' ? 1 : u.f, un = L.convMetric.kind === 'temp' ? '°C' : u.u;
+    const series = [{ n: 'MEF', y: ok.map(o => o.val / fct), c: 0, m: true }];
+    if (L.convMetric.ref) series.push({ n: 'Carte', y: ok.map(() => L.convMetric.ref / fct), c: 1, d: true });
+    specs.push({ id: 'conv', title: `Convergența ${L.convMetric.label} cu numărul de grade de libertate`, xl: 'GDL', yl: `${L.convMetric.label} [${un}]`, xs: ok.map(o => o.dof), series });
+  }
+  const sig = S.lab + '|' + specs.map(s => s.id).join(',');
+  const box = $('#charts');
+  if (sig !== S.chartSig) {
+    box.innerHTML = ''; S.charts = [];
+    for (const s of specs) {
+      const d = el('div', 'chart', `<h3></h3><div class="cw"><canvas></canvas></div>`);
+      box.appendChild(d); S.charts.push({ id: s.id, chart: new LineChart(d.querySelector('canvas')), h: d.querySelector('h3') });
+    }
+    S.chartSig = sig;
+  }
+  specs.forEach((s, i) => { S.charts[i].h.textContent = s.title; S.charts[i].chart.set(s); });
+}
+
+/* ---------- raport ---------- */
+const EQ = {
+  hex: [
+    'Echilibru discretizat:  [K]{u} = {F},   [K] = Σₑ ∫ [B]ᵀ[D][B] dV',
+    'Legea lui Hooke 3D:  {σ} = [D]{ε},   λ = Eν/((1+ν)(1−2ν)),  μ = E/(2(1+ν))',
+    'Tensiune echivalentă:  σ_vM = √( ½[(σx−σy)²+(σy−σz)²+(σz−σx)²] + 3(τxy²+τyz²+τzx²) )'],
+  plate: [
+    'Echilibru discretizat:  [K]{u} = {F},   [K] = Σₑ t ∫ [B]ᵀ[D][B] dA',
+    'Stare plană de tensiuni:  {σ} = [D]{ε},   D = E/(1−ν²)·[[1, ν, 0],[ν, 1, 0],[0, 0, (1−ν)/2]]',
+    'Tensiune echivalentă:  σ_vM = √(σx² − σxσy + σy² + 3τxy²)'],
+  axi: [
+    'Echilibru axisimetric:  [K]{u} = {F},   [K] = Σₑ 2π ∫ [B]ᵀ[D][B] r dA',
+    'Deformații:  ε_r = ∂u_r/∂r,  ε_z = ∂u_z/∂z,  ε_θ = u_r/r,  γ_rz = ∂u_r/∂z + ∂u_z/∂r',
+    'Tensiune echivalentă:  σ_vM = √( ½[(σr−σθ)²+(σθ−σz)²+(σz−σr)²] + 3τrz² )']
+};
+function renderReport(res) {
+  const L = LABS[S.lab], P = S.P[S.lab];
+  const par = L.params.filter(q => q.type !== 'sel').map(q => `<tr><td>${q.l}</td><td class="n">${fmt(P[q.k], 5)}</td><td>${q.u || ''}</td></tr>`).join('');
+  let eq = (EQ[res.kind] || EQ.plate).slice();
+  if (L.id === 'l9') eq = ['Conducție staționară:  ∇·(k∇T) + q_v = 0,   convecție:  −k ∂T/∂n = α(T − T_a)', 'Sistem termic:  [K_T]{T} = {Q},   [K_T] = Σₑ ∫ (k t [∇N]ᵀ[∇N] + α_f [N]ᵀ[N]) dA', 'Deformație termică:  ε_th = α_T (T − T_ref),   {F_th} = Σₑ t ∫ [B]ᵀ[D]{ε_th} dA', ...EQ.plate.slice(1)];
+  if (L.id === 'l1' || L.id === 'l2') eq.push('Verificare: δ_E = F·L³/(3EI),  δ_T = δ_E + F·L/(G·A_s),  σ = M·c/I');
+  if (L.id === 'l6' || L.id === 'l8') eq.push('Lamé (cilindru gros):  σ_θ = p·rᵢ²/(rₒ²−rᵢ²)·(1 + rₒ²/r²),  σ_r = p·rᵢ²/(rₒ²−rᵢ²)·(1 − rₒ²/r²)');
+  const props = (res.props || []).map(p => `<tr><td>${p[0]}</td><td class="n">${fmt(p[1], 5)}</td><td>${p[2]}</td></tr>`).join('');
+  $('#report').innerHTML = `
+    <div><h4>1. Tema lucrării</h4><p><b>${L.full}.</b> ${L.tema}</p><p>Modul Ansys: <span class="mono">${L.module}</span></p></div>
+    <div><h4>2. Model matematic</h4>${eq.map(e => `<div class="eq">${e}</div>`).join('')}</div>
+    <div><h4>3. Date de intrare curente</h4><div class="tw"><table><thead><tr><th>Parametru</th><th class="n">Valoare</th><th>Unitate</th></tr></thead><tbody>${par}</tbody></table></div></div>
+    <div><h4>4. Discretizare și soluție</h4><p>Element: ${res.elem}. Noduri: ${res.nn}; elemente: ${res.ne}; ecuații: ${res.ndof}; lățime de bandă: ${res.bw}; reziduu relativ ‖Ku−F‖/‖F‖ = ${res.res.toExponential(2)}; timp: ${Math.round(res.ms)} ms.</p></div>
+    <div><h4>5. Mărimi derivate</h4><div class="tw"><table><tbody>${props}</tbody></table></div></div>
+    <div><h4>6. Rezultate</h4>${$('#tblRes').innerHTML}</div>
+    <div><h4>7. Verificări analitice</h4>${$('#tblChk').innerHTML}</div>
+    <div class="row"><button class="btn sm" id="copyRep" type="button">Copiază raportul ca text</button><span class="foot" id="copyMsg"></span></div>`;
+  $('#copyRep').addEventListener('click', () => {
+    const txt = $('#report').innerText.replace(/Copiază raportul ca text/, '').trim(), msg = $('#copyMsg');
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($('#report')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); msg.textContent = 'Textul a fost selectat; apasă Ctrl+C.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => { msg.textContent = 'Raport copiat.'; }, fallback); else fallback();
+  });
+}
+
+/* ---------- selectarea lucrării ---------- */
+function selectLab(id) {
+  S.lab = id; S.chartSig = ''; showErr(null);
+  const L = LABS[id];
+  $('#intro').innerHTML = `<div><h2>Lucrarea ${L.nr}. ${L.full}</h2><p>${L.tema}</p></div><div><span class="chip">${L.module}</span></div>`;
+  updateStages(); renderControls();
+  if (S.res[id]) applyResult(S.res[id]); else runSolve();
+}
+
+/* ---------- bara de unelte a viewport-ului ---------- */
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => viewer.setView(b.dataset.v)));
+$('#wireBtn').addEventListener('click', e => { viewer.opts.wire = !viewer.opts.wire; e.currentTarget.setAttribute('aria-pressed', viewer.opts.wire); viewer.draw(); });
+$('#animBtn').addEventListener('click', e => {
+  viewer.animating = !viewer.animating; viewer.t0 = performance.now(); e.currentTarget.setAttribute('aria-pressed', viewer.animating);
+  if (viewer.animating) { const tick = () => { if (!viewer.animating) { viewer.draw(); return; } viewer.draw(); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }
+});
+$('#sclRange').addEventListener('input', e => { S.pct = +e.target.value; S.real = false; updateScale(); });
+$('#realBtn').addEventListener('click', () => { S.real = !S.real; updateScale(); });
+if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { $('#animBtn').title = 'Animația este disponibilă la cerere'; }
+
+buildTabs();
+try { const t = localStorage.getItem('mef-theme'); if (t === 'light' || t === 'dark') S.theme = t; } catch (e) { }
+applyTheme(S.theme);
+viewer.resize();
+selectLab('l1');
+window.__S = S; window.__viewer = viewer;
+})();
+
+</script>
+
+</body></html>
