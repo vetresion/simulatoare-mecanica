@@ -1,0 +1,889 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulator Psihrometru Assmann</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+<style>
+/* Concept: caiet de laborator — hârtie rece, cerneală închisă, mercur roșu (termometrul uscat) și albastru (termometrul umed). */
+:root{
+  --bg:#EDF0F1; --surface:#FAFBFB; --raised:#FFFFFF; --ink:#0F1E27; --muted:#55666F;
+  --line:#CCD4D9; --line-soft:#E1E6E9; --accent:#0D5C7B; --accent-ink:#FFFFFF;
+  --dry:#B8432F; --wet:#1565A8; --ok:#2E7D4F; --warn:#A8620F;
+  --plot:#F7F9F9; --fog:#DCE6EC; --metal:#C9D2D7; --inner:#F2F5F6; --gauze:#EDE6D3;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1418; --surface:#121D23; --raised:#18262D; --ink:#E5EDF0; --muted:#8FA3AD;
+    --line:#2B3C45; --line-soft:#1D2B32; --accent:#5DB6D8; --accent-ink:#06222D;
+    --dry:#F2765F; --wet:#6CB2F0; --ok:#5CC08A; --warn:#E0A24A;
+    --plot:#0F1A1F; --fog:#1B2C36; --metal:#3A4B54; --inner:#0F1A1F; --gauze:#7B7461;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1418; --surface:#121D23; --raised:#18262D; --ink:#E5EDF0; --muted:#8FA3AD;
+  --line:#2B3C45; --line-soft:#1D2B32; --accent:#5DB6D8; --accent-ink:#06222D;
+  --dry:#F2765F; --wet:#6CB2F0; --ok:#5CC08A; --warn:#E0A24A;
+  --plot:#0F1A1F; --fog:#1B2C36; --metal:#3A4B54; --inner:#0F1A1F; --gauze:#7B7461;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);
+  padding-block:22px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;min-width:0}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,46px);letter-spacing:-.01em}
+h1 em{font-style:italic;font-weight:400;color:var(--accent)}
+h2{font-size:22px;margin-bottom:10px}
+h3{font-size:17px;margin-bottom:6px}
+p{margin:0 0 10px}
+.kicker{font:500 11.5px/1.4 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.lede{max-width:68ch;color:var(--muted);margin-top:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px}
+i,var,.v{font-family:var(--serif);font-style:italic;font-size:1.06em}
+sub,sup{font-size:.72em;line-height:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+/* inputs */
+.inputs{margin-top:20px;padding:16px;display:grid;gap:14px}
+.inputs .row1{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));align-items:end}
+.fld{display:grid;gap:5px;min-width:0}
+.fld label{font-size:12.5px;color:var(--muted);line-height:1.3}
+.pair{display:flex;align-items:center;gap:6px}
+.pair .u{font:12px var(--mono);color:var(--muted)}
+input[type=number],input[type=text],select,textarea{font:15px var(--mono);color:var(--ink);background:var(--raised);
+  border:1px solid var(--line);border-radius:3px;padding:7px 9px;width:100%;min-width:0}
+select{font-family:var(--sans)}
+textarea{font-family:var(--sans);resize:vertical;min-height:84px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:500 14px var(--sans);border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:3px;padding:8px 13px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.sm{padding:5px 9px;font-size:13px}
+.inputs .acts{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+details.adv summary{cursor:pointer;color:var(--muted);font-size:13px}
+details.adv .fld{margin-top:8px;max-width:340px}
+/* results strip */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--line);margin:0 -16px -16px}
+.tile{padding:12px 16px;border-right:1px solid var(--line);min-width:0}
+.tile:last-child{border-right:0}
+.tile .k{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .n{font:600 28px/1.1 var(--serif);font-variant-numeric:tabular-nums;margin-top:3px}
+.tile .n small{font:400 13px var(--mono);color:var(--muted);margin-left:4px}
+.tile .s{font:12px var(--mono);color:var(--muted);margin-top:2px}
+.tile.main .n{color:var(--accent);font-size:34px}
+.warn{margin:0;padding:9px 12px;border-radius:3px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:1px solid var(--warn);font-size:13.5px}
+@media(max-width:760px){
+  .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tile{border-bottom:1px solid var(--line)}
+  .tile:nth-child(2n){border-right:0}
+  .tile:last-child{border-bottom:0}
+}
+/* tabs */
+.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:22px;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.tab{flex:0 0 auto;font:500 14px var(--sans);color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+.panel{padding-top:20px}
+.split{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:900px){.split{grid-template-columns:minmax(0,1fr)}}
+.instr-wrap{margin:0;padding:10px 6px 4px}
+.instr-wrap figcaption{font:12px var(--mono);color:var(--muted);text-align:center;padding:4px 0 8px}
+svg.instr{width:100%;height:auto;display:block;max-width:430px;margin:0 auto}
+.proc{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:s}
+.proc li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px}
+.proc li::before{content:counter(s);font:600 13px var(--mono);width:26px;height:26px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.proc li.done::before{background:var(--ok);border-color:var(--ok);color:#fff}
+.proc .t{font-size:13.5px;color:var(--muted);margin-top:4px}
+.readouts{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:4px;margin-top:16px;background:var(--surface)}
+.ro{padding:12px 14px;min-width:0}
+.ro+.ro{border-left:1px solid var(--line)}
+.ro .k{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ro .n{font:600 34px/1.1 var(--serif);font-variant-numeric:tabular-nums}
+.ro.d .n{color:var(--dry)} .ro.w .n{color:var(--wet)}
+.ro .n small{font:400 14px var(--mono);color:var(--muted)}
+.status{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:14px}
+.pill{flex:0 0 auto;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:3px 7px;border-radius:2px;border:1px solid var(--muted);color:var(--muted)}
+.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.warn{color:var(--warn);border-color:var(--warn)}
+.bar{height:6px;background:var(--line-soft);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:100%;transition:width .2s}
+.meta{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;font:12.5px var(--mono);color:var(--muted);margin-top:12px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.btnrow select{width:auto}
+.sub-card{padding:14px 16px;margin-top:16px}
+.two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;margin-top:26px}
+@media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.legend{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:13.5px}
+.legend li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px}
+.legend b{font:500 12px var(--mono);color:var(--accent)}
+/* formulas */
+.eq{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 12px;margin:6px 0;background:var(--inner);border:1px solid var(--line-soft);border-radius:3px;font-family:var(--serif);font-size:17px;overflow-x:auto}
+.eq .no{font:12px var(--mono);color:var(--muted);white-space:nowrap}
+.eq.num{font-family:var(--mono);font-size:13.5px;background:transparent;border-style:dashed}
+.eq.num span:first-child{white-space:nowrap}
+/* calc */
+.steps{list-style:none;counter-reset:st;margin:0;padding:0;display:grid;gap:14px}
+.steps>li{counter-increment:st;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px}
+.steps>li::before{content:counter(st);font:600 13px var(--mono);width:28px;height:28px;border-radius:50%;border:1px solid var(--accent);color:var(--accent);display:grid;place-items:center}
+.steps h3{font-size:16.5px}
+.steps .res{font-family:var(--mono);font-weight:500;color:var(--accent)}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+th{font:500 11.5px var(--mono);letter-spacing:.04em;color:var(--muted);background:var(--inner);position:sticky;top:0}
+td:first-child,th:first-child{text-align:left}
+td.l,th.l{text-align:left}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.txt{font-family:var(--sans)}
+tr.hl td,tr.hl th{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+td.cell{background:color-mix(in srgb,var(--accent) 34%,var(--surface));color:var(--ink);font-weight:600}
+.scroll{max-height:440px;overflow:auto}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px;margin-top:18px}
+.chartbox{padding:12px 12px 6px;min-width:0}
+.chartbox h3{font-size:16px;margin-bottom:2px}
+.chartbox p.cap{font-size:13px;color:var(--muted);margin-bottom:6px}
+.chartc{width:100%;min-width:0}
+svg.chart{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font:11px var(--mono);fill:var(--muted)}
+.chart .gr{stroke:var(--line-soft);stroke-width:1}
+.chart .gr2{stroke:var(--line);stroke-width:1}
+.chart .plotbg{fill:var(--plot)}
+.chart .frame{stroke:var(--muted);fill:none}
+.chart .halo{paint-order:stroke;stroke:var(--plot);stroke-width:3px;stroke-linejoin:round}
+.chart .lab{fill:var(--ink);font-weight:500}
+.chart .c-an{stroke:var(--accent);stroke-width:2.2;fill:none}
+.chart .c-g{stroke:var(--muted);stroke-width:1.6;fill:none;stroke-dasharray:5 4}
+.chart .c-dry{stroke:var(--dry);stroke-width:1.6;fill:none}
+.chart .c-wet{stroke:var(--wet);stroke-width:1.8;fill:none}
+.chart .c-wetd{stroke:var(--wet);stroke-width:1.4;fill:none;stroke-dasharray:5 4}
+.chart .c-dl{stroke:var(--dry);stroke-width:1.2;fill:none;stroke-dasharray:3 4}
+.chart .c-sat{stroke:var(--ink);stroke-width:2;fill:none}
+.chart .c-iso{stroke:var(--wet);stroke-width:.9;fill:none;stroke-dasharray:6 4;opacity:.75}
+.chart .il{fill:var(--wet)}
+.chart .fogtxt{fill:var(--muted);font-style:italic}
+.chart .pt-d{fill:var(--dry);stroke:var(--plot);stroke-width:1.5}
+.chart .pt-g{fill:var(--plot);stroke:var(--dry);stroke-width:2}
+.chart .pt-w{fill:var(--wet);stroke:var(--plot);stroke-width:1.5}
+.chart .pt-m{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.chart .hatl{stroke:var(--line);stroke-width:1}
+.chart .proc-l{stroke:var(--ink);stroke-width:1.3;fill:none;stroke-dasharray:2 3}
+.chartc{cursor:crosshair}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin:6px 2px 4px}
+.keys span::before{content:"";display:inline-block;width:18px;height:0;border-top:2px solid var(--c,var(--ink));vertical-align:middle;margin-right:6px}
+.keys span.dash::before{border-top-style:dashed}
+.keys span.dot::before{width:9px;height:9px;border:2px solid var(--c);border-radius:50%;background:var(--bg)}
+.dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0;font-size:14px}
+.dl dt{color:var(--muted)} .dl dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted)}
+.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.bd circle{fill:var(--surface);stroke:var(--ink);stroke-width:1}
+.bd text{font:500 9px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+/* instrument */
+.instr .metal{fill:var(--metal);stroke:var(--ink);stroke-width:1.2}
+.instr .inner{fill:var(--inner);stroke:none}
+.instr .hat{fill:url(#hat);stroke:var(--ink);stroke-width:1}
+.instr .hatl{stroke:var(--ink);stroke-width:1}
+.instr .glass{fill:var(--raised);stroke:var(--muted);stroke-width:1}
+.instr .tube{fill:none;stroke:var(--ink);stroke-width:1.3}
+.instr .win{fill:var(--inner);stroke:var(--ink);stroke-width:1}
+.instr .tk{stroke:var(--ink);stroke-width:.8}
+.instr text{font:9px var(--mono);fill:var(--ink)}
+.instr .lead{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.instr .gz{fill:var(--gauze);stroke:var(--muted);stroke-width:1}
+.instr .gzw{fill:var(--wet);opacity:0;transition:opacity .5s;stroke:var(--wet);stroke-width:1}
+.instr.wet .gzw{opacity:.45}
+.instr .merc-d{fill:var(--dry)} .instr .merc-w{fill:var(--wet)}
+.instr .ptxt-d{fill:var(--dry);font:500 12px var(--mono)} .instr .ptxt-w{fill:var(--wet);font:500 12px var(--mono)}
+.instr .flow{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-dasharray:3 7;opacity:0}
+.instr.run .flow{opacity:.9;animation:flow .55s linear infinite}
+.instr .ribs line{stroke:var(--ink);stroke-width:1.4;opacity:.6}
+.instr.run .ribs{animation:ribs .22s linear infinite}
+.instr .keyg{transform-box:fill-box;transform-origin:center}
+.instr.wind .keyg{animation:turn 1.2s ease-in-out}
+@keyframes flow{to{stroke-dashoffset:-10}}
+@keyframes ribs{to{transform:translateX(9px)}}
+@keyframes turn{to{transform:rotate(540deg)}}
+@media (prefers-reduced-motion: reduce){
+  .instr.run .flow{animation:none;opacity:.9} .instr.run .ribs,.instr.wind .keyg{animation:none}
+}
+@media print{.tabs{display:none}}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="kicker">Autor:S.L. dr. ing. Vetres Ion</p>
+  <h1>Determinarea umidității relative a aerului</h1>
+   <h1>Psihrometrul <em>Assmann</em></h1>
+  <p class="lede">Determinarea umidității relative a aerului prin metoda psihrometrică. Modifică datele de intrare și urmărește rezultatul în calcul, pe diagrama t–t′ și pe diagrama i–x.</p>
+</header>
+
+<section class="inputs card" aria-label="Date de intrare">
+  <div class="row1">
+    <div class="fld"><label for="sel_preset">Stare de plecare</label>
+      <select id="sel_preset">
+        <option value="">Alege un exemplu…</option>
+        <option value="22,15">Aer ambiant de laborator (22,0 / 15,0)</option>
+        <option value="35,20">Cald și uscat (35,0 / 20,0)</option>
+        <option value="12,10.5">Rece și umed (12,0 / 10,5)</option>
+        <option value="20,19.4">Aproape saturat (20,0 / 19,4)</option>
+        <option value="28,14">Foarte uscat (28,0 / 14,0)</option>
+        <option value="40,30">Cald și umed (40,0 / 30,0)</option>
+      </select></div>
+    <div class="fld"><label for="in_name">Denumirea stării (pentru tabelul de măsurători)</label>
+      <input id="in_name" type="text" placeholder="ex. Aer după bateria de încălzire"></div>
+    <div class="acts"><button class="btn" id="btn_add" type="button">Adaugă în tabelul de măsurători</button></div>
+  </div>
+  <div class="row1">
+    <div class="fld"><label for="in_t">Termometrul uscat, <i>t</i></label>
+      <div class="pair"><input id="in_t" type="number" min="0" max="50" step="0.1" inputmode="decimal"><span class="u">°C</span></div>
+      <input id="rg_t" type="range" min="0" max="50" step="0.1" aria-label="t, cursor"></div>
+    <div class="fld"><label for="in_tw">Termometrul umed, <i>t′</i></label>
+      <div class="pair"><input id="in_tw" type="number" min="0" max="50" step="0.1" inputmode="decimal"><span class="u">°C</span></div>
+      <input id="rg_tw" type="range" min="0" max="50" step="0.1" aria-label="t′, cursor"></div>
+    <div class="fld"><label for="in_B">Presiunea atmosferică, <i>B</i></label>
+      <div class="pair"><input id="in_B" type="number" min="85000" max="106000" step="10" inputmode="numeric"><span class="u">Pa</span></div>
+      <div class="note"><button class="btn ghost sm" id="btn_B0" type="button">B = 101 330 Pa</button> <span id="B_mm" class="mono"></span></div></div>
+    <div class="fld"><label for="sel_v">Viteza aerului în aparat, <i>v</i> (tab. 5.3)</label>
+      <select id="sel_v">
+        <option value="0.13">0,13 m/s → C = 0,0013</option><option value="0.2">0,2 m/s → C = 0,0011</option>
+        <option value="0.4">0,4 m/s → C = 0,0009</option><option value="0.8">0,8 m/s → C = 0,0008</option>
+        <option value="2.5" selected>2,5 m/s → C = 0,0007</option><option value="4">4,0 m/s → C = 0,00067</option>
+      </select>
+      <details class="adv"><summary>Constantă C introdusă manual</summary>
+        <div class="fld"><label for="in_C">C (lasă gol pentru valoarea din tabel)</label><input id="in_C" type="number" min="0.0003" max="0.003" step="0.00001" placeholder="automat"></div></details>
+    </div>
+  </div>
+  <div class="strip" id="strip" aria-live="polite"></div>
+</section>
+<p class="warn" id="warn" hidden style="margin-top:12px"></p>
+
+<nav class="tabs" role="tablist" aria-label="Secțiuni">
+  <button class="tab" role="tab" data-tab="psihrometru" aria-selected="true">Psihrometru</button>
+  <button class="tab" role="tab" data-tab="calcul" aria-selected="false">Calcul</button>
+  <button class="tab" role="tab" data-tab="tt" aria-selected="false">Diagrama t–t′</button>
+  <button class="tab" role="tab" data-tab="ix" aria-selected="false">Diagrama i–x</button>
+  <button class="tab" role="tab" data-tab="tabele" aria-selected="false">Tabele 5.1–5.3</button>
+  <button class="tab" role="tab" data-tab="raport" aria-selected="false">Raport</button>
+</nav>
+
+<!-- 1. PSIHROMETRU -->
+<section class="panel" id="p-psihrometru" role="tabpanel">
+  <div class="split">
+    <figure class="instr-wrap card"><div id="instr"></div><figcaption>Fig. 5.1 Psihrometrul Assmann (schemă funcțională)</figcaption></figure>
+    <div>
+      <h2>Desfășurarea lucrării</h2>
+      <ol class="proc" id="proc">
+        <li id="st1"><div><button class="btn" id="btn_wet" type="button">Umezește tifonul</button>
+          <div class="t">Bulbul termometrului umed se acoperă cu tifon, apoi se umezește cu apă distilată dintr-o pipetă cu pompă de cauciuc.</div></div></li>
+        <li id="st2"><div><button class="btn" id="btn_run" type="button">Întoarce cheia și pornește ventilatorul</button>
+          <div class="t">Arcul mecanismului de ceasornic acționează microventilatorul. Aerul este aspirat pe lângă bulbi cu aproximativ 2,5 m/s.</div></div></li>
+        <li id="st3"><div><strong>Așteaptă 2–4 minute și citește ambele termometre.</strong>
+          <div class="t">Termometrul umed coboară exponențial spre <i>t′</i>, din cauza evaporării apei din tifon.</div></div></li>
+      </ol>
+      <div class="readouts">
+        <div class="ro d"><div class="k">Termometrul uscat</div><div class="n"><span id="r_d">–</span><small> °C</small></div></div>
+        <div class="ro w"><div class="k">Termometrul umed</div><div class="n"><span id="r_w">–</span><small> °C</small></div></div>
+      </div>
+      <div class="status"><span class="pill" id="pill">–</span><span id="stat_txt"></span></div>
+      <div class="meta"><span>arc ceasornic</span><div class="bar"><i id="spr"></i></div><span id="tau">τ = 00:00</span></div>
+      <div class="btnrow">
+        <button class="btn ghost sm" id="btn_skip" type="button">Sari la 3 min de funcționare</button>
+        <button class="btn ghost sm" id="btn_reset" type="button">Resetează aparatul</button>
+        <label class="note" for="sel_speed">Viteză simulare</label>
+        <select id="sel_speed"><option value="1">×1</option><option value="10" selected>×10</option><option value="30">×30</option></select>
+      </div>
+      <div class="card sub-card">
+        <div id="live"></div>
+        <div class="btnrow"><button class="btn sm" id="btn_note" type="button">Notează citirea curentă în tabel</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="card chartbox" style="margin-top:20px">
+    <h3>Evoluția citirii termometrului umed</h3>
+    <p class="cap">Zona umbrită (2–4 min) este intervalul recomandat pentru citire. Linia întreruptă este valoarea finală <i>t′</i>.</p>
+    <div class="chartc" id="tw_chart" style="cursor:default"></div>
+  </div>
+  <div class="two">
+    <div>
+      <h2>Noțiuni introductive</h2>
+      <p>Psihrometrul se folosește când temperatura aerului este mai mare de 0 °C. Aparatul are două termometre cu mercur identice, lungi de aproximativ 400 mm, cu diviziuni din 0,2 în 0,2 °C și precizie de 0,1 °C. Termometrul uscat indică temperatura reală a aerului. Bulbul termometrului umed este înfășurat în tifon îmbibat cu apă distilată, iar evaporarea apei îl răcește sub temperatura aerului.</p>
+      <p>Diferența psihrometrică Δ<i>t</i> = <i>t</i> − <i>t′</i> depinde de umiditatea aerului. Cu cât aerul este mai uscat, cu atât evaporarea este mai intensă și Δ<i>t</i> mai mare.</p>
+      <p><b>Umiditatea relativă</b> este raportul dintre masa vaporilor de apă dintr-un volum de aer și masa vaporilor din același volum saturat, la aceeași temperatură. <b>Presiunea parțială</b> <i>p</i><sub>v</sub> este presiunea pe care ar exercita-o vaporii dacă ar ocupa singuri volumul amestecului. <b>Presiunea de saturație</b> <i>p</i><sub>vs</sub> este presiunea parțială a vaporilor în aerul saturat.</p>
+      <div class="eq"><span><i>p</i><sub>v</sub> = <i>p′</i><sub>vs</sub> − <i>C</i>·<i>B</i>·(<i>t</i> − <i>t′</i>)</span><span class="no">(5.1 / 5.3)</span></div>
+      <div class="eq"><span>φ = <i>p</i><sub>v</sub> / <i>p′</i><sub>vs</sub>(<i>t</i>) · 100 %</span><span class="no">(5.4)</span></div>
+    </div>
+    <div>
+      <h2>Părțile aparatului</h2>
+      <ul class="legend">
+        <li><b>1</b><span>Termometrul uscat</span></li>
+        <li><b>2</b><span>Termometrul umed, cu mercur, gradat de la −25 °C la +50 °C</span></li>
+        <li><b>3, 4</b><span>Tuburi de aspirație, protejează bulbii de radiațiile exterioare</span></li>
+        <li><b>5, 6</b><span>Inele de ebonită, înșurubate la corp, fac legătura cu tuburile</span></li>
+        <li><b>7</b><span>Coloana de aspirație, dirijează aerul spre ventilator</span></li>
+        <li><b>8</b><span>Corpul psihrometrului și carcasa de protecție</span></li>
+        <li><b>9</b><span>Microventilatorul dispozitivului de aspirație</span></li>
+        <li><b>10</b><span>Cheia mecanismului de ceasornic</span></li>
+        <li><b>11</b><span>Ferestrele carcasei, pe unde se refulează aerul</span></li>
+        <li><b>12</b><span>Cârligul de agățare în poziție verticală</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2. CALCUL -->
+<section class="panel" id="p-calcul" role="tabpanel" hidden><div id="calc_out"></div></section>
+
+<!-- 3. t–t' -->
+<section class="panel" id="p-tt" role="tabpanel" hidden>
+  <div class="card chartbox">
+    <h2>Diagrama de determinare a umidității relative, în coordonate <i>t</i> și <i>t′</i></h2>
+    <p class="cap">Fig. 5.2. Curbele sunt locurile de φ = const., trasate din relațiile (5.2) și (5.3) pentru <i>B</i> și <i>C</i> din datele de intrare. Apasă sau trage pe diagramă pentru a seta starea aerului.</p>
+    <div class="chartc" id="tt_chart"></div>
+    <div class="keys" id="tt_keys"></div>
+  </div>
+  <div class="card sub-card" id="tt_info"></div>
+</section>
+
+<!-- 4. i–x -->
+<section class="panel" id="p-ix" role="tabpanel" hidden>
+  <div class="card chartbox">
+    <h2>Diagrama i–x pentru aer umed</h2>
+    <p class="cap">Fig. 5.3. Axe oblice (Mollier): izotermele sunt aproape orizontale, izentalpele sunt drepte descendente. Apasă sau trage pe diagramă pentru a seta starea aerului.</p>
+    <div class="chartc" id="ix_chart"></div>
+    <div class="keys" id="ix_keys"></div>
+    <label class="note" style="display:inline-flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="ix_link" checked> Unește stările din tabelul de măsurători în ordinea înregistrării</label>
+  </div>
+  <div class="card sub-card" id="ix_info"></div>
+</section>
+
+<!-- 5. TABELE -->
+<section class="panel" id="p-tabele" role="tabpanel" hidden><div id="tab_out"></div></section>
+
+<!-- 6. RAPORT -->
+<section class="panel" id="p-raport" role="tabpanel" hidden>
+  <div class="card sub-card" style="margin-top:0">
+    <h2>Raport de laborator</h2>
+    <div class="row1" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <div class="fld"><label for="rp_nume">Nume și prenume</label><input id="rp_nume" type="text"></div>
+      <div class="fld"><label for="rp_grupa">Grupa</label><input id="rp_grupa" type="text"></div>
+      <div class="fld"><label for="rp_data">Data</label><input id="rp_data" type="text"></div>
+    </div>
+  </div>
+  <div class="card sub-card"><h3>Tabelul măsurătorilor și al rezultatelor</h3>
+    <p class="note">Rândurile marcate „exemplu" sunt stări generate de simulator pentru o instalație de tratare (încălzire, umidificare adiabatică, răcire). Le poți șterge.</p>
+    <div id="rep_tbl"></div>
+    <div class="btnrow"><button class="btn ghost sm" id="btn_clear_ex" type="button">Șterge exemplele</button><button class="btn ghost sm" id="btn_clear_all" type="button">Șterge toate măsurătorile</button></div>
+  </div>
+  <div class="card sub-card"><h3>Procesele dintre stări</h3><div id="rep_obs"></div></div>
+  <div class="card sub-card"><h3>Concluzii</h3>
+    <div class="fld"><label for="rp_conc">Scrie observațiile tale (compararea metodelor, surse de eroare, încadrarea în intervalul de confort)</label><textarea id="rp_conc"></textarea></div>
+  </div>
+  <div class="card sub-card"><h3>Raport în format text</h3>
+    <div class="fld"><label for="rp_txt">Copiază și lipește în documentul tău</label><textarea id="rp_txt" readonly style="min-height:200px;font-family:var(--mono);font-size:12.5px"></textarea></div>
+    <div class="btnrow"><button class="btn" id="btn_copy" type="button">Copiază raportul</button><span class="note" id="copy_msg"></span></div>
+  </div>
+</section>
+
+<p class="foot">Simulator didactic după Lucrarea nr. 5, „Determinarea umidității relative a aerului cu psihrometrul Assmann": relațiile (5.1)–(5.4), tabelele 5.1–5.3 și diagramele din figurile 5.2 și 5.3. Formula (5.2) este valabilă pentru temperaturi peste 0 °C. Diagramele sunt trasate pentru presiunea B introdusă.</p>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NB=' ';
+function f(x,d=1){
+  if(x==null||!isFinite(x)) return '–';
+  const s=Math.abs(x).toFixed(d); const neg=x<0&&Number(s)!==0;
+  let [i,fr]=s.split('.'); i=i.replace(/\B(?=(\d{3})+(?!\d))/g,NB);
+  return (neg?'−':'')+i+(fr?','+fr:'');
+}
+const r1=n=>Math.round(n*10)/10, rd1=r1;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+
+/* ---------- fizică ---------- */
+const R_A=287.05,R_V=461.5,EPS=622,MMHG=133.322;
+const pvs=t=>1.40974e10*Math.exp(-3928.5/(t+231.667));                    // (5.2)
+const C_TAB=[[0.13,0.0013],[0.2,0.0011],[0.4,0.0009],[0.8,0.0008],[2.5,0.0007],[4,0.00067]]; // tab. 5.3
+function Cof(v){
+  if(v<=C_TAB[0][0]) return C_TAB[0][1];
+  for(let i=1;i<C_TAB.length;i++){ if(v<=C_TAB[i][0]){ const [a,ca]=C_TAB[i-1],[b,cb]=C_TAB[i]; return ca+(cb-ca)*(v-a)/(b-a);} }
+  return C_TAB[C_TAB.length-1][1];
+}
+const T51={0:[81,63,45,28,11],1:[83,66,48,33,16],2:[84,68,51,37,20],3:[84,69,54,40,24,7],4:[85,70,56,42,28,14],5:[85,72,58,45,32,20,5],6:[86,73,60,47,35,23,10],7:[86,74,62,49,38,26,14],8:[87,75,63,51,40,28,18,7],9:[87,75,64,52,42,31,21,11],10:[88,76,65,54,44,34,24,14,4],11:[88,77,67,56,46,36,27,17,8],12:[89,78,68,57,48,38,29,20,11,2],13:[89,78,69,59,50,40,31,23,14,6],14:[90,79,70,60,51,42,33,25,17,9],15:[90,80,72,61,52,44,35,28,20,12,4],16:[90,81,72,62,54,45,37,30,22,15,9],17:[91,81,72,63,55,47,39,32,24,18,12],18:[91,82,72,64,56,48,41,34,27,20,14],19:[91,82,73,65,58,50,43,36,29,22,16,10],20:[91,83,73,66,59,51,44,37,30,24,18,12],21:[92,83,74,67,60,52,46,39,32,26,20,15],22:[92,83,75,68,61,54,47,40,34,28,22,17],23:[92,84,76,68,61,55,48,42,36,30,23,19],24:[92,84,76,69,62,56,49,43,37,31,25,20],25:[92,84,77,70,63,57,50,45,39,32,27,22],26:[92,85,78,71,64,58,51,46,40,34,28,24],27:[93,85,78,71,64,58,52,47,41,36,30,26],28:[93,85,78,72,65,59,53,48,42,37,32,27],29:[93,86,79,72,66,60,54,49,43,38,33,29],30:[93,86,79,73,67,61,55,50,44,39,34,30],31:[93,86,80,73,67,61,55,50,44,39,34,30],32:[93,86,80,73,67,62,56,50,45,40,35,31],33:[93,86,80,74,68,62,57,51,46,41,36,32],34:[93,86,80,74,68,63,57,52,47,42,38,33],35:[94,87,81,75,69,63,58,53,48,43,39,34],36:[94,87,81,75,70,64,59,54,49,44,40,35],37:[94,88,82,76,70,65,60,55,50,46,42,37],38:[94,88,82,76,71,65,60,55,51,47,43,38],39:[94,88,82,77,71,66,61,56,52,48,44,40],40:[94,88,82,77,72,67,62,57,52,48,44,41],41:[94,88,82,77,72,67,62,58,53,49,45,41],42:[null,88,83,77,72,67,63,58,53,49,45,41],43:[null,null,83,78,73,68,63,58,54,50,46,42],44:[null,null,83,78,73,68,64,59,55,50,46,43]};
+const t51=(t,d)=>{ if(d===0) return 100; const v=T51[t][d-1]; return v==null?null:v; };
+function tableInterp(t,dt){
+  if(t<0||t>44||dt<0||dt>12) return null;
+  const t0=Math.min(Math.floor(t),44), t1=Math.min(t0+1,44), d0=Math.min(Math.floor(dt),12), d1=Math.min(d0+1,12);
+  const wt=t-t0, wd=dt-d0;
+  const cs=[[t0,d0,(1-wt)*(1-wd)],[t0,d1,(1-wt)*wd],[t1,d0,wt*(1-wd)],[t1,d1,wt*wd]];
+  let phi=0;
+  for(const [a,b,w] of cs){ const v=t51(a,b); if(w>1e-9){ if(v==null) return null; phi+=w*v; } }
+  return {phi,t0,t1,d0,d1,c:[t51(t0,d0),t51(t0,d1),t51(t1,d0),t51(t1,d1)]};
+}
+const P52=[4.58,6.50,9.20,12.8,17.5,23.8,31.8,42.2,55.3,71.9,92.6,118.0,149.4,187.5,233.7,289.1,355.1,433.6,525.8,633.0,760.0];
+const G52=[1.293,1.270,1.248,1.226,1.205,1.185,1.165,1.146,1.128,1.110,1.093,1.076,1.060,1.044,1.029,1.014,1.000,0.986,0.973,0.959,0.947];
+const NEG52=[[-25,0.47,null],[-20,0.77,1.396],[-15,1.24,1.368],[-10,1.95,1.342],[-5,3.01,1.317]];
+function p52(t){ if(t<0||t>100) return null; const k=Math.min(Math.floor(t/5),19); const w=(t-5*k)/5; return (P52[k]+(P52[k+1]-P52[k])*w)*MMHG; }
+function bis(fn,a,b){ let fa=fn(a); for(let k=0;k<70;k++){ const m=(a+b)/2,fm=fn(m); if((fm>0)===(fa>0)){a=m;fa=fm;} else b=m; } return (a+b)/2; }
+function twFromPv(t,pv,B,C){ const g=w=>pvs(w)-C*B*(t-w)-pv; if(g(0)>0) return 0; if(g(t)<0) return t; return bis(g,0,t); }
+function calc(t,tw,B,C){
+  const dt=t-tw, pw=pvs(tw), pd=pvs(t), CB=C*B, pv=pw-CB*dt, phi=pv/pd*100;
+  const x=EPS*pv/(B-pv), i=1.006*t+x/1000*(2501+1.86*t);
+  const td=pv>0?-3928.5/Math.log(pv/1.40974e10)-231.667:NaN;
+  const T=t+273.15, rho=(B-pv)/(R_A*T)+pv/(R_V*T), vs=R_A*T/(B-pv), rhov=pv/(R_V*T)*1000;
+  const xsw=EPS*pw/(B-pw), iw=1.006*tw+xsw/1000*(2501+1.86*tw);
+  const xg=(iw-1.006*t)/(2501+1.86*t)*1000, pvg=xg*B/(EPS+xg), phig=pvg/pd*100;
+  const tb=tableInterp(t,dt);
+  return {t,tw,B,C,dt,pw,pd,CB,pv,phi,x,i,td,rho,vs,rhov,xsw,iw,xg,pvg,phig,tb,phit:tb?tb.phi:null,defi:pd-pv,expw:-3928.5/(tw+231.667),expd:-3928.5/(t+231.667)};
+}
+function uncert(t,tw,B,C,d=0.1){
+  const p=(a,b)=>calc(a,b,B,C).phi;
+  const a=(p(t+d,tw)-p(t-d,tw))/2, b=(p(t,tw+d)-p(t,tw-d))/2; return Math.hypot(a,b);
+}
+
+/* ---------- stare ---------- */
+const S={t:22,tw:15,B:101330,v:2.5,Cman:null,C:0.0007,R:null,meas:[],uid:0,link:true};
+function recompute(){ S.C=S.Cman!=null?S.Cman:Cof(S.v); S.R=calc(S.t,S.tw,S.B,S.C); S.u=uncert(S.t,S.tw,S.B,S.C); }
+function setState(t,tw){ t=clamp(r1(t),0,50); tw=clamp(r1(tw),0,t); S.t=t; S.tw=tw; syncInputs(); update(); }
+function syncInputs(){
+  $('#in_t').value=S.t; $('#rg_t').value=S.t; $('#in_tw').value=S.tw; $('#rg_tw').max=S.t; $('#rg_tw').value=S.tw;
+  $('#in_B').value=S.B; $('#B_mm').textContent='= '+f(S.B/MMHG,1)+' mmHg';
+}
+function onT(v){ if(!isFinite(v)) return; S.t=clamp(r1(v),0,50); if(S.tw>S.t) S.tw=S.t; syncInputs(); update(); }
+function onTw(v){ if(!isFinite(v)) return; S.tw=clamp(r1(v),0,S.t); syncInputs(); update(); }
+$('#in_t').addEventListener('input',e=>{ const v=parseFloat(e.target.value); if(isFinite(v)){ S.t=clamp(r1(v),0,50); if(S.tw>S.t) S.tw=S.t; $('#rg_t').value=S.t; $('#rg_tw').max=S.t; $('#rg_tw').value=S.tw; if(document.activeElement!==$('#in_tw')) $('#in_tw').value=S.tw; update(); }});
+$('#in_tw').addEventListener('input',e=>{ const v=parseFloat(e.target.value); if(isFinite(v)){ S.tw=clamp(r1(v),0,S.t); $('#rg_tw').value=S.tw; update(); }});
+$('#in_t').addEventListener('change',()=>syncInputs()); $('#in_tw').addEventListener('change',()=>syncInputs());
+$('#rg_t').addEventListener('input',e=>onT(parseFloat(e.target.value)));
+$('#rg_tw').addEventListener('input',e=>onTw(parseFloat(e.target.value)));
+$('#in_B').addEventListener('input',e=>{ const v=parseFloat(e.target.value); if(isFinite(v)&&v>=85000&&v<=106000){ S.B=v; $('#B_mm').textContent='= '+f(S.B/MMHG,1)+' mmHg'; update(); }});
+$('#in_B').addEventListener('change',()=>syncInputs());
+$('#btn_B0').addEventListener('click',()=>{ S.B=101330; syncInputs(); update(); });
+$('#sel_v').addEventListener('change',e=>{ S.v=parseFloat(e.target.value); update(); });
+$('#in_C').addEventListener('input',e=>{ const v=parseFloat(e.target.value); S.Cman=isFinite(v)&&v>0?v:null; update(); });
+$('#sel_preset').addEventListener('change',e=>{ const v=e.target.value; if(!v) return; const [a,b]=v.split(',').map(parseFloat); S.t=a; S.tw=Math.min(b,a); syncInputs(); update(); e.target.value=''; });
+
+/* ---------- grafice: utilitare ---------- */
+function ticks(a,b,st){ const r=[]; for(let v=Math.ceil(a/st-1e-9)*st; v<=b+1e-9; v+=st) r.push(+v.toFixed(6)); return r; }
+function mkChart(el,o){
+  const w=Math.max(300,Math.floor(el.clientWidth||600)); const h=o.hf?o.hf(w):o.h;
+  const ml=o.ml??50, mr=o.mr??16, mt=o.mt??14, mb=o.mb??40, pw=w-ml-mr, ph=h-mt-mb;
+  const c={w,h,ml,mr,mt,mb,pw,ph,x:o.x,y:o.y};
+  c.sx=v=>ml+(v-o.x[0])/(o.x[1]-o.x[0])*pw; c.sy=v=>mt+ph-(v-o.y[0])/(o.y[1]-o.y[0])*ph;
+  c.ix=p=>o.x[0]+(p-ml)/pw*(o.x[1]-o.x[0]); c.iy=p=>o.y[0]+(mt+ph-p)/ph*(o.y[1]-o.y[0]);
+  c.P=(x,y)=>r1(c.sx(x))+' '+r1(c.sy(y));
+  return c;
+}
+function axes(c,o){
+  let s=`<rect x="${c.ml}" y="${c.mt}" width="${c.pw}" height="${c.ph}" class="plotbg"/>`;
+  if(o.xminor) ticks(c.x[0],c.x[1],o.xminor).forEach(v=>s+=`<line class="gr" x1="${r1(c.sx(v))}" x2="${r1(c.sx(v))}" y1="${c.mt}" y2="${c.mt+c.ph}"/>`);
+  if(o.yminor) ticks(c.y[0],c.y[1],o.yminor).forEach(v=>s+=`<line class="gr" y1="${r1(c.sy(v))}" y2="${r1(c.sy(v))}" x1="${c.ml}" x2="${c.ml+c.pw}"/>`);
+  ticks(c.x[0],c.x[1],o.xmajor).forEach(v=>{ const X=r1(c.sx(v)); s+=`<line class="gr2" x1="${X}" x2="${X}" y1="${c.mt}" y2="${c.mt+c.ph}"/><text x="${X}" y="${c.mt+c.ph+15}" text-anchor="middle">${(o.xf||(q=>f(q,0)))(v)}</text>`; });
+  if(!o.noYGrid) ticks(c.y[0],c.y[1],o.ymajor).forEach(v=>{ const Y=r1(c.sy(v)); s+=`<line class="gr2" y1="${Y}" y2="${Y}" x1="${c.ml}" x2="${c.ml+c.pw}"/><text x="${c.ml-6}" y="${Y+4}" text-anchor="end">${(o.yf||(q=>f(q,0)))(v)}</text>`; });
+  s+=`<rect x="${c.ml}" y="${c.mt}" width="${c.pw}" height="${c.ph}" class="frame"/>`;
+  if(o.xl) s+=`<text x="${c.ml+c.pw/2}" y="${c.h-6}" text-anchor="middle" class="lab">${o.xl}</text>`;
+  if(o.yl) s+=`<text transform="translate(13 ${c.mt+c.ph/2}) rotate(-90)" text-anchor="middle" class="lab">${o.yl}</text>`;
+  return s;
+}
+function pth(c,pts,cls,extra=''){
+  let d='',pen=false;
+  for(const p of pts){ if(!p){pen=false;continue;} d+=(pen?'L':'M')+c.P(p[0],p[1]); pen=true; }
+  return `<path class="${cls}" d="${d}" ${extra}/>`;
+}
+function svgWrap(c,inner,label){ return `<svg class="chart" viewBox="0 0 ${c.w} ${c.h}" width="${c.w}" height="${c.h}" role="img" aria-label="${label}">${inner}</svg>`; }
+function inside(c,x,y){ return x>=c.x[0]&&x<=c.x[1]&&y>=c.y[0]&&y<=c.y[1]; }
+function bindPick(el,getC,pick){
+  let drag=false; const h=e=>{ const c=getC(); if(!c) return; const b=el.getBoundingClientRect(); const px=e.clientX-b.left, py=e.clientY-b.top;
+    if(px<c.ml-4||px>c.ml+c.pw+4||py<c.mt-4||py>c.mt+c.ph+4) return; pick(c.ix(px),c.iy(py)); };
+  el.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse'){ drag=true; h(e);} });
+  el.addEventListener('pointermove',e=>{ if(drag&&e.pointerType==='mouse') h(e); });
+  window.addEventListener('pointerup',()=>{drag=false;});
+  el.addEventListener('click',e=>{ if(e.pointerType!=='mouse'||e.detail===0) h(e); else if(e.pointerType===undefined) h(e); });
+  el.addEventListener('click',e=>{ if(e.pointerType==='touch'||e.pointerType==='pen') h(e); });
+}
+
+/* ---------- 1. psihrometru ---------- */
+const yT=T=>408-(T+25)*(250/75);
+const SIM={wet:false,run:false,tau:0,spring:1,speed:10};
+const TAU0=35, SPRING_S=360;
+function simWet(){ if(!SIM.wet||SIM.tau===0) return S.t; return S.tw+(S.t-S.tw)*Math.exp(-SIM.tau/TAU0); }
+function buildInstr(){
+  const xd=152,xw=248; let s=`<svg class="instr" id="isvg" viewBox="0 0 400 520" role="img" aria-label="Psihrometrul Assmann, schemă">
+  <defs><pattern id="hat" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" class="hatl"/></pattern>
+  <clipPath id="capclip"><rect x="128" y="52" width="144" height="52" rx="9"/></clipPath></defs>`;
+  s+=`<rect x="130" y="124" width="140" height="296" class="inner"/>
+  <rect x="122" y="124" width="8" height="296" class="hat"/><rect x="270" y="124" width="8" height="296" class="hat"/>
+  <rect x="186" y="126" width="4" height="320" class="hat"/><rect x="210" y="126" width="4" height="320" class="hat"/>`;
+  s+=`<rect x="128" y="52" width="144" height="52" rx="9" class="metal"/><g clip-path="url(#capclip)"><g class="ribs">`;
+  for(let x=119;x<290;x+=9) s+=`<line x1="${x}" x2="${x}" y1="56" y2="100"/>`;
+  s+=`</g></g><rect x="120" y="104" width="160" height="22" class="metal"/>`;
+  for(let i=0;i<5;i++) s+=`<rect x="${134+i*26}" y="111" width="16" height="8" rx="3" class="win"/>`;
+  s+=`<g class="keyg"><path d="M164 26 L176 40 L188 26 L184 22 L176 32 L168 22 Z" class="metal"/></g><line x1="176" y1="40" x2="176" y2="52" class="tube"/>
+  <circle cx="226" cy="36" r="7" class="tube"/><line x1="226" y1="43" x2="226" y2="52" class="tube"/>`;
+  [[xd,'d'],[xw,'w']].forEach(([x,k])=>{
+    s+=`<rect x="${x-3.5}" y="154" width="7" height="278" rx="3" class="glass"/>`;
+    s+=`<rect id="m_${k}" x="${x-1.6}" y="300" width="3.2" height="130" class="merc-${k}"/>`;
+    s+=`<circle cx="${x}" cy="440" r="8.5" class="glass"/><circle cx="${x}" cy="440" r="6" class="merc-${k}"/>`;
+    for(let T=-25;T<=50;T++){ const y=yT(T), L=T%10===0?8:T%5===0?5.5:3; const dir=k==='d'?1:-1;
+      s+=`<line class="tk" x1="${x+dir*4.5}" x2="${x+dir*(4.5+L)}" y1="${r1(y)}" y2="${r1(y)}"/>`;
+      if(T%10===0) s+=`<text x="${x+dir*14}" y="${r1(y)+3}" text-anchor="${k==='d'?'start':'end'}">${T}</text>`; }
+    s+=`<rect x="${x-16}" y="420" width="32" height="14" class="hat"/>`;
+    s+=`<path d="M${x-14} 434 L${x-19} 492 L${x+19} 492 L${x+14} 434" class="tube"/>`;
+  });
+  s+=`<rect x="${xw-10}" y="427" width="20" height="26" rx="7" class="gz"/><rect x="${xw-10}" y="427" width="20" height="26" rx="7" class="gzw"/>`;
+  s+=`<path class="flow" d="M${xd} 490 V458 Q${xd} 446 200 446 V130"/><path class="flow" d="M${xw} 490 V458 Q${xw} 446 200 446 V130"/>
+  <path class="flow" d="M122 115 H96"/><path class="flow" d="M278 115 H304"/>`;
+  s+=`<g id="pt_d"><line class="lead" x1="${xd}" x2="104" y1="0" y2="0"/><text id="pt_dt" class="ptxt-d" x="100" y="4" text-anchor="end">t</text></g>
+  <g id="pt_w"><line class="lead" x1="${xw}" x2="296" y1="0" y2="0"/><text id="pt_wt" class="ptxt-w" x="300" y="4">t′</text></g>`;
+  const bd=(n,x,y,tx,ty)=>`${tx!=null?`<line class="lead" x1="${x}" y1="${y}" x2="${tx}" y2="${ty}"/>`:''}<g class="bd"><circle cx="${x}" cy="${y}" r="8"/><text x="${x}" y="${y}">${n}</text></g>`;
+  s+=bd(1,xd,142)+bd(2,xw,142)+bd(3,126,480)+bd(4,274,480)+bd(5,112,427,137,427)+bd(6,288,427,263,427)+bd(7,200,300)+bd(8,108,230,122,230)
+   +bd(9,108,78,128,78)+bd(10,148,24,168,30)+bd(11,294,114,280,114)+bd(12,248,26,233,34);
+  s+=`</svg>`; $('#instr').innerHTML=s;
+}
+function setMerc(k,T){ const y=yT(clamp(T,-25,50)); const m=$('#m_'+k); m.setAttribute('y',y); m.setAttribute('height',432-y);
+  $('#pt_'+k).setAttribute('transform',`translate(0 ${r1(y)})`);
+  $('#pt_'+k+'t').textContent=(k==='d'?'t = ':'t′ = ')+f(T,1)+' °C'; }
+function mmss(s){ s=Math.floor(s); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function instrUpdate(){
+  const td=S.t, tw=simWet(), svg=$('#isvg'); if(!svg) return;
+  svg.classList.toggle('wet',SIM.wet); svg.classList.toggle('run',SIM.run&&SIM.spring>0);
+  setMerc('d',td); setMerc('w',tw);
+  $('#r_d').textContent=f(td,1); $('#r_w').textContent=f(tw,1);
+  $('#spr').style.width=(SIM.spring*100)+'%'; $('#tau').textContent='τ = '+mmss(SIM.tau);
+  $('#st1').classList.toggle('done',SIM.wet); $('#st2').classList.toggle('done',SIM.tau>0);
+  const stable=SIM.wet&&SIM.tau>0&&Math.abs(tw-S.tw)<0.1;
+  let pill='info',cls='',txt='';
+  if(!SIM.wet){ pill='Așteptare'; txt='Tifonul este uscat, deci ambele termometre indică temperatura aerului.'; }
+  else if(SIM.tau===0){ pill='Pregătit'; txt='Tifonul este umezit. Pornește ventilatorul.'; }
+  else if(stable){ pill='Stabilizat'; cls='ok'; txt='Citirea s-a stabilizat. Poți nota valorile.'; }
+  else if(SIM.run&&SIM.spring>0){ pill='Se stabilizează'; cls='warn'; txt='Termometrul umed încă coboară. Se recomandă 2–4 minute de funcționare înainte de citire.'; }
+  else { pill='Oprit'; cls='warn'; txt='Arcul s-a destins și ventilatorul s-a oprit. Întoarce din nou cheia.'; }
+  const p=$('#pill'); p.textContent=pill; p.className='pill '+cls; $('#stat_txt').textContent=txt;
+  const Rr=calc(rd1(td),rd1(tw),S.B,S.C), err=Rr.phi-S.R.phi;
+  $('#live').innerHTML=`<h3>Rezultat din citirile curente</h3><dl class="dl"><dt>Δ<i>t</i> citit</dt><dd>${f(td-tw,1)} °C</dd><dt>φ calculat</dt><dd>${f(Rr.phi,1)} %</dd><dt>φ adevărat (date de intrare)</dt><dd>${f(S.R.phi,1)} %</dd><dt>Eroare de citire</dt><dd>${err>=0?'+':''}${f(err,1)} puncte procentuale</dd></dl>`;
+  renderTw();
+}
+function renderTw(){
+  const el=$('#tw_chart'); if(!el||!el.clientWidth) return;
+  const hi=S.t, lo=S.tw, pad=Math.max(0.5,(hi-lo)*0.12);
+  const c=mkChart(el,{hf:w=>w<520?220:260,x:[0,360],y:[lo-pad,hi+pad],ml:48,mt:12,mb:40});
+  const step=(hi-lo+2*pad)>12?2:(hi-lo+2*pad)>5?1:0.5;
+  let s=axes(c,{xmajor:60,xminor:30,ymajor:step,xf:v=>mmss(v),yf:v=>f(v,step<1?1:0),xl:'timp de funcționare a ventilatorului, τ [min:s]',yl:'t′ citit [°C]'});
+  s+=`<rect x="${r1(c.sx(120))}" y="${c.mt}" width="${r1(c.sx(240)-c.sx(120))}" height="${c.ph}" fill="var(--ok)" opacity=".13"/>`;
+  s+=`<line class="c-wetd" x1="${c.ml}" x2="${c.ml+c.pw}" y1="${r1(c.sy(S.tw))}" y2="${r1(c.sy(S.tw))}"/>`;
+  const pts=[]; for(let t=0;t<=360;t+=4) pts.push([t,S.tw+(S.t-S.tw)*Math.exp(-t/TAU0)]);
+  s+=pth(c,pts,'c-wet');
+  const tau=Math.min(SIM.tau,360), cur=SIM.wet?(tau===0?S.t:S.tw+(S.t-S.tw)*Math.exp(-tau/TAU0)):null;
+  if(cur!=null) s+=`<circle cx="${r1(c.sx(tau))}" cy="${r1(c.sy(cur))}" r="5" class="pt-w"/>`;
+  $('#tw_chart').innerHTML=svgWrap(c,s,'Evoluția citirii termometrului umed în timp');
+}
+let raf=0,last=0;
+function loop(ts){
+  if(!last) last=ts; const dt=Math.min(0.1,(ts-last)/1000); last=ts;
+  if(SIM.run&&SIM.spring>0){ SIM.tau+=dt*SIM.speed; SIM.spring=Math.max(0,1-SIM.tau/SPRING_S); if(SIM.spring===0){ SIM.run=false; SIM.tau=Math.min(SIM.tau,SPRING_S);} }
+  if(ACTIVE==='psihrometru') instrUpdate();
+  if(SIM.run&&SIM.spring>0) raf=requestAnimationFrame(loop); else { raf=0; last=0; }
+}
+function startLoop(){ if(!raf){ last=0; raf=requestAnimationFrame(loop);} }
+$('#btn_wet').addEventListener('click',()=>{ SIM.wet=true; instrUpdate(); });
+$('#btn_run').addEventListener('click',()=>{
+  if(!SIM.wet){ $('#stat_txt').textContent='Umezește mai întâi tifonul termometrului umed.'; return; }
+  SIM.spring=1; if(SIM.tau>=SPRING_S) SIM.tau=0; SIM.run=true;
+  const sv=$('#isvg'); sv.classList.remove('wind'); void sv.getBoundingClientRect(); sv.classList.add('wind'); setTimeout(()=>sv.classList.remove('wind'),1300);
+  startLoop(); instrUpdate();
+});
+$('#btn_skip').addEventListener('click',()=>{ SIM.wet=true; SIM.tau=180; SIM.spring=1-180/SPRING_S; SIM.run=true; startLoop(); instrUpdate(); });
+$('#btn_reset').addEventListener('click',()=>{ SIM.wet=false; SIM.run=false; SIM.tau=0; SIM.spring=1; instrUpdate(); });
+$('#sel_speed').addEventListener('change',e=>{ SIM.speed=parseFloat(e.target.value); });
+$('#btn_note').addEventListener('click',()=>{
+  const td=rd1(S.t), tw=rd1(simWet()); const nm=$('#in_name').value.trim()||('Citire '+(S.meas.length+1)+(SIM.tau>0?' (τ = '+mmss(SIM.tau)+')':''));
+  addMeas(nm,td,Math.min(tw,td),'citire de pe aparat'); $('#btn_note').textContent='Adăugat în tabel ✓'; setTimeout(()=>$('#btn_note').textContent='Notează citirea curentă în tabel',1500);
+});
+
+/* ---------- măsurători ---------- */
+function addMeas(name,t,tw,note=''){ const R=calc(t,tw,S.B,S.C); S.meas.push({id:++S.uid,name,t,tw,B:S.B,C:S.C,v:S.v,note,R}); if(ACTIVE==='raport') renderRaport(); }
+$('#btn_add').addEventListener('click',()=>{ const nm=$('#in_name').value.trim()||('Starea '+(S.meas.length+1)); addMeas(nm,S.t,S.tw); $('#btn_add').textContent='Adăugat ✓'; setTimeout(()=>$('#btn_add').textContent='Adaugă în tabelul de măsurători',1400); $('#in_name').value=''; renderActive(); });
+function seed(){
+  const B=101330,C=Cof(2.5),rd=rd1;
+  const t1=22.0,pv1=0.45*pvs(t1),tw1=rd(twFromPv(t1,pv1,B,C));
+  const t2=34.0,tw2=rd(twFromPv(t2,pv1,B,C)),R2=calc(t2,tw2,B,C);
+  const g=t=>{ const pv=0.7*pvs(t),x=EPS*pv/(B-pv); return 1.006*t+x/1000*(2501+1.86*t)-R2.i; };
+  const t3=rd(bis(g,10,t2)),pv3=0.7*pvs(t3),tw3=rd(twFromPv(t3,pv3,B,C)),R3=calc(t3,tw3,B,C);
+  const t4=rd(R3.td+1.5),tw4=rd(twFromPv(t4,R3.pv,B,C));
+  [['1 · Aer ambiant',t1,tw1],['2 · După bateria de încălzire',t2,tw2],['3 · După umidificare adiabatică',t3,tw3],['4 · După răcire',t4,tw4]]
+    .forEach(([n,a,b])=>{ const R=calc(a,b,B,C); S.meas.push({id:++S.uid,name:n,t:a,tw:b,B,C,v:2.5,note:'exemplu',R}); });
+}
+function procName(a,b){
+  const dx=b.R.x-a.R.x, dt=b.t-a.t, di=b.R.i-a.R.i;
+  if(Math.abs(dx)<0.2) return dt>0?'încălzire sensibilă (x ≈ const.)':dt<0?'răcire sensibilă (x ≈ const.)':'fără modificare';
+  if(dx>0&&Math.abs(di)<1.2) return 'umidificare adiabatică (i ≈ const.)';
+  if(dx>0) return dt>0?'încălzire cu umidificare':'umidificare cu răcire';
+  return dt<0?'răcire cu dezumidificare':'încălzire cu uscare (dezumidificare chimică)';
+}
+
+/* ---------- 2. calcul ---------- */
+function eqn(l,r,no){ return `<div class="eq"><span>${l}</span>${no?`<span class="no">${no}</span>`:''}</div>`; }
+function num(l){ return `<div class="eq num"><span>${l}</span></div>`; }
+function renderCalc(){
+  const R=S.R,B=S.B,C=S.C, tb=R.tb, ph52=p52(S.tw), cman=S.Cman!=null;
+  const eqPw=`1,40974·10<sup>10</sup> · e<sup>−3928,5 / (${f(S.tw,1)} + 231,667)</sup>`;
+  let h=`<div class="card sub-card" style="margin-top:0"><h2>Calculul umidității relative</h2>
+  <p class="note">Se folosesc relațiile din lucrare, cu <i>t</i> = <i>t</i><sub>us</sub> (termometrul uscat) și <i>t′</i> = <i>t</i><sub>um</sub> (termometrul umed). Valorile din calcul urmăresc datele de intrare de mai sus.</p>
+  <ol class="steps">
+  <li><div><h3>Diferența psihrometrică</h3>${num(`Δt = t − t′ = ${f(S.t,1)} − ${f(S.tw,1)} = <span class="res">${f(R.dt,1)} °C</span>`)}</div></li>
+  <li><div><h3>Constanta C și presiunea atmosferică</h3><p>${cman?'Constanta a fost introdusă manual.':`Pentru viteza aerului v = ${f(S.v,2)} m/s, tabelul 5.3 dă`} <span class="mono">C = ${f(C,5)}</span>. Presiunea atmosferică este <span class="mono">B = ${f(B,0)} Pa</span>.</p>
+    ${num(`C·B = ${f(C,5)} · ${f(B,0)} = <span class="res">${f(R.CB,2)} Pa/°C</span>`)}</div></li>
+  <li><div><h3>Presiunea de saturație la temperatura termometrului umed</h3>
+    ${eqn(`<i>p′</i><sub>vs</sub> = 1,40974·10<sup>10</sup> · e<sup>−3928,5 / (<i>t′</i> + 231,667)</sup> &nbsp;[Pa]`,'','(5.2)')}
+    ${num(`p′vs = ${eqPw} = 1,40974·10^10 · e^(${f(R.expw,4)}) = <span class="res">${f(R.pw,1)} Pa</span>`)}
+    <p class="note">Verificare în tabelul 5.2 (interpolare liniară între valorile din 5 în 5 °C): ${ph52!=null?`<span class="mono">${f(ph52,1)} Pa</span>, abatere ${f((ph52-R.pw)/R.pw*100,2)} %`:'în afara tabelului'}.</p></div></li>
+  <li><div><h3>Presiunea parțială a vaporilor de apă</h3>
+    ${eqn(`<i>p</i><sub>v</sub> = <i>p′</i><sub>vs</sub> − <i>C</i>·<i>B</i>·(<i>t</i> − <i>t′</i>) &nbsp;[Pa]`,'','(5.3)')}
+    ${num(`pv = ${f(R.pw,1)} − ${f(R.CB,2)} · ${f(R.dt,1)} = ${f(R.pw,1)} − ${f(R.CB*R.dt,1)} = <span class="res">${f(R.pv,1)} Pa</span>`)}</div></li>
+  <li><div><h3>Presiunea de saturație la temperatura termometrului uscat</h3>
+    ${num(`p′vs(t) = 1,40974·10^10 · e^(−3928,5 / (${f(S.t,1)} + 231,667)) = 1,40974·10^10 · e^(${f(R.expd,4)}) = <span class="res">${f(R.pd,1)} Pa</span>`)}</div></li>
+  <li><div><h3>Umiditatea relativă</h3>
+    ${eqn(`φ = <i>p</i><sub>v</sub> / <i>p′</i><sub>vs</sub>(<i>t</i>) · 100 &nbsp;[%]`,'','(5.4)')}
+    ${num(`φ = ${f(R.pv,1)} / ${f(R.pd,1)} · 100 = <span class="res">${f(R.phi,1)} %</span> &nbsp;(± ${f(S.u,1)} pentru ±0,1 °C la citire)`)}</div></li>
+  </ol></div>`;
+  h+=`<div class="card sub-card"><h3>Compararea metodelor de determinare</h3><div class="tblwrap"><table>
+  <thead><tr><th class="l">Metoda</th><th class="l">Cum se obține</th><th>φ [%]</th><th>Abatere față de analitic [p.p.]</th></tr></thead><tbody>
+  <tr><td class="txt">1. Tabelară</td><td class="txt l">tab. 5.1, interpolare biliniară în <i>t</i> și Δ<i>t</i></td><td>${f(R.phit,1)}</td><td>${R.phit!=null?f(R.phit-R.phi,1):'–'}</td></tr>
+  <tr><td class="txt">2. Analitică</td><td class="txt l">relațiile (5.2), (5.3), (5.4)</td><td><b>${f(R.phi,1)}</b></td><td>0,0</td></tr>
+  <tr><td class="txt">3. Diagrama i–x</td><td class="txt l">izentalpa prin saturația la <i>t′</i>, intersectată cu izoterma <i>t</i></td><td>${f(R.phig,1)}</td><td>${f(R.phig-R.phi,1)}</td></tr>
+  <tr><td class="txt">4. Diagrama t–t′</td><td class="txt l">curba φ = const. trasată din (5.2) și (5.3)</td><td>${f(R.phi,1)}</td><td>0,0</td></tr>
+  </tbody></table></div>`;
+  h+=`<div style="margin-top:12px">`;
+  if(tb) h+=`<p><b>Tabelul 5.1.</b> <i>t</i> = ${f(S.t,1)} °C se află între rândurile ${tb.t0} și ${tb.t1}, iar Δ<i>t</i> = ${f(R.dt,1)} °C între coloanele ${tb.d0} și ${tb.d1}. Valorile învecinate sunt φ(${tb.t0};${tb.d0}) = ${tb.c[0]??'–'}, φ(${tb.t0};${tb.d1}) = ${tb.c[1]??'–'}, φ(${tb.t1};${tb.d0}) = ${tb.c[2]??'–'}, φ(${tb.t1};${tb.d1}) = ${tb.c[3]??'–'}. Rezultatul interpolat este <span class="res mono">${f(tb.phi,1)} %</span>.</p>`;
+  else h+=`<p><b>Tabelul 5.1.</b> Starea aerului este în afara domeniului tabelului (<i>t</i> ≤ 44 °C, Δ<i>t</i> ≤ 12 °C, celule completate).</p>`;
+  h+=`<p><b>Diagrama i–x.</b> Entalpia aerului saturat la <i>t′</i> = ${f(S.tw,1)} °C este <i>i′</i> = ${f(R.iw,1)} kJ/kg. Izentalpa corespunzătoare taie izoterma <i>t</i> = ${f(S.t,1)} °C la <i>x′</i> = ${f(R.xg,2)} g/kg, de unde <i>p</i><sub>v</sub> = ${f(R.pvg,1)} Pa și φ = <span class="res mono">${f(R.phig,1)} %</span>. Metoda presupune că procesul de la bulbul umed are loc la entalpie constantă, deci diferă ușor de relația (5.3).</p></div></div>`;
+  h+=`<div class="card sub-card"><h3>Parametrii derivați ai stării aerului</h3><dl class="dl">
+  <dt>Conținutul de umiditate <i>x</i> = 622·<i>p</i><sub>v</sub> / (<i>B</i> − <i>p</i><sub>v</sub>)</dt><dd>${f(R.x,2)} g/kg aer uscat</dd>
+  <dt>Entalpia <i>i</i> = 1,006·<i>t</i> + <i>x</i>·(2501 + 1,86·<i>t</i>)/1000</dt><dd>${f(R.i,1)} kJ/kg aer uscat</dd>
+  <dt>Temperatura punctului de rouă <i>t</i><sub>r</sub> (din 5.2, cu <i>p</i><sub>v</sub>)</dt><dd>${f(R.td,1)} °C</dd>
+  <dt>Deficitul de saturație <i>p′</i><sub>vs</sub>(<i>t</i>) − <i>p</i><sub>v</sub></dt><dd>${f(R.defi,1)} Pa</dd>
+  <dt>Umiditatea absolută ρ<sub>v</sub> = <i>p</i><sub>v</sub> / (<i>R</i><sub>v</sub>·<i>T</i>)</dt><dd>${f(R.rhov,2)} g/m³</dd>
+  <dt>Densitatea aerului umed</dt><dd>${f(R.rho,3)} kg/m³</dd>
+  <dt>Volumul specific <i>R</i><sub>a</sub>·<i>T</i> / (<i>B</i> − <i>p</i><sub>v</sub>)</dt><dd>${f(R.vs,3)} m³/kg aer uscat</dd></dl>
+  <p class="note" style="margin-top:10px">${R.phi>=40&&R.phi<=60?'Umiditatea se încadrează în intervalul uzual de confort pentru spații de locuit (aproximativ 40…60 %).':R.phi<40?'Aerul este mai uscat decât intervalul uzual de confort pentru spații de locuit (aproximativ 40…60 %).':'Aerul este mai umed decât intervalul uzual de confort pentru spații de locuit (aproximativ 40…60 %).'}
+  Incertitudinea de ±0,1 °C la citirea fiecărui termometru produce o incertitudine de aproximativ ±${f(S.u,1)} puncte procentuale în φ.</p></div>`;
+  h+=`<div class="grid2"><div class="card chartbox"><h3>φ în funcție de diferența psihrometrică</h3><p class="cap">La <i>t</i> = ${f(S.t,1)} °C constant. Punctele sunt valorile din tabelul 5.1 interpolate în <i>t</i>.</p><div class="chartc" id="g1" style="cursor:default"></div></div>
+  <div class="card chartbox"><h3>Interpretarea grafică a relației (5.3)</h3><p class="cap">Din punctul (<i>t′</i>, <i>p′</i><sub>vs</sub>) se coboară cu panta <i>C</i>·<i>B</i> până la abscisa <i>t</i>; se obține <i>p</i><sub>v</sub>. Punctele negre sunt din tabelul 5.2.</p><div class="chartc" id="g2" style="cursor:default"></div></div>
+  <div class="card chartbox"><h3>Influența vitezei aerului asupra rezultatului</h3><p class="cap">Constanta <i>C</i> din tabelul 5.3 scade cu viteza; φ se calculează pentru aceleași <i>t</i> și <i>t′</i>.</p><div class="chartc" id="g3" style="cursor:default"></div></div></div>`;
+  $('#calc_out').innerHTML=h; chartG1(); chartG2(); chartG3();
+}
+function chartG1(){
+  const el=$('#g1'), c=mkChart(el,{hf:w=>Math.max(240,w*0.62),x:[0,Math.min(12,S.t)||1],y:[0,100],ml:46,mt:12,mb:40});
+  const xm=c.x[1]; let s=axes(c,{xmajor:xm>6?1:0.5,ymajor:20,yminor:10,xf:v=>f(v,xm>6?0:1),yf:v=>f(v,0),xl:'Δt = t − t′ [°C]',yl:'φ [%]'});
+  const an=[],gr=[]; for(let d=0;d<=xm+1e-9;d+=xm/120){ const R=calc(S.t,S.t-d,S.B,S.C); an.push([d,R.phi]); gr.push([d,R.phig]); }
+  s+=pth(c,gr,'c-g')+pth(c,an,'c-an');
+  for(let d=1;d<=12&&d<=xm;d++){ const tb=tableInterp(S.t,d); if(tb) s+=`<circle cx="${r1(c.sx(d))}" cy="${r1(c.sy(tb.phi))}" r="3.4" class="pt-m"/>`; }
+  const dt=S.R.dt; if(S.R.phi>=0&&S.R.phi<=100) s+=`<circle cx="${r1(c.sx(dt))}" cy="${r1(c.sy(S.R.phi))}" r="5.5" class="pt-d"/><text class="halo lab" x="${r1(c.sx(dt))+9}" y="${r1(c.sy(S.R.phi))-8}">${f(S.R.phi,1)} %</text>`;
+  $('#g1').innerHTML=svgWrap(c,s,'φ în funcție de diferența psihrometrică')+`<div class="keys"><span style="--c:var(--accent)">analitic (5.2)–(5.4)</span><span class="dash" style="--c:var(--muted)">diagrama i–x</span><span class="dot" style="--c:var(--ink)">tab. 5.1</span></div>`;
+}
+function chartG2(){
+  const el=$('#g2'), lo=Math.max(0,Math.floor(S.tw-6)), hi=Math.min(50,Math.ceil(S.t+6)), ymax=pvs(hi)*1.06;
+  const c=mkChart(el,{hf:w=>Math.max(240,w*0.62),x:[lo,hi],y:[0,ymax],ml:56,mt:12,mb:40});
+  const stp=hi-lo>24?5:hi-lo>12?2:1, ystp=ymax>8000?2000:ymax>4000?1000:500;
+  let s=axes(c,{xmajor:stp,xminor:1,ymajor:ystp,yminor:ystp/2,yf:v=>f(v,0),xl:'t [°C]',yl:'presiunea [Pa]'});
+  const cv=[]; for(let t=lo;t<=hi+1e-9;t+=0.25) cv.push([t,pvs(t)]);
+  s+=pth(c,cv,'c-sat');
+  for(let k=0;k<P52.length;k++){ const t=5*k; if(t>=lo&&t<=hi) s+=`<circle cx="${r1(c.sx(t))}" cy="${r1(c.sy(P52[k]*MMHG))}" r="2.8" fill="var(--ink)"/>`; }
+  const R=S.R, X=t=>r1(c.sx(t)), Y=p=>r1(c.sy(p));
+  s+=`<line class="c-wet" x1="${X(S.tw)}" y1="${Y(R.pw)}" x2="${X(S.t)}" y2="${Y(R.pv)}"/>`;
+  s+=`<line class="c-dl" x1="${X(S.t)}" y1="${Y(R.pv)}" x2="${X(S.t)}" y2="${Y(R.pd)}"/>`;
+  s+=`<circle cx="${X(S.tw)}" cy="${Y(R.pw)}" r="5" class="pt-w"/><circle cx="${X(S.t)}" cy="${Y(R.pd)}" r="5" class="pt-m"/><circle cx="${X(S.t)}" cy="${Y(R.pv)}" r="5.5" class="pt-d"/>`;
+  const lx=(x,y,t,dx,dy,an)=>`<text class="halo lab" x="${x+dx}" y="${y+dy}" text-anchor="${an}">${t}</text>`;
+  s+=lx(X(S.tw),Y(R.pw),`p′vs(t′) = ${f(R.pw,0)}`,-8,-8,'end')+lx(X(S.t),Y(R.pd),`p′vs(t) = ${f(R.pd,0)}`,-8,-8,'end')+lx(X(S.t),Y(R.pv),`pv = ${f(R.pv,0)}`,-8,18,'end');
+  $('#g2').innerHTML=svgWrap(c,s,'Interpretarea grafică a relației 5.3');
+}
+function chartG3(){
+  const el=$('#g3'), pts=C_TAB.map(([v,Cv])=>[v,calc(S.t,S.tw,S.B,Cv).phi]);
+  const ys=pts.map(p=>p[1]).concat([S.R.phi]); let lo=Math.min(...ys),hi=Math.max(...ys); const pad=Math.max(0.5,(hi-lo)*0.25); lo-=pad; hi+=pad;
+  const c=mkChart(el,{hf:w=>Math.max(240,w*0.55),x:[0,4.4],y:[lo,hi],ml:50,mt:12,mb:40});
+  const yst=(hi-lo)>10?2:(hi-lo)>4?1:0.5;
+  let s=axes(c,{xmajor:0.5,xminor:0.25,ymajor:yst,yf:v=>f(v,yst<1?1:0),xf:v=>f(v,1),xl:'viteza aerului v [m/s]',yl:'φ [%]'});
+  s+=pth(c,pts,'c-an'); pts.forEach(p=>s+=`<circle cx="${r1(c.sx(p[0]))}" cy="${r1(c.sy(p[1]))}" r="3.6" class="pt-m"/>`);
+  if(S.Cman==null) s+=`<circle cx="${r1(c.sx(S.v))}" cy="${r1(c.sy(S.R.phi))}" r="5.5" class="pt-d"/><text class="halo lab" x="${r1(c.sx(S.v))}" y="${r1(c.sy(S.R.phi))-10}" text-anchor="${S.v>3?'end':'start'}">${f(S.R.phi,1)} %</text>`;
+  $('#g3').innerHTML=svgWrap(c,s,'φ în funcție de viteza aerului');
+}
+
+/* ---------- 3. diagrama t–t′ ---------- */
+let TTC=null;
+function renderTT(){
+  const el=$('#tt_chart'), c=mkChart(el,{hf:w=>Math.max(340,Math.min(560,w*0.78)),x:[0,45],y:[0,35],ml:46,mr:38,mt:14,mb:42});
+  TTC=c; const B=S.B,C=S.C;
+  let s=`<defs><clipPath id="clpTT"><rect x="${c.ml}" y="${c.mt}" width="${c.pw}" height="${c.ph}"/></clipPath></defs>`;
+  s+=axes(c,{xmajor:5,xminor:1,ymajor:5,yminor:1,xl:'t — temperatura termometrului uscat [°C]',yl:'t′ — temperatura termometrului umed [°C]'});
+  s+=`<g clip-path="url(#clpTT)">`;
+  for(let k=1;k<=10;k++){ const p=k/10, pts=[];
+    for(let t=0;t<=45.001;t+=0.5){ const pv=p*pvs(t), g=w=>pvs(w)-C*B*(t-w)-pv;
+      if(g(0)>0){ pts.push(null); continue; } pts.push([t,t===0?0:bis(g,0,t)]); }
+    const strong=k%2===0; const mix=20+k*8;
+    s+=pth(c,pts,'',`style="fill:none;stroke:color-mix(in srgb,var(--wet) ${mix}%,var(--muted));stroke-width:${k===10?2.2:strong?1.5:.9}"`);
+    if(strong||k===10){ let lp=null; pts.forEach(q=>{ if(q&&q[1]<=35) lp=q; }); if(lp) s+=`<text class="halo lab" x="${r1(c.sx(lp[0]))+4}" y="${r1(c.sy(lp[1]))+(k===10?-4:3)}">${f(p,1)}</text>`; }
+  }
+  s+=`</g>`;
+  const mk=(t,tw,cls,lbl)=>{ if(!inside(c,t,tw)) return ''; const X=r1(c.sx(t)),Y=r1(c.sy(tw)); return `<circle cx="${X}" cy="${Y}" r="${cls==='pt-d'?6:4.5}" class="${cls}"/>${lbl?`<text class="halo lab" x="${X+8}" y="${Y-7}">${lbl}</text>`:''}`; };
+  S.meas.forEach((m,i)=>s+=mk(m.t,m.tw,'pt-m',String(i+1)));
+  const R=S.R; if(inside(c,S.t,S.tw)){ const X=r1(c.sx(S.t)),Y=r1(c.sy(S.tw));
+    s+=`<line class="c-dl" x1="${X}" x2="${X}" y1="${Y}" y2="${c.mt+c.ph}"/><line class="c-dl" x1="${c.ml}" x2="${X}" y1="${Y}" y2="${Y}"/>`;
+    s+=`<text class="halo lab" x="${X}" y="${c.mt+c.ph-5}" text-anchor="middle">${f(S.t,1)}</text><text class="halo lab" x="${c.ml+5}" y="${Y-5}">${f(S.tw,1)}</text>`; }
+  s+=mk(S.t,S.tw,'pt-d',`φ = ${f(R.phi,1)} %`);
+  el.innerHTML=svgWrap(c,s,'Diagrama de determinare a umidității relative în coordonate t și t′');
+  $('#tt_keys').innerHTML=`<span style="--c:var(--wet)">curbe φ = const. (0,1 … 1,0)</span><span class="dot" style="--c:var(--dry)">starea curentă</span><span class="dot" style="--c:var(--ink)">stări din tabel</span>`;
+  $('#tt_info').innerHTML=`<h3>Citire pe diagramă</h3><dl class="dl"><dt><i>t</i> (abscisa)</dt><dd>${f(S.t,1)} °C</dd><dt><i>t′</i> (ordonata)</dt><dd>${f(S.tw,1)} °C</dd><dt>Punctul se află pe curba</dt><dd>φ = ${f(R.phi/100,2)}</dd><dt>Valoare din calcul</dt><dd>${f(R.phi,1)} %</dd></dl><p class="note" style="margin-top:8px">Pentru <i>t′</i> sub 0 °C psihrometrul cu apă nu se folosește, de aceea diagrama începe de la 0 °C.</p>`;
+}
+bindPick($('#tt_chart'),()=>TTC,(x,y)=>{ const t=clamp(r1(x),0,45); setState(t,clamp(r1(y),0,t)); });
+
+/* ---------- 4. diagrama i–x ---------- */
+let IXC=null; const XMAX=24, YMAX=56;
+function renderIX(){
+  const el=$('#ix_chart'), B=S.B, R=S.R;
+  const c=mkChart(el,{hf:w=>Math.max(430,Math.round(w*0.74)),x:[0,XMAX],y:[0,YMAX],ml:46,mr:58,mt:16,mb:44}); IXC=c;
+  const xs=t=>EPS*pvs(t)/(B-pvs(t)), Y=(t,x)=>t*(1.006+0.00186*x), is=t=>1.006*t+xs(t)/1000*(2501+1.86*t);
+  const t24=bis(t=>xs(t)-XMAX,0,60), sat=[]; for(let t=0;t<t24;t+=0.25) sat.push([xs(t),Y(t,xs(t))]); sat.push([XMAX,Y(t24,XMAX)]);
+  const x0=xs(0), P=c.P;
+  let unsat='M'+P(0,0)+'L'+P(x0,0); sat.forEach(p=>unsat+='L'+P(p[0],p[1])); unsat+='L'+P(XMAX,YMAX)+'L'+P(0,YMAX)+'Z';
+  let fog='M'+P(x0,0); sat.forEach(p=>fog+='L'+P(p[0],p[1])); fog+='L'+P(XMAX,0)+'Z';
+  let s=`<defs><clipPath id="clpIX"><rect x="${c.ml}" y="${c.mt}" width="${c.pw}" height="${c.ph}"/></clipPath><clipPath id="clpU"><path d="${unsat}"/></clipPath>
+  <pattern id="fogp" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" class="hatl"/></pattern></defs>`;
+  s+=`<rect x="${c.ml}" y="${c.mt}" width="${c.pw}" height="${c.ph}" class="plotbg"/><path d="${fog}" fill="var(--fog)"/><path d="${fog}" fill="url(#fogp)" opacity=".55"/>`;
+  ticks(0,XMAX,2).forEach(v=>{ const X=r1(c.sx(v)); s+=`<line class="gr2" x1="${X}" x2="${X}" y1="${c.mt}" y2="${c.mt+c.ph}"/><text x="${X}" y="${c.mt+c.ph+15}" text-anchor="middle">${v}</text>`; });
+  s+=`<g clip-path="url(#clpU)">`;
+  for(let t=1;t<=50;t++){ const xe=Math.min(XMAX,xs(t)); s+=`<path class="${t%5===0?'gr2':'gr'}" d="M${P(0,Y(t,0))}L${P(xe,Y(t,xe))}"/>`; }
+  for(let i=10;i<=130;i+=10) s+=`<path class="c-iso" d="M${P(0,i)}L${P(XMAX,i-2.501*XMAX)}"/>`;
+  s+=`</g><g clip-path="url(#clpIX)">`;
+  for(let k=1;k<=10;k++){ const p=k/10, pts=[]; let lp=null;
+    for(let t=0;t<=60;t+=0.25){ const pv=p*pvs(t); if(pv>=B) break; const x=EPS*pv/(B-pv), y=Y(t,x); if(x>XMAX||y>YMAX) break; pts.push([x,y]); lp=[x,y]; }
+    if(k<10) s+=pth(c,pts,'',`style="fill:none;stroke:color-mix(in srgb,var(--ink) 55%,var(--muted));stroke-width:${k%2===0?1.3:.8}"`);
+    if(lp&&(k%2===0||k===10)) s+=`<text class="halo lab" x="${r1(c.sx(lp[0]))+(lp[0]>=XMAX-.01?4:6)}" y="${r1(c.sy(lp[1]))+(lp[0]>=XMAX-.01?4:-2)}" style="fill:var(--ink)">${k*10}%</text>`; }
+  s+=pth(c,sat,'c-sat')+`</g>`;
+  s+=`<text class="fogtxt" x="${r1(c.sx(14))}" y="${r1(c.sy(3.5))}">zona de ceață</text>`;
+  for(let i=10;i<=110;i+=10){ if(i>is(t24)){ const y=i-2.501*XMAX; if(y>=0&&y<=YMAX) s+=`<text class="il" x="${r1(c.sx(XMAX))+28}" y="${r1(c.sy(y))+4}">${i}</text>`; }
+    else if(i>is(0)){ const ts=bis(t=>is(t)-i,0,t24), xx=xs(ts); s+=`<text class="il" x="${r1(c.sx(xx))+5}" y="${r1(c.sy(i-2.501*xx))+13}">${i}</text>`; } }
+  s+=`<text class="il" x="${r1(c.sx(XMAX))+28}" y="${c.mt-3}" text-anchor="middle">i</text><text x="${r1(c.sx(XMAX))+28}" y="${c.mt+ c.ph+15}" text-anchor="middle" class="il">kJ/kg</text>`;
+  for(let t=0;t<=50;t+=5){ const yy=r1(c.sy(1.006*t)); s+=`<text x="${c.ml-6}" y="${yy+4}" text-anchor="end">${t}</text>`; }
+  s+=`<rect x="${c.ml}" y="${c.mt}" width="${c.pw}" height="${c.ph}" class="frame"/>`;
+  s+=`<text x="${c.ml+c.pw/2}" y="${c.h-6}" text-anchor="middle" class="lab">x — conținutul de umiditate [g/kg aer uscat]</text><text transform="translate(13 ${c.mt+c.ph/2}) rotate(-90)" text-anchor="middle" class="lab">t [°C]</text>`;
+  const clipPt=(x,y)=>x>=0&&x<=XMAX&&y>=0&&y<=YMAX;
+  if(S.link&&S.meas.length>1){ const pts=S.meas.map(m=>[m.R.x,Y(m.t,m.R.x)]); s+=pth(c,pts,'proc-l'); }
+  S.meas.forEach((m,i)=>{ const x=m.R.x,y=Y(m.t,m.R.x); if(clipPt(x,y)) s+=`<circle cx="${r1(c.sx(x))}" cy="${r1(c.sy(y))}" r="4.5" class="pt-m"/><text class="halo lab" x="${r1(c.sx(x))+7}" y="${r1(c.sy(y))-6}">${i+1}</text>`; });
+  const A=[R.x,Y(S.t,R.x)], W=[R.xsw,Y(S.tw,R.xsw)], G=[R.xg,Y(S.t,R.xg)];
+  if(R.pv>0&&R.phi<=100.05){
+    s+=`<path class="c-wetd" d="M${P(0,Y(S.tw,0))}L${P(W[0],W[1])}"/><path class="c-wet" d="M${P(W[0],W[1])}L${P(G[0],G[1])}"/>`;
+    s+=`<path class="c-dl" d="M${P(A[0],A[1])}L${P(A[0],0)}"/>`;
+    if(isFinite(R.td)){ const T=[R.x,Y(R.td,R.x)]; s+=`<rect x="${r1(c.sx(T[0]))-4}" y="${r1(c.sy(T[1]))-4}" width="8" height="8" fill="var(--ink)"/><text class="halo lab" x="${r1(c.sx(T[0]))+8}" y="${r1(c.sy(T[1]))+14}">t<tspan dy="3" font-size="9">r</tspan><tspan dy="-3"> = ${f(R.td,1)} °C</tspan></text>`; }
+    s+=`<circle cx="${r1(c.sx(W[0]))}" cy="${r1(c.sy(W[1]))}" r="4.5" class="pt-w"/><text class="halo lab" x="${r1(c.sx(W[0]))-8}" y="${r1(c.sy(W[1]))-7}" text-anchor="end">W′ (t′ = ${f(S.tw,1)})</text>`;
+    s+=`<circle cx="${r1(c.sx(G[0]))}" cy="${r1(c.sy(G[1]))}" r="5" class="pt-g"/><text class="halo lab" x="${r1(c.sx(G[0]))-8}" y="${r1(c.sy(G[1]))+4}" text-anchor="end">A′</text>`;
+    s+=`<circle cx="${r1(c.sx(A[0]))}" cy="${r1(c.sy(A[1]))}" r="6" class="pt-d"/><text class="halo lab" x="${r1(c.sx(A[0]))+9}" y="${r1(c.sy(A[1]))-7}">A  φ = ${f(R.phi,1)} %</text>`;
+    s+=`<text class="halo lab" x="${r1(c.sx(A[0]))+4}" y="${r1(c.sy(0))-6}">x = ${f(R.x,2)}</text>`;
+  }
+  el.innerHTML=svgWrap(c,s,'Diagrama i–x pentru aer umed');
+  $('#ix_keys').innerHTML=`<span style="--c:var(--dry)" class="dot">A: starea calculată</span><span style="--c:var(--dry)" class="dot">A′: citire grafică</span><span class="dash" style="--c:var(--wet)">izoterma t′ până la saturație (W′)</span><span style="--c:var(--wet)">izentalpa W′ → A′</span><span class="dash" style="--c:var(--wet)">izentalpe i = const.</span>`;
+  $('#ix_info').innerHTML=`<h3>Citire pe diagramă</h3><p>Din temperatura termometrului umed <i>t′</i> = ${f(S.tw,1)} °C se pleacă pe izotermă până la curba de saturație (punctul W′). Se urcă paralel cu izentalpa (<i>i′</i> = ${f(R.iw,1)} kJ/kg) până la izoterma <i>t</i> = ${f(S.t,1)} °C. Punctul A′ dă φ ≈ ${f(R.phig,1)} %. Punctul A, calculat cu relația (5.3), dă φ = ${f(R.phi,1)} %.</p>
+  <dl class="dl"><dt>Conținut de umiditate <i>x</i></dt><dd>${f(R.x,2)} g/kg</dd><dt>Entalpie <i>i</i></dt><dd>${f(R.i,1)} kJ/kg</dd><dt>Punct de rouă <i>t</i><sub>r</sub></dt><dd>${f(R.td,1)} °C</dd></dl>`;
+}
+bindPick($('#ix_chart'),()=>IXC,(x,y)=>{
+  x=clamp(x,0,XMAX); const t=clamp(r1(y/(1.006+0.00186*x)),0,50); const pv=x*S.B/(EPS+x);
+  const tw=pv>=pvs(t)?t:twFromPv(t,pv,S.B,S.C); setState(t,tw);
+});
+$('#ix_link').addEventListener('change',e=>{ S.link=e.target.checked; renderIX(); });
+
+/* ---------- 5. tabele ---------- */
+function renderTabele(){
+  const R=S.R, tb=R.tb; let h=`<div class="grid2" style="margin-top:0"><div class="card chartbox"><h3>Tabel 5.1 — umiditatea relativă [%]</h3>
+  <p class="cap">Pe orizontală este Δ<i>t</i> (diferența psihrometrică, în °C), pe verticală <i>t</i> (termometrul uscat). Celulele evidențiate sunt cele folosite la interpolare.</p>
+  <div class="tblwrap scroll" id="t51box"><table><thead><tr><th><i>t</i> \\ Δ<i>t</i></th>${[1,2,3,4,5,6,7,8,9,10,11,12].map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>`;
+  for(let t=0;t<=44;t++){ const on=tb&&(t===tb.t0||t===tb.t1);
+    h+=`<tr${on?' class="hl" id="r51"':''}><td>${t}</td>`+[1,2,3,4,5,6,7,8,9,10,11,12].map(d=>{ const v=t51(t,d); const cell=tb&&(t===tb.t0||t===tb.t1)&&(d===tb.d0||d===tb.d1); return `<td${cell?' class="cell"':''}>${v==null?'–':v}</td>`; }).join('')+`</tr>`; }
+  h+=`</tbody></table></div></div><div style="display:grid;gap:18px;align-content:start">`;
+  h+=`<div class="card chartbox"><h3>Tabel 5.2 — presiunea de saturație</h3><p class="cap">Presiunea parțială a vaporilor în amestec la 760 mmHg și greutatea a 1 m³ de aer uscat. Rândurile apropiate de <i>t′</i> = ${f(S.tw,1)} °C sunt evidențiate.</p>
+  <div class="tblwrap scroll" style="max-height:300px"><table><thead><tr><th><i>t</i> [°C]</th><th><i>p′</i><sub>vs</sub> [mmHg]</th><th><i>p′</i><sub>vs</sub> [Pa]</th><th>γ aer uscat [kg/m³]</th><th>din (5.2) [Pa]</th></tr></thead><tbody>`;
+  const rows=NEG52.concat(P52.map((p,k)=>[5*k,p,G52[k]]));
+  rows.forEach(([t,p,g])=>{ const on=Math.abs(t-S.tw)<5&&t>=0&&(t<=S.tw+0.001||t+5>S.tw); const near=(S.tw>=t&&S.tw<t+5); h+=`<tr${near?' class="hl"':''}><td>${t}</td><td>${f(p,2)}</td><td>${f(p*MMHG,0)}</td><td>${g==null?'–':f(g,3)}</td><td>${t>0||t===0?f(pvs(t),0):'–'}</td></tr>`; });
+  h+=`</tbody></table></div></div>`;
+  h+=`<div class="card chartbox"><h3>Tabel 5.3 — constanta C</h3><p class="cap">În funcție de viteza aerului în aparat.</p><div class="tblwrap"><table><thead><tr><th><i>v</i> [m/s]</th>${C_TAB.map(r=>`<th>${f(r[0],2)}</th>`).join('')}</tr></thead><tbody><tr><td>C</td>${C_TAB.map(r=>`<td${S.Cman==null&&Math.abs(r[0]-S.v)<1e-9?' class="cell"':''}>${f(r[1],5)}</td>`).join('')}</tr></tbody></table></div>
+  <p class="note" style="margin-top:8px">Lucrarea folosește <i>C</i> = 0,0007 pentru 2,5 m/s și <i>B</i> = 101 330 Pa.</p></div></div></div>`;
+  $('#tab_out').innerHTML=h;
+  const box=$('#t51box'), row=$('#r51'); if(box&&row) box.scrollTop=Math.max(0,row.offsetTop-110);
+}
+
+/* ---------- 6. raport ---------- */
+function renderRaport(){
+  const M=S.meas; let h=`<div class="tblwrap"><table><thead><tr><th>Nr.</th><th class="l">Starea aerului</th><th><i>t</i> [°C]</th><th><i>t′</i> [°C]</th><th>Δ<i>t</i></th><th>φ tab. 5.1</th><th>φ analitic</th><th>φ i–x</th><th><i>x</i> [g/kg]</th><th><i>i</i> [kJ/kg]</th><th><i>t</i><sub>r</sub> [°C]</th><th></th></tr></thead><tbody>`;
+  if(!M.length) h+=`<tr><td colspan="12" class="txt l">Nu există măsurători. Folosește butonul „Adaugă în tabelul de măsurători".</td></tr>`;
+  M.forEach((m,i)=>{ const R=m.R; h+=`<tr><td>${i+1}</td><td class="txt l">${esc(m.name)}${m.note?` <span class="muted">(${esc(m.note)})</span>`:''}</td><td>${f(m.t,1)}</td><td>${f(m.tw,1)}</td><td>${f(R.dt,1)}</td><td>${f(R.phit,1)}</td><td><b>${f(R.phi,1)}</b></td><td>${f(R.phig,1)}</td><td>${f(R.x,2)}</td><td>${f(R.i,1)}</td><td>${f(R.td,1)}</td><td><button class="btn ghost sm" data-del="${m.id}" type="button" aria-label="Șterge rândul ${i+1}">Șterge</button></td></tr>`; });
+  h+=`</tbody></table></div>`; $('#rep_tbl').innerHTML=h;
+  $$('[data-del]').forEach(b=>b.addEventListener('click',()=>{ S.meas=S.meas.filter(m=>m.id!==+b.dataset.del); renderRaport(); }));
+  let o=''; if(M.length<2) o='<p class="note">Sunt necesare cel puțin două stări pentru a descrie un proces.</p>';
+  else { o='<ul style="margin:0;padding-left:18px">'; for(let i=1;i<M.length;i++){ const a=M[i-1],b=M[i]; o+=`<li>${i} → ${i+1}: <b>${procName(a,b)}</b>; Δ<i>t</i> = ${f(b.t-a.t,1)} °C, Δ<i>x</i> = ${f(b.R.x-a.R.x,2)} g/kg, Δ<i>i</i> = ${f(b.R.i-a.R.i,1)} kJ/kg, φ: ${f(a.R.phi,1)} → ${f(b.R.phi,1)} %.</li>`; } o+='</ul>'; }
+  $('#rep_obs').innerHTML=o; buildText();
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function buildText(){
+  const M=S.meas, pad=(v,n)=>String(v).padEnd(n), pl=(v,n)=>String(v).padStart(n);
+  let t=`RAPORT DE LABORATOR — Lucrarea nr. 5\nDeterminarea umidității relative a aerului cu psihrometrul Assmann\n\nStudent: ${$('#rp_nume').value||'………'}   Grupa: ${$('#rp_grupa').value||'………'}   Data: ${$('#rp_data').value}\n`;
+  t+=`Condiții: B = ${f(S.B,0)} Pa, v = ${f(S.v,2)} m/s, C = ${f(S.C,5)}\n\n`;
+  t+=pad('Nr',3)+pad('Starea',34)+pl('t',6)+pl("t'",6)+pl('Δt',6)+pl('φ tab',8)+pl('φ an.',8)+pl('φ i-x',8)+pl('x',8)+pl('i',8)+pl('tr',7)+'\n';
+  M.forEach((m,i)=>{ const R=m.R; t+=pad(i+1,3)+pad(m.name.slice(0,32),34)+pl(f(m.t,1),6)+pl(f(m.tw,1),6)+pl(f(R.dt,1),6)+pl(f(R.phit,1),8)+pl(f(R.phi,1),8)+pl(f(R.phig,1),8)+pl(f(R.x,2),8)+pl(f(R.i,1),8)+pl(f(R.td,1),7)+'\n'; });
+  t+=`\n(φ în %, t, t', tr în °C, x în g/kg aer uscat, i în kJ/kg aer uscat)\n`;
+  if(M.length>1){ t+='\nProcese:\n'; for(let i=1;i<M.length;i++) t+=`  ${i} → ${i+1}: ${procName(M[i-1],M[i])}\n`; }
+  t+=`\nRelații folosite:\n  p'vs = 1,40974·10^10 · exp(−3928,5/(t + 231,667))   (5.2)\n  pv = p'vs(t') − C·B·(t − t')                          (5.3)\n  φ = pv / p'vs(t) · 100                                (5.4)\n`;
+  const c=$('#rp_conc').value.trim(); if(c) t+=`\nConcluzii:\n${c}\n`;
+  $('#rp_txt').value=t;
+}
+['#rp_nume','#rp_grupa','#rp_data','#rp_conc'].forEach(s=>$(s).addEventListener('input',buildText));
+$('#rp_data').value=new Date().toLocaleDateString('ro-RO');
+$('#btn_clear_ex').addEventListener('click',()=>{ S.meas=S.meas.filter(m=>m.note!=='exemplu'); renderRaport(); });
+$('#btn_clear_all').addEventListener('click',()=>{ S.meas=[]; renderRaport(); });
+$('#btn_copy').addEventListener('click',async()=>{ const ta=$('#rp_txt'), msg=$('#copy_msg');
+  try{ await navigator.clipboard.writeText(ta.value); msg.textContent='Copiat.'; }catch(e){ ta.focus(); ta.select(); msg.textContent='Textul este selectat. Apasă Ctrl+C.'; }
+  setTimeout(()=>msg.textContent='',2500); });
+
+/* ---------- antet, taburi ---------- */
+function renderStrip(){
+  const R=S.R, bad=R.phi>100.05||R.phi<0||!isFinite(R.phi);
+  const tile=(k,n,u,s,cls='')=>`<div class="tile ${cls}"><div class="k">${k}</div><div class="n">${n}<small>${u}</small></div><div class="s">${s||'&nbsp;'}</div></div>`;
+  $('#strip').innerHTML=tile('Umiditate relativă φ',f(R.phi,1),'%',`± ${f(S.u,1)} p.p. (±0,1 °C)`,'main')+tile('Presiune parțială <i>p</i><sub>v</sub>',f(R.pv,0),'Pa',`<i>p′</i><sub>vs</sub>(<i>t</i>) = ${f(R.pd,0)} Pa`)
+    +tile('Conținut de umiditate <i>x</i>',f(R.x,2),'g/kg',`Δ<i>t</i> = ${f(R.dt,1)} °C`)+tile('Entalpie <i>i</i>',f(R.i,1),'kJ/kg','aer uscat')+tile('Punct de rouă <i>t</i><sub>r</sub>',f(R.td,1),'°C',`<i>C</i> = ${f(S.C,5)}`);
+  const w=$('#warn'), msgs=[];
+  if(R.phi>100.05) msgs.push('φ depășește 100 %: starea nu este fizică. Termometrul umed nu poate indica o valoare atât de apropiată de cel uscat pentru aceste date. Micșorează <i>t′</i> sau mărește Δ<i>t</i>.');
+  if(R.phi<0) msgs.push('φ este negativ: Δ<i>t</i> este prea mare pentru <i>t</i> dat (sau <i>t′</i> este sub 0 °C, unde formula (5.2) nu se aplică).');
+  if(S.tw<=0.05&&S.t>0.5) msgs.push('<i>t′</i> = 0 °C: relația (5.2) este valabilă pentru temperaturi peste 0 °C, iar psihrometrul cu apă nu se folosește sub această limită.');
+  if(!R.tb&&!bad) msgs.push('Starea este în afara domeniului tabelului 5.1 (<i>t</i> ≤ 44 °C, Δ<i>t</i> ≤ 12 °C). Rezultatul tabelar nu este disponibil.');
+  w.hidden=!msgs.length; w.innerHTML=msgs.join('<br>');
+}
+let ACTIVE='psihrometru'; const TABS=['psihrometru','calcul','tt','ix','tabele','raport'];
+function renderActive(){
+  switch(ACTIVE){
+    case 'psihrometru': instrUpdate(); break; case 'calcul': renderCalc(); break; case 'tt': renderTT(); break;
+    case 'ix': renderIX(); break; case 'tabele': renderTabele(); break; case 'raport': renderRaport(); break;
+  }
+}
+function update(){ recompute(); renderStrip(); renderActive(); }
+function setTab(id,push=true){
+  if(!TABS.includes(id)) id='psihrometru'; ACTIVE=id;
+  $$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));
+  TABS.forEach(t=>{ $('#p-'+t).hidden=t!==id; });
+  if(push){ try{ history.replaceState(null,'','#'+id); }catch(e){} }
+  renderActive();
+}
+$$('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+let lastW=0,rt=0;
+new ResizeObserver(()=>{ const w=$('.wrap').clientWidth; if(w===lastW) return; lastW=w; clearTimeout(rt); rt=setTimeout(renderActive,120); }).observe($('.wrap'));
+
+buildInstr(); seed(); syncInputs(); recompute(); renderStrip();
+setTab((location.hash||'').slice(1)||'psihrometru',false);
+})();
+</script>
+
+</body></html>
