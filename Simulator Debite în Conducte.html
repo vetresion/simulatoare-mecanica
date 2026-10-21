@@ -1,0 +1,638 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulator Debite în Conducte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Concept: foaie de laborator cu panou de intrare fix în stânga și foi de calcul în dreapta; culoarea identifică instrumentul (diafragmă, Venturi, Pitot). */
+:root{
+  --bg:#EFF3F6; --surface:#FFFFFF; --surface2:#F5F8FA; --fg:#13212F; --muted:#586979; --line:#D3DDE5;
+  --accent:#0B5E8E; --accent-soft:#DCEBF4;
+  --c-dia:#0072B2; --c-ven:#D55E00; --c-pit:#009E73; --c-pitu:#B0488A;
+  --good:#1B7F4B; --warn:#A86300; --bad:#B3261E;
+  --serif:'Source Serif 4',Georgia,serif; --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D151D; --surface:#15202B; --surface2:#1B2835; --fg:#E4ECF2; --muted:#9AAEBF; --line:#2B3B4A;
+  --accent:#62B4E8; --accent-soft:#17344A;
+  --c-dia:#56B4E9; --c-ven:#FF8F4D; --c-pit:#2FD1A1; --c-pitu:#E8A0C8;
+  --good:#58C98A; --warn:#E8A94A; --bad:#FF8A80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D151D; --surface:#15202B; --surface2:#1B2835; --fg:#E4ECF2; --muted:#9AAEBF; --line:#2B3B4A;
+  --accent:#62B4E8; --accent-soft:#17344A;
+  --c-dia:#56B4E9; --c-ven:#FF8F4D; --c-pit:#2FD1A1; --c-pitu:#E8A0C8;
+  --good:#58C98A; --warn:#E8A94A; --bad:#FF8A80; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:1380px;margin:0 auto}
+h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:clamp(22px,3.2vw,32px);line-height:1.15}
+h2{font-size:20px;margin-bottom:6px}
+h3{font-size:15px;margin:0 0 8px}
+.eyebrow{font:500 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+header.top{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:end;border-bottom:2px solid var(--fg);padding-bottom:12px;margin-bottom:20px}
+header.top p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.layout{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:940px){.layout{grid-template-columns:minmax(0,1fr)}}
+.panel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+@media(max-width:940px){.panel{position:static;max-height:none}}
+details{border-top:1px solid var(--line);padding:8px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:2px 0}
+.f{display:grid;grid-template-columns:minmax(0,1fr) 96px 38px;gap:6px;align-items:center;margin-top:6px}
+.f label{font-size:13px}
+.f .u{font:12px var(--mono);color:var(--muted)}
+input[type=number],select{width:100%;font:13px var(--mono);padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--surface2);color:var(--fg);min-width:0}
+select{font-family:var(--sans)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.rng{margin-top:8px}
+.rng .top{display:flex;justify-content:space-between;font-size:13px}
+.rng output{font:500 13px var(--mono)}
+.chk{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px}
+button{font:500 13px var(--sans);padding:6px 10px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.src{font-size:12px;color:var(--muted);margin-top:8px}
+.src b{color:var(--fg)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:16px}
+nav.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:9px 12px;white-space:nowrap;color:var(--muted)}
+nav.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
+.pane[hidden]{display:none}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-width:0}
+.card .nm{display:flex;align-items:center;gap:7px;font:600 12px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.card .big{font:500 24px var(--mono);margin-top:4px;font-variant-numeric:tabular-nums}
+.card .big small{font-size:12px;color:var(--muted)}
+.card .sub{font:12px var(--mono);color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.dev.ok{color:var(--good)} .dev.mid{color:var(--warn)} .dev.hi{color:var(--bad)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:16px;min-width:0}
+.box p{margin:6px 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.grid2>*{min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font:600 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--mono);white-space:nowrap}
+td.rel{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+td.res{font-family:var(--mono);font-weight:500;text-align:right;white-space:nowrap}
+td.sym{font-family:var(--serif);font-style:italic;white-space:nowrap}
+tr.hl td{background:var(--accent-soft)}
+.eq{font-family:var(--serif);font-size:16px;margin:10px 0;padding:8px 12px;background:var(--surface2);border-left:3px solid var(--accent);overflow-x:auto;white-space:nowrap}
+.eq .no{float:right;margin-left:24px;color:var(--muted);font:13px var(--mono)}
+.rt{border-top:1px solid currentColor;padding:0 1px}
+.chart{position:relative;height:300px}
+.chart.tall{height:340px}
+.note{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;font:500 11.5px var(--mono);padding:2px 7px;border-radius:10px;border:1px solid var(--line);margin:2px 4px 2px 0}
+.tag.ok{color:var(--good);border-color:var(--good)} .tag.no{color:var(--warn);border-color:var(--warn)}
+.q{border-top:1px solid var(--line);padding:10px 0}
+.q:first-child{border-top:0}
+.q h3{font-family:var(--sans);font-size:14px}
+.ans{background:var(--surface2);border-radius:4px;padding:8px 10px;margin-top:6px;font-size:13.5px}
+svg text{font-family:var(--sans)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;margin:4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.pill{font:500 11px var(--mono);padding:1px 6px;border-radius:8px;background:var(--accent-soft);color:var(--accent)}
+</style>
+
+<div class="app">
+<header class="top">
+  <div>
+    <div class="eyebrow">Autor: S.L. dr. ing. Vetres Ion</div>
+    <h1>Măsurarea presiunii, a vitezei și a debitelor gazelor în conducte</h1>
+    <p>Simulator de laborator pentru instalația cu diafragmă (ISO 5167-2), ajutaj Venturi (ISO 5167-3) și tub Pitot-Prandtl. Toate calculele sunt făcute pas cu pas, cu valorile înlocuite.</p>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="panel" aria-label="Date de intrare">
+  <details open><summary>Sursa citirilor</summary>
+    <div class="rng"><div class="top"><label for="w">Viteza medie reală în conductă</label><output id="wo">8.0 m/s</output></div>
+      <input type="range" id="w" min="3" max="14" step="0.1" value="8"></div>
+    <div class="f"><label for="hst">h<sub>st</sub> presiune statică (U)</label><input type="number" id="hst" step="1" value="120"><span class="u">mm H₂O</span></div>
+    <div class="f"><label for="noise">Zgomot de citire ±</label><input type="number" id="noise" step="0.1" min="0" value="0"><span class="u">mm</span></div>
+    <div class="f"><label for="res">Rezoluția scalei U</label><input type="number" id="res" step="0.5" min="0" value="0.5"><span class="u">mm</span></div>
+    <div class="src" id="src"></div>
+    <div class="btns"><button id="regen" class="pri">Citiri noi din viteza reală</button></div>
+  </details>
+  <details open><summary>Citiri din Tabelul 4.1</summary>
+    <div class="f"><label for="ht">h<sub>t</sub> presiune totală (U)</label><input type="number" id="ht" step="0.1"><span class="u">mm H₂O</span></div>
+    <div class="f"><label for="piezo">Δp Pitot, senzor piezo</label><input type="number" id="piezo" step="0.1"><span class="u">Pa</span></div>
+    <div class="f"><label for="hd">Δp diafragmă (U)</label><input type="number" id="hd" step="1"><span class="u">mm H₂O</span></div>
+    <div class="f"><label for="hv">Δp Venturi (U)</label><input type="number" id="hv" step="0.5"><span class="u">mm H₂O</span></div>
+    <p class="note">Câmpurile se completează automat din simulare. Dacă le modifici, calculele pornesc de la valorile tale (citiri de laborator).</p>
+  </details>
+  <details open><summary>Mediu</summary>
+    <div class="f"><label for="T">Temperatura aerului</label><input type="number" id="T" step="1" value="300"><span class="u">K</span></div>
+    <div class="f"><label for="pb">Presiunea barometrică</label><input type="number" id="pb" step="1" value="1013"><span class="u">mbar</span></div>
+    <div class="f"><label for="rhow">Densitatea apei din U</label><input type="number" id="rhow" step="0.1" value="998.2"><span class="u">kg/m³</span></div>
+  </details>
+  <details><summary>Instalația</summary>
+    <div class="f"><label for="D">Diametrul conductei D</label><input type="number" id="D" step="0.5" value="36"><span class="u">mm</span></div>
+    <div class="f"><label for="dd">Diametrul diafragmei d</label><input type="number" id="dd" step="0.5" value="14"><span class="u">mm</span></div>
+    <div class="f"><label for="dv">Diametrul gâtului Venturi d</label><input type="number" id="dv" step="0.5" value="24"><span class="u">mm</span></div>
+    <div class="f"><label for="loss">Pierdere permanentă Venturi</label><input type="number" id="loss" step="1" min="0" max="60" value="15"><span class="u">% Δp</span></div>
+  </details>
+  <details open><summary>Model de calcul</summary>
+    <div class="f" style="grid-template-columns:minmax(0,1fr) 150px"><label for="coef">Coeficienți C și ε</label>
+      <select id="coef"><option value="calc">Calculați (ISO, iterativ)</option><option value="manual">Din îndrumar (fixe)</option></select></div>
+    <div class="chk"><input type="checkbox" id="prof" checked><label for="prof">Pitot în centru: corecție de profil w<sub>med</sub> = k·w<sub>max</sub></label></div>
+    <div class="btns"><button id="reset">Valori implicite</button><button id="copy">Copiază Tabelul 4.1</button></div>
+    <div class="src" id="copied"></div>
+  </details>
+</aside>
+
+<main>
+  <div class="cards" id="cards"></div>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="pane" id="p-rez">
+    <div class="box"><h2>Tabelul 4.1 completat</h2>
+      <p class="note">Valori măsurate și calculate pentru cele patru metode. Abaterea este față de <span id="refname"></span>.</p>
+      <div class="scroll"><table id="t41"></table></div></div>
+    <div class="grid2">
+      <div class="box"><h3>Debitul volumic indicat de fiecare instrument</h3><div class="chart"><canvas id="chCmp"></canvas></div></div>
+      <div class="box"><h3>Presiunea diferențială în funcție de viteză</h3><div class="chart"><canvas id="chDp"></canvas></div><p class="note">Scară logaritmică. Punctele marcate sunt starea curentă. Pitot-Prandtl dă Δp mic, de aceea citirea pe tub U este imprecisă la viteze mici.</p></div>
+      <div class="box"><h3>Curba de etalonare q<sub>v</sub> = f(Δp)</h3><div class="chart"><canvas id="chQ"></canvas></div><p class="note">Axe logaritmice: dependența q ∝ √Δp apare ca dreaptă cu panta 1/2.</p></div>
+      <div class="box"><h3>Numărul Reynolds și regimul de curgere</h3><div class="chart"><canvas id="chRe"></canvas></div><p class="note" id="reNote"></p></div>
+    </div>
+    <div class="box"><h3>Ipoteze și limite ale modelului</h3>
+      <ul class="note" style="margin:0;padding-left:18px">
+        <li>Aerul este gaz ideal (R = 287.05 J/kg·K, κ = 1.4); vâscozitatea urmează legea Sutherland.</li>
+        <li>Densitatea se calculează la presiunea absolută din amonte, p<sub>1</sub> = p<sub>b</sub> + ρ<sub>w</sub>·g·h<sub>st</sub>.</li>
+        <li>Diafragma este tratată cu ecuația Reader-Harris/Gallagher cu corecția pentru D &lt; 71.12 mm, prize la D și D/2. Conducta de 36 mm este sub limita ISO 5167-2 (D ≥ 50 mm), deci aplicarea este didactică.</li>
+        <li>Profilul de viteză este o lege de putere w = w<sub>max</sub>(1 − r/R)<sup>1/n</sup> cu n ≈ 1.5·log₁₀Re, o aproximare empirică. Simularea generează citirile cu coeficienții calculați, indiferent de modul ales pentru evaluare.</li>
+        <li>Incertitudinea include doar citirea Δp; nu include incertitudinea coeficienților C și ε.</li>
+      </ul></div>
+  </section>
+
+  <section class="pane" id="p-dia" hidden>
+    <div class="box"><h2>Diafragma cu prize la D și D/2</h2>
+      <div class="eq">q<sub>m</sub> = <span style="display:inline-block;text-align:center;vertical-align:middle">C<br><span style="border-top:1px solid currentColor">√(1 − β⁴)</span></span> · ε · <span style="display:inline-block;text-align:center;vertical-align:middle">π<br><span style="border-top:1px solid currentColor">4</span></span> · d² · <span class="rt">√(2·Δp·ρ)</span><span class="no">(4.8)</span></div>
+      <div id="diaChecks"></div>
+      <div class="scroll"><table id="diaSteps"></table></div></div>
+    <div class="grid2">
+      <div class="box"><h3>Componentele coeficientului de descărcare C</h3><div class="scroll"><table id="diaC"></table></div></div>
+      <div class="box"><h3>Comparație cu formula din îndrumar</h3><div id="diaMan"></div></div>
+      <div class="box"><h3>C în funcție de Re<sub>D</sub></h3><div class="chart"><canvas id="chC"></canvas></div></div>
+      <div class="box"><h3>Coeficientul de detentă ε în funcție de p₂/p₁</h3><div class="chart"><canvas id="chEps"></canvas></div><p class="note">La Δp de ordinul sutelor de pascali, p₂/p₁ este foarte aproape de 1 și ε ≈ 0.99. Valoarea ε = 0.95 din îndrumar corespunde unui raport p₂/p₁ de 0.75–0.85.</p></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-ven" hidden>
+    <div class="box"><h2>Ajutajul Venturi</h2>
+      <div class="eq">C = 0.99858 − 0.196·β<sup>4.5</sup><span class="no">(4.16)</span></div>
+      <div id="venChecks"></div>
+      <div class="scroll"><table id="venSteps"></table></div></div>
+    <div class="grid2">
+      <div class="box"><h3>Comparație cu formula din îndrumar</h3><div id="venMan"></div></div>
+      <div class="box"><h3>Geometria ajutajului (schemă ilustrativă)</h3><div class="chart"><canvas id="chVenG"></canvas></div>
+        <p class="note">D = 36 mm, d = 2D/3, porțiunile E = 0.3d și F ≈ 0.42d, unghiul părții divergente φ = 30°.</p></div>
+      <div class="box" style="grid-column:1/-1"><h3>Presiunea statică și viteza de-a lungul ajutajului</h3><div class="chart tall"><canvas id="chVenP"></canvas></div>
+        <p class="note">Model Bernoulli cu continuitate, scalat să dea Δp măsurat în gât. În zona divergentă se scade o pierdere permanentă estimată (valoarea din panou), de aceea presiunea nu revine complet la valoarea de intrare.</p></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-pit" hidden>
+    <div class="box"><h2>Tubul Pitot-Prandtl</h2>
+      <div class="eq">w = <span class="rt">√(2·(p<sub>t</sub> − p<sub>s</sub>)/ρ)</span> = <span class="rt">√(2·p<sub>d</sub>/ρ)</span><span class="no">(4.18)</span> &nbsp;&nbsp; ṁ = ρ·A·w<span class="no">(4.19)</span></div>
+      <div class="scroll"><table id="pitSteps"></table></div></div>
+    <div class="grid2">
+      <div class="box"><h3>Explorarea secțiunii în arii egale</h3>
+        <div class="f" style="grid-template-columns:minmax(0,1fr) 96px"><label for="ntr">Număr de inele n (4.20)</label><select id="ntr"><option>3</option><option>5</option></select></div>
+        <div id="ringSvg"></div><div class="scroll"><table id="trav"></table></div></div>
+      <div class="box"><h3>Profilul de viteză pe diametru</h3><div class="chart tall"><canvas id="chProf"></canvas></div>
+        <p class="note" id="profNote"></p></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-pres" hidden>
+    <div class="grid2">
+      <div class="box"><h2>Presiuni absolută, barometrică, manometrică, vacuumetrică</h2>
+        <div class="rng"><div class="top"><label for="prel">Presiunea măsurată față de atmosferă</label><output id="prelo"></output></div>
+          <input type="range" id="prel" min="-500" max="500" step="10" value="150"></div>
+        <div class="eq">p<sub>m</sub> = p<sub>a</sub> − p<sub>b</sub><span class="no">(4.6)</span></div>
+        <div class="eq">p<sub>v</sub> = p<sub>b</sub> − p<sub>a</sub><span class="no">(4.7)</span></div>
+        <div id="presSvg"></div><div id="presTxt" class="note"></div></div>
+      <div class="box"><h2>Ecuația lui Bernoulli în tubul Pitot</h2>
+        <div class="eq">p<sub>s</sub> + ρ·w²/2 = p<sub>t</sub> = const.<span class="no">(4.5)</span></div>
+        <div id="bernSvg"></div>
+        <div class="scroll"><table id="presTbl"></table></div></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-unc" hidden>
+    <div class="box"><h2>Cât de precis este fiecare instrument?</h2>
+      <p class="note">Debitul masic depinde de √Δp, deci eroarea relativă a debitului este jumătate din eroarea relativă a lui Δp: δq/q = ½·δ(Δp)/Δp. La un tub U fiecare diferență se obține din două citiri, deci δ(Δp) = √2·u, unde u este incertitudinea unei citiri (rezoluția din panou, minimum 0.5 mm). Senzorul piezo are ±1 Pa.</p>
+      <div class="scroll"><table id="uncTbl"></table></div></div>
+    <div class="box"><h3>Eroarea relativă a debitului în funcție de viteză</h3><div class="chart tall"><canvas id="chErr"></canvas></div></div>
+  </section>
+
+  <section class="pane" id="p-quiz" hidden>
+    <div class="box"><h2>Chestionar 4.6, cu răspunsuri calculate</h2><div id="quiz"></div></div>
+  </section>
+</main>
+</div>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const PI=Math.PI, G=9.80665, RG=287.05, KAP=1.4;
+const DEF={w:8,hst:120,noise:0,res:0.5,T:300,pb:1013,rhow:998.2,D:36,dd:14,dv:24,loss:15,coef:'calc',prof:true};
+const S=Object.assign({ht:0,piezo:0,hd:0,hv:0,src:'sim',ntr:3,prel:150},DEF);
+const NUM=['hst','noise','res','T','pb','rhow','D','dd','dv','loss','ht','piezo','hd','hv'];
+const INSTR=[
+ {k:'dia',name:'Diafragmă',col:'--c-dia'},
+ {k:'ven',name:'Venturi',col:'--c-ven'},
+ {k:'pitU',name:'Pitot (tub U)',col:'--c-pitu'},
+ {k:'pitP',name:'Pitot (piezo)',col:'--c-pit'}];
+const TABS=[['rez','Rezultate'],['dia','Diafragmă'],['ven','Venturi'],['pit','Pitot-Prandtl'],['pres','Presiuni'],['unc','Incertitudine'],['quiz','Chestionar']];
+let active='rez', CH={}, RZ=null;
+
+/* ---------- utilitare ---------- */
+function F(v,sd=4){
+  if(v===undefined||v===null||!isFinite(v))return '—';
+  if(v===0)return '0';
+  const a=Math.abs(v);
+  if(a>=1e6||a<1e-3){const [m,e]=v.toExponential(sd-1).split('e');return m+'·10<sup>'+parseInt(e,10)+'</sup>';}
+  const dec=Math.max(0,sd-1-Math.floor(Math.log10(a)));
+  return v.toFixed(Math.min(dec,8));
+}
+const T0=v=>(isFinite(v)?v:0);
+const cv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const mm2Pa=h=>S.rhow*G*h/1000, Pa2mm=p=>p/(S.rhow*G)*1000;
+const sutherland=T=>1.716e-5*Math.pow(T/273.15,1.5)*(273.15+110.4)/(T+110.4);
+function kProf(Re){const n=Math.max(4,1.5*Math.log10(Math.max(Re,1e3)));return{n,k:2*n*n/((n+1)*(2*n+1))};}
+
+/* ---------- modelul fizic ---------- */
+function env(){
+  const p1=S.pb*100+mm2Pa(S.hst);
+  const rho=p1/(RG*S.T), mu=sutherland(S.T), D=S.D/1000;
+  return{p1,rho,mu,nu:mu/rho,D,dd:S.dd/1000,dv:S.dv/1000,A:PI*D*D/4};
+}
+function Cdia(Re,beta,Dmm){
+  const L1=1,L2=0.47,M2=2*L2/(1-beta),A=Math.pow(19000*beta/Re,0.8);
+  const t=[
+    0.5961, 0.0261*beta**2, -0.216*beta**8,
+    0.000521*Math.pow(1e6*beta/Re,0.7),
+    (0.0188+0.0063*A)*Math.pow(beta,3.5)*Math.pow(1e6/Re,0.3),
+    (0.043+0.080*Math.exp(-10*L1)-0.123*Math.exp(-7*L1))*(1-0.11*A)*beta**4/(1-beta**4),
+    -0.031*(M2-0.8*Math.pow(M2,1.1))*Math.pow(beta,1.3),
+    Dmm<71.12?0.011*(0.75-beta)*(2.8-Dmm/25.4):0];
+  return{C:t.reduce((a,b)=>a+b,0),t,A,M2,L1,L2};
+}
+const Cven=b=>0.99858-0.196*Math.pow(b,4.5);
+const epsDia=(b,tau)=>1-(0.351+0.256*b**4+0.93*b**8)*(1-Math.pow(tau,1/KAP));
+function epsVen(b,tau){
+  if(tau>=0.999999)return 1;
+  const x=Math.pow(tau,2/KAP);
+  return Math.sqrt((KAP*x/(KAP-1))*((1-b**4)/(1-b**4*x))*((1-Math.pow(tau,(KAP-1)/KAP))/(1-tau)));
+}
+const MAN={dia:{C:0.605,eps:0.95,K:9.052e-5,kk:2.368},ven:{C:0.968,eps:0.924,K:45.146e-5,kk:2.368}};
+function geo(kind,e){const d=kind==='dia'?e.dd:e.dv,beta=d/e.D;return{d,beta,E:1/Math.sqrt(1-beta**4),Ao:PI*d*d/4};}
+function coefs(kind,Re,beta,e,tau){
+  return kind==='dia'?{C:Cdia(Re,beta,e.D*1000).C,eps:epsDia(beta,tau)}:{C:Cven(beta),eps:epsVen(beta,tau)};
+}
+/* Δp [Pa] → debit masic, cu iterație pe C(Re) și ε(τ) */
+function solveDP(kind,dp,e,manual){
+  const g=geo(kind,e);let C=MAN[kind].C,eps=MAN[kind].eps,qm=0,Re=0,tau=1-dp/e.p1,it=0;
+  if(manual){qm=C*g.E*eps*g.Ao*Math.sqrt(2*dp*e.rho);Re=4*qm/(PI*e.D*e.mu);}
+  else for(;it<80;it++){
+    qm=C*g.E*eps*g.Ao*Math.sqrt(2*Math.max(dp,0)*e.rho);Re=4*qm/(PI*e.D*e.mu);tau=1-dp/e.p1;
+    const n=coefs(kind,Math.max(Re,500),g.beta,e,tau);
+    if(Math.abs(n.C-C)<1e-11&&Math.abs(n.eps-eps)<1e-11){C=n.C;eps=n.eps;break;}C=n.C;eps=n.eps;}
+  const V=qm/e.rho*3600;
+  return Object.assign({kind,dp,qm,Re,C,eps,tau,it,V,w:qm/(e.rho*e.A)},g);
+}
+/* debit masic → Δp [Pa] (pentru generarea citirilor) */
+function invDP(kind,qm,e){
+  const g=geo(kind,e),Re=4*qm/(PI*e.D*e.mu);let eps=1,dp=0;
+  for(let i=0;i<80;i++){
+    const C=coefs(kind,Math.max(Re,500),g.beta,e,Math.max(1-dp/e.p1,0.3)).C;
+    const nd=Math.pow(qm/(C*g.E*eps*g.Ao),2)/(2*e.rho);
+    const ne=coefs(kind,Math.max(Re,500),g.beta,e,Math.max(1-nd/e.p1,0.3)).eps;
+    if(Math.abs(nd-dp)<1e-9&&Math.abs(ne-eps)<1e-12){dp=nd;eps=ne;break;}dp=nd;eps=ne;}
+  return dp;
+}
+function genIdeal(w){
+  const e=env(),qm=e.rho*e.A*w,Re=e.rho*w*e.D/e.mu,k=kProf(Re).k;
+  return{e,qm,Re,k,dpP:0.5*e.rho*Math.pow(w/k,2),dpD:invDP('dia',qm,e),dpV:invDP('ven',qm,e)};
+}
+function pitot(dp,e){
+  const wc=Math.sqrt(2*Math.max(dp,0)/e.rho);let wm=wc,k=1,n=0,Re=0;
+  for(let i=0;i<40;i++){Re=e.rho*wm*e.D/e.mu;if(S.prof){const p=kProf(Re);k=p.k;n=p.n;}wm=k*wc;}
+  const qm=e.rho*e.A*wm;
+  return{dp,wc,k,n,w:wm,Re,qm,V:qm/e.rho*3600};
+}
+function generate(){
+  const g=genIdeal(S.w),nz=()=>(Math.random()*2-1)*S.noise,q=v=>S.res>0?Math.round(v/S.res)*S.res:v;
+  S.ht=q(S.hst+Pa2mm(g.dpP)+nz());
+  S.piezo=Math.round((g.dpP+S.noise*Math.random()*2-S.noise)*10)/10;
+  S.hd=q(Pa2mm(g.dpD)+nz()); S.hv=q(Pa2mm(g.dpV)+nz());
+  S.src='sim';
+}
+function calc(){
+  const e=env(),man=S.coef==='manual';
+  const dia=solveDP('dia',mm2Pa(S.hd),e,man),ven=solveDP('ven',mm2Pa(S.hv),e,man);
+  const pitU=pitot(mm2Pa(S.ht-S.hst),e),pitP=pitot(S.piezo,e);
+  const list=[dia,ven,pitU,pitP];
+  let ref,refname;
+  if(S.src==='sim'){ref=genIdeal(S.w).qm;refname='viteza reală simulată ('+S.w.toFixed(1)+' m/s)';}
+  else{ref=(dia.qm+ven.qm+pitP.qm)/3;refname='media diafragmă, Venturi și Pitot piezo';}
+  list.forEach((r,i)=>{r.name=INSTR[i].name;r.col=INSTR[i].col;r.dev=(r.qm-ref)/ref*100;r.wv=r.qm/(e.rho*e.A);});
+  return{e,dia,ven,pitU,pitP,list,ref,refname,man};
+}
+
+/* ---------- interfață: panou ---------- */
+function setFields(){
+  NUM.forEach(id=>{const el=$(id);if(document.activeElement!==el){const v=S[id];el.value=['ht','piezo','hd','hv'].includes(id)?(+v).toFixed(1):v;}});
+  $('w').value=S.w;$('wo').textContent=S.w.toFixed(1)+' m/s';
+  $('src').innerHTML=S.src==='sim'?'Citirile sunt generate din viteza reală, cu coeficienții ISO calculați, zgomotul și rezoluția setate.':'Calculele folosesc <b>citirile introduse de tine</b>. Apasă „Citiri noi din viteza reală” pentru a reveni la simulare.';
+}
+function readFields(){
+  NUM.forEach(id=>{const v=parseFloat($(id).value);if(isFinite(v))S[id]=v;});
+  S.coef=$('coef').value;S.prof=$('prof').checked;
+}
+function onPhysics(){readFields();S.D=Math.max(S.D,S.dv+1,S.dd+1);if(S.src==='sim')generate();setFields();render();}
+['hst','noise','res','T','pb','rhow','D','dd','dv','loss','coef','prof'].forEach(id=>$(id).addEventListener('input',onPhysics));
+['ht','piezo','hd','hv'].forEach(id=>$(id).addEventListener('input',()=>{readFields();S.src='manual';$('src').innerHTML='Calculele folosesc <b>citirile introduse de tine</b>. Apasă „Citiri noi din viteza reală” pentru a reveni la simulare.';render();}));
+$('w').addEventListener('input',()=>{S.w=parseFloat($('w').value);readFields();generate();setFields();render();});
+$('regen').addEventListener('click',()=>{readFields();generate();setFields();render();});
+$('reset').addEventListener('click',()=>{Object.assign(S,DEF);$('coef').value='calc';$('prof').checked=true;generate();setFields();render();});
+$('ntr').addEventListener('change',()=>{S.ntr=+$('ntr').value;render();});
+$('prel').addEventListener('input',()=>{S.prel=+$('prel').value;render();});
+$('copy').addEventListener('click',()=>{
+  const r=RZ;const rows=[['Mărime','U.M.',...r.list.map(x=>x.name)],
+   ['p_t','mm H2O',,,S.ht.toFixed(1),''],['p_st','mm H2O',S.hst,S.hst,S.hst,''],
+   ['Δp','mm H2O',Pa2mm(r.dia.dp).toFixed(1),Pa2mm(r.ven.dp).toFixed(1),Pa2mm(r.pitU.dp).toFixed(2),Pa2mm(r.pitP.dp).toFixed(2)],
+   ['Δp','Pa',r.dia.dp.toFixed(1),r.ven.dp.toFixed(1),r.pitU.dp.toFixed(2),r.pitP.dp.toFixed(2)],
+   ['w','m/s',...r.list.map(x=>x.wv.toFixed(3))],['q_m','g/s',...r.list.map(x=>(x.qm*1000).toFixed(3))],
+   ['V','m3/h',...r.list.map(x=>x.V.toFixed(3))]];
+  const txt=rows.map(a=>a.map(c=>c===undefined?'':c).join('\t')).join('\n');
+  const done=ok=>{$('copied').textContent=ok?'Tabelul a fost copiat. Lipește-l în Excel sau Word.':'Copierea nu a reușit în acest browser.';};
+  try{navigator.clipboard.writeText(txt).then(()=>done(true),()=>done(false));}catch(e){done(false);}
+});
+/* taburi */
+$('tabs').innerHTML=TABS.map(([k,t])=>`<button role="tab" data-k="${k}" aria-selected="${k===active}">${t}</button>`).join('');
+$('tabs').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;active=b.dataset.k;
+  $('tabs').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x.dataset.k===active));
+  TABS.forEach(([k])=>$('p-'+k).hidden=k!==active);render();});
+
+/* ---------- grafice ---------- */
+Chart.register({id:'refline',afterDatasetsDraw(c){const v=c.options.refValue;if(v===undefined)return;const y=c.scales.y.getPixelForValue(v),a=c.chartArea,x=c.ctx;x.save();x.strokeStyle=cv('--fg');x.lineWidth=1.5;x.setLineDash([5,4]);x.beginPath();x.moveTo(a.left,y);x.lineTo(a.right,y);x.stroke();x.restore();}});
+function themeChart(){
+  Chart.defaults.color=cv('--muted');Chart.defaults.borderColor=cv('--line');
+  Chart.defaults.font.family="'IBM Plex Sans',system-ui,sans-serif";Chart.defaults.font.size=12;
+}
+function axis(title,log,extra){return Object.assign({type:log?'logarithmic':'linear',title:{display:!!title,text:title},grid:{color:cv('--line')}},extra||{});}
+function ds(label,data,col,o){return Object.assign({label,data,borderColor:cv(col),backgroundColor:cv(col),borderWidth:2,pointRadius:0,showLine:true,tension:0.15},o||{});}
+function pt(label,data,col){return {label,data,borderColor:cv(col),backgroundColor:cv(col),pointRadius:6,pointHoverRadius:7,showLine:false};}
+function chart(id,type,data,options){
+  if(CH[id]){CH[id].data.datasets=data.datasets;if(data.labels)CH[id].data.labels=data.labels;CH[id].update('none');return CH[id];}
+  CH[id]=new Chart($(id),{type,data,options:Object.assign({responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{labels:{boxWidth:14,usePointStyle:false}},tooltip:{mode:'nearest',intersect:false}}},options)});
+  return CH[id];
+}
+function curve(fn,x0,x1,n){const a=[];for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;a.push({x,y:fn(x)});}return a;}
+const sc=(x,y,l)=>({x:{...axis(x,l&&l[0])},y:{...axis(y,l&&l[1])}});
+
+/* ---------- randări ---------- */
+function render(){
+  RZ=calc();const r=RZ;
+  $('wo').textContent=S.w.toFixed(1)+' m/s';
+  $('cards').innerHTML=r.list.map(x=>{const a=Math.abs(x.dev),c=a<3?'ok':a<10?'mid':'hi';
+    return `<div class="card"><div class="nm"><span class="dot" style="background:var(${x.col})"></span>${x.name}</div>
+    <div class="big">${F(x.V,4)} <small>m³/h</small></div>
+    <div class="sub">w = ${F(x.wv,3)} m/s · q<sub>m</sub> = ${F(x.qm*1000,3)} g/s</div>
+    <div class="sub">Re = ${F(x.Re,4)} · abatere <span class="dev ${c}">${x.dev>=0?'+':''}${x.dev.toFixed(1)} %</span></div></div>`;}).join('');
+  ({rez:renderRez,dia:renderDia,ven:renderVen,pit:renderPit,pres:renderPres,unc:renderUnc,quiz:renderQuiz})[active]();
+}
+function table(head,rows,cls){
+  return '<thead><tr>'+head.map((h,i)=>`<th class="${cls&&cls[i]||''}">${h}</th>`).join('')+'</tr></thead><tbody>'+
+   rows.map(r=>'<tr'+(r.hl?' class="hl"':'')+'>'+r.c.map((c,i)=>`<td class="${cls&&cls[i]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
+}
+
+function renderRez(){
+  const r=RZ,e=r.e;$('refname').textContent=r.refname;
+  const d=[r.dia,r.ven,r.pitU,r.pitP],f=(fn)=>d.map(fn);
+  $('t41').innerHTML=table(['Mărime','U.M.',...d.map(x=>`<span class="dot" style="background:var(${x.col})"></span> ${x.name}`)],[
+    {c:['p<sub>t</sub> (presiune totală, relativă)','mm H₂O','—','—',F(S.ht,4),F(S.hst+Pa2mm(r.pitP.dp),4)]},
+    {c:['p<sub>st</sub> (presiune statică, relativă)','mm H₂O','—','—',F(S.hst,4),F(S.hst,4)]},
+    {c:['Δp măsurat','mm H₂O',...f(x=>F(Pa2mm(x.dp),4))]},
+    {c:['Δp măsurat','Pa',...f(x=>F(x.dp,4))]},
+    {c:['Re<sub>D</sub>','—',...f(x=>F(x.Re,4))]},
+    {c:['w (viteza medie)','m/s',...f(x=>F(x.wv,4))],hl:1},
+    {c:['q<sub>m</sub>','g/s',...f(x=>F(x.qm*1000,4))]},
+    {c:['q<sub>v</sub> = m (din tabel)','m³/h',...f(x=>F(x.V,4))],hl:1},
+    {c:['Abatere față de referință','%',...f(x=>(x.dev>=0?'+':'')+x.dev.toFixed(2))]}],['','','n','n','n','n']);
+  const cmp=chart('chCmp','bar',{labels:d.map(x=>x.name),datasets:[{label:'q_v [m³/h]',data:d.map(x=>x.V),backgroundColor:d.map(x=>cv(x.col))}]},
+    {plugins:{legend:{display:false}},scales:{y:axis('q_v [m³/h]',false,{beginAtZero:true}),x:{grid:{display:false}}}});
+  cmp.data.datasets[0].backgroundColor=d.map(x=>cv(x.col));cmp.update('none');
+  cmp.options.refValue=r.ref/e.rho*3600;cmp.update('none');
+  // Δp(w)
+  const w0=3,w1=14,N=40;
+  const gd=(sel)=>curve(w=>{const g=genIdeal(w);return Pa2mm(g[sel]);},w0,w1,N);
+  const g0=genIdeal(S.w);
+  chart('chDp','scatter',{datasets:[ds('Diafragmă',gd('dpD'),'--c-dia'),ds('Venturi',gd('dpV'),'--c-ven'),ds('Pitot',gd('dpP'),'--c-pit'),
+    pt('Diafragmă (citit)',[{x:r.dia.wv,y:Pa2mm(r.dia.dp)}],'--c-dia'),pt('Venturi (citit)',[{x:r.ven.wv,y:Pa2mm(r.ven.dp)}],'--c-ven'),pt('Pitot piezo (citit)',[{x:r.pitP.wv,y:Pa2mm(r.pitP.dp)}],'--c-pit')]},
+    {scales:sc('w [m/s]','Δp [mm H₂O]',[false,true])});
+  // q(Δp)
+  const qd=(kind)=>{const a=[];for(let i=0;i<=40;i++){const w=w0+(w1-w0)*i/40,g=genIdeal(w);a.push({x:Pa2mm(kind==='dia'?g.dpD:g.dpV),y:g.qm/g.e.rho*3600});}return a;};
+  chart('chQ','scatter',{datasets:[ds('Diafragmă',qd('dia'),'--c-dia'),ds('Venturi',qd('ven'),'--c-ven'),
+    pt('Diafragmă (citit)',[{x:Pa2mm(r.dia.dp),y:r.dia.V}],'--c-dia'),pt('Venturi (citit)',[{x:Pa2mm(r.ven.dp),y:r.ven.V}],'--c-ven')]},
+    {scales:sc('Δp [mm H₂O]','q_v [m³/h]',[true,true])});
+  // Re(w)
+  const reW=curve(w=>e.rho*w*e.D/e.mu,w0,w1,20);
+  const rc=chart('chRe','scatter',{datasets:[ds('Re_D = ρ·w·D/μ',reW,'--c-dia'),pt('Starea curentă',[{x:r.pitP.wv,y:e.rho*r.pitP.wv*e.D/e.mu}],'--c-ven'),
+    ds('Re = 4000 (limita laminar/turbulent)',[{x:w0,y:4000},{x:w1,y:4000}],'--muted',{borderDash:[6,4],borderWidth:1})]},
+    {scales:sc('w [m/s]','Re_D',[false,false])});
+  $('reNote').innerHTML=`ν = ${F(e.nu,4)} m²/s, ρ = ${F(e.rho,4)} kg/m³, μ = ${F(e.mu,4)} Pa·s. Pentru w = 5…12 m/s, Re<sub>D</sub> = ${F(e.rho*5*e.D/e.mu,3)}…${F(e.rho*12*e.D/e.mu,3)}, deci curgere turbulentă.`;
+}
+
+function stepRows(r,e,kind){
+  const man=RZ.man,g=r,isD=kind==='dia',dm=g.d*1000,Dm=e.D*1000;
+  const rows=[
+   ['β','raportul diametrelor','d / D',`${F(dm)} / ${F(Dm)}`,F(g.beta,4),'—'],
+   ['E','factor de viteză de apropiere','1 / √(1 − β⁴)',`1 / √(1 − ${F(g.beta,4)}⁴)`,F(g.E,5),'—'],
+   ['A<sub>o</sub>','aria orificiului / gâtului','π·d² / 4',`π·${F(g.d,3)}² / 4`,F(g.Ao,4),'m²'],
+   ['A<sub>D</sub>','aria conductei','π·D² / 4',`π·${F(e.D,3)}² / 4`,F(e.A,4),'m²'],
+   ['p<sub>1</sub>','presiunea absolută în amonte','p<sub>b</sub> + ρ<sub>w</sub>·g·h<sub>st</sub>',`${F(S.pb*100,5)} + ${F(S.rhow,4)}·9.807·${F(S.hst/1000,3)}`,F(e.p1,6),'Pa'],
+   ['ρ','densitatea aerului','p<sub>1</sub> / (R·T)',`${F(e.p1,6)} / (287.05·${F(S.T,3)})`,F(e.rho,5),'kg/m³'],
+   ['μ','vâscozitatea dinamică (Sutherland)','1.716·10⁻⁵·(T/273.15)<sup>1.5</sup>·383.55/(T+110.4)',`T = ${F(S.T,3)} K`,F(e.mu,4),'Pa·s'],
+   ['Δp','presiunea diferențială','ρ<sub>w</sub>·g·h',`${F(S.rhow,4)}·9.807·${F((isD?S.hd:S.hv)/1000,4)}`,F(g.dp,5),'Pa'],
+   ['τ','raportul presiunilor p₂/p₁','1 − Δp/p<sub>1</sub>',`1 − ${F(g.dp,4)}/${F(e.p1,6)}`,F(g.tau,6),'—'],
+   ['ε','coeficient de detentă',isD?'1 − (0.351 + 0.256β⁴ + 0.93β⁸)·[1 − τ<sup>1/κ</sup>]  (4.9)':'√{ κτ<sup>2/κ</sup>/(κ−1) · (1−β⁴)/(1−β⁴τ<sup>2/κ</sup>) · (1−τ<sup>(κ−1)/κ</sup>)/(1−τ) }',man?'valoare fixă din îndrumar':`κ = 1.4, τ = ${F(g.tau,6)}`,F(g.eps,5),'—'],
+   ['Re<sub>D</sub>','numărul Reynolds','4·q<sub>m</sub> / (π·D·μ)',`4·${F(g.qm,4)} / (π·${F(e.D,3)}·${F(e.mu,4)})`,F(g.Re,5),'—'],
+   ['C','coeficient de descărcare',isD?'Reader-Harris/Gallagher (4.10), (4.11)':'0.99858 − 0.196·β<sup>4.5</sup>  (4.16)',man?'valoare fixă din îndrumar':(isD?'vezi tabelul componentelor':`0.99858 − 0.196·${F(g.beta,4)}<sup>4.5</sup>`),F(g.C,5),'—'],
+   ['q<sub>m</sub>','debitul masic  (4.8)','C·E·ε·A<sub>o</sub>·√(2·Δp·ρ)',`${F(g.C,4)}·${F(g.E,4)}·${F(g.eps,4)}·${F(g.Ao,3)}·√(2·${F(g.dp,4)}·${F(e.rho,4)})`,F(g.qm,5),'kg/s'],
+   ['q<sub>v</sub>','debitul volumic','q<sub>m</sub> / ρ · 3600',`${F(g.qm,4)} / ${F(e.rho,4)} · 3600`,F(g.V,5),'m³/h'],
+   ['w','viteza medie în conductă','q<sub>m</sub> / (ρ·A<sub>D</sub>)',`${F(g.qm,4)} / (${F(e.rho,4)}·${F(e.A,4)})`,F(g.w,4),'m/s']];
+  return table(['Simbol','Mărime','Relație','Înlocuire','Rezultat','U.M.'],
+    rows.map(x=>({c:[`<span class="sym">${x[0]}</span>`,x[1],`<span class="rel">${x[2]}</span>`,`<span class="rel">${x[3]}</span>`,x[4],x[5]],hl:x[0]==='q<sub>m</sub>'||x[0]==='w'})),['','','rel','rel','res','']);
+}
+function tags(items){return items.map(([t,ok])=>`<span class="tag ${ok?'ok':'no'}">${ok?'✓':'!'} ${t}</span>`).join('');}
+function manualCmp(kind,r,e){
+  const M=MAN[kind],qman=M.K*Math.sqrt(M.kk*r.dp),vman=qman/1.184*3600,dv=(qman-r.qm)/r.qm*100;
+  const eq=kind==='dia'?'q<sub>m</sub> = 9.052·10⁻⁵·√(2.368·Δp)  (4.14)':'q<sub>m</sub> = 45.146·10⁻⁵·√(2.368·Δp)  (4.17)';
+  const sec=kind==='dia'?'0.605 / 0.95':'0.968 / 0.924';
+  return `<div class="eq">${eq}</div><div class="scroll"><table>${table(['Mărime','Calcul complet','Formula din îndrumar'],[
+   {c:['C / ε',`${F(r.C,4)} / ${F(r.eps,4)}`,sec]},
+   {c:['q<sub>m</sub> [g/s]',F(r.qm*1000,5),F(qman*1000,5)]},
+   {c:['q<sub>v</sub> [m³/h]',F(r.V,5),F(vman,5)+' (ρ = 1.184)'],hl:1},
+   {c:['Abatere','—',(dv>=0?'+':'')+dv.toFixed(2)+' %']}],['','n','n'])}</table></div>
+   <p class="note">Formula din îndrumar este valabilă doar pentru instalația dată (ρ = 1.184 kg/m³, T = 300 K, coeficienți fixați) și cu Δp în pascali. La alte condiții, coeficienții se recalculează.</p>`;
+}
+function renderDia(){
+  const r=RZ.dia,e=RZ.e,Dm=e.D*1000;
+  $('diaChecks').innerHTML=tags([[`d ≥ 12.5 mm (d = ${F(r.d*1000,3)})`,r.d*1000>=12.5],[`0.1 ≤ β ≤ 0.75 (β = ${F(r.beta,3)})`,r.beta>=0.1&&r.beta<=0.75],
+    [`D ≥ 50 mm (D = ${F(Dm,3)})`,Dm>=50],[`Re<sub>D</sub> ≥ 5000 (${F(r.Re,4)})`,r.Re>=5000]])+
+    (Dm<71.12?'<p class="note">Pentru D &lt; 71.12 mm se adaugă ultimul termen din (4.11). Sub D = 50 mm instalația iese din domeniul standardului și este folosită didactic.</p>':'');
+  $('diaSteps').innerHTML=stepRows(r,e,'dia');
+  const cc=Cdia(Math.max(r.Re,500),r.beta,Dm);
+  const names=['0.5961','0.0261·β²','−0.216·β⁸','0.000521·(10⁶β/Re)<sup>0.7</sup>','(0.0188+0.0063A)·β<sup>3.5</sup>·(10⁶/Re)<sup>0.3</sup>','(0.043+0.080e<sup>−10L₁</sup>−0.123e<sup>−7L₁</sup>)(1−0.11A)·β⁴/(1−β⁴)','−0.031(M₂′−0.8M₂′<sup>1.1</sup>)·β<sup>1.3</sup>','0.011(0.75−β)(2.8−D/25.4)'];
+  $('diaC').innerHTML=table(['Termen','Valoare'],names.map((n,i)=>({c:[`<span class="rel">${n}</span>`,F(cc.t[i],5)]})).concat([{c:['<b>C = Σ termeni</b>',F(cc.C,5)],hl:1},
+    {c:['A = (19000β/Re)<sup>0.8</sup>',F(cc.A,4)]},{c:['L₁ = 1, L₂′ = 0.47, M₂′ = 2L₂′/(1−β)',F(cc.M2,4)]}]),['','n']);
+  $('diaMan').innerHTML=manualCmp('dia',r,e);
+  const b=r.beta,Rs=curve(x=>Cdia(x,b,Dm).C,4000,60000,56);
+  chart('chC','scatter',{datasets:[ds('C(Re) calculat',Rs,'--c-dia'),ds('C = 0.605 (îndrumar)',[{x:4000,y:0.605},{x:60000,y:0.605}],'--muted',{borderDash:[6,4],borderWidth:1}),pt('Starea curentă',[{x:r.Re,y:cc.C}],'--c-ven')]},{scales:sc('Re_D','C',[false,false])});
+  chart('chEps','scatter',{datasets:[ds('Diafragmă',curve(t=>epsDia(b,t),0.6,1,40),'--c-dia'),ds('Venturi',curve(t=>epsVen(RZ.ven.beta,t),0.6,1,40),'--c-ven'),
+    pt('Diafragmă (curent)',[{x:r.tau,y:epsDia(b,r.tau)}],'--c-dia'),pt('Venturi (curent)',[{x:RZ.ven.tau,y:epsVen(RZ.ven.beta,RZ.ven.tau)}],'--c-ven')]},{scales:sc('p₂/p₁','ε',[false,false])});
+}
+function renderVen(){
+  const r=RZ.ven,e=RZ.e,Dm=e.D*1000,dm=r.d*1000;
+  $('venChecks').innerHTML=tags([[`65 ≤ D ≤ 500 mm (D = ${F(Dm,3)})`,Dm>=65&&Dm<=500],[`d ≥ 50 mm (d = ${F(dm,3)})`,dm>=50],
+   [`0.316 ≤ β ≤ 0.775 (β = ${F(r.beta,3)})`,r.beta>=0.316&&r.beta<=0.775],[`1.5·10⁵ ≤ Re ≤ 2·10⁶ (Re = ${F(r.Re,3)})`,r.Re>=1.5e5&&r.Re<=2e6]])+
+   '<p class="note">Dimensiunile și Re din instalație sunt sub domeniul ISO 5167-3, dar îndrumarul folosește aceeași relație. Valorile sunt orientative.</p>';
+  $('venSteps').innerHTML=stepRows(r,e,'ven');
+  $('venMan').innerHTML=manualCmp('ven',r,e);
+  // geometrie
+  const d=dm,lin=10,lc=15,lt=0.3*d+0.417*d,half=15*PI/180,ld=(Dm-d)/2/Math.tan(half),lo=10;
+  const xs=[0,lin,lin+lc,lin+lc+lt,lin+lc+lt+ld,lin+lc+lt+ld+lo],ds_=[Dm,Dm,d,d,Dm,Dm],L=xs[5];
+  const Dx=x=>{for(let i=0;i<5;i++)if(x<=xs[i+1])return ds_[i]+(ds_[i+1]-ds_[i])*(x-xs[i])/(xs[i+1]-xs[i]||1);return Dm;};
+  const N=140,X=[];for(let i=0;i<=N;i++)X.push(L*i/N);
+  chart('chVenG','scatter',{datasets:[ds('Peretele superior',X.map(x=>({x,y:Dx(x)/2})),'--c-ven',{fill:false}),ds('Peretele inferior',X.map(x=>({x,y:-Dx(x)/2})),'--c-ven',{fill:'-1',backgroundColor:cv('--accent-soft')}),
+    ds('Axa',[{x:0,y:0},{x:L,y:0}],'--muted',{borderDash:[4,4],borderWidth:1})]},{plugins:{legend:{display:false}},scales:sc('x [mm]','r [mm]')});
+  const th=x=>{const a=Math.pow(Dm/Dx(x),4)-1,b=Math.pow(Dm/d,4)-1;return a/b;};
+  const xt=xs[3],lossf=S.loss/100;
+  const pFn=x=>{let t=th(x);let p=-r.dp*t;if(x>xt){p-=-lossf*r.dp*Math.min(1,(x-xt)/(xs[4]-xt));}return p;};
+  const wFn=x=>r.w*Math.pow(Dm/Dx(x),2);
+  chart('chVenP','scatter',{datasets:[ds('p − p₁ [Pa]',X.map(x=>({x,y:pFn(x)})),'--c-ven',{yAxisID:'y'}),ds('w [m/s]',X.map(x=>({x,y:wFn(x)})),'--c-dia',{yAxisID:'y2'})]},
+   {scales:{x:axis('x [mm]'),y:axis('p − p₁ [Pa]'),y2:{...axis('w [m/s]'),position:'right',grid:{drawOnChartArea:false}}}});
+}
+function renderPit(){
+  const e=RZ.e,u=RZ.pitU,p=RZ.pitP;
+  const rows=[
+   ['ρ','densitatea aerului','p₁/(R·T)',F(e.rho,5),F(e.rho,5),'kg/m³'],
+   ['Δp = p<sub>t</sub> − p<sub>s</sub>','presiunea dinamică','ρ<sub>w</sub>·g·(h<sub>t</sub> − h<sub>st</sub>)  |  citire piezo',`${F(S.rhow,4)}·9.807·${F((S.ht-S.hst)/1000,3)}`,F(S.piezo,4),'Pa'],
+   ['w<sub>max</sub>','viteza în axa conductei (4.18)','√(2Δp/ρ)',F(u.wc,4),F(p.wc,4),'m/s'],
+   ['Re','Reynolds pe viteza medie','ρ·w·D/μ',F(u.Re,4),F(p.Re,4),'—'],
+   ['n','exponentul profilului','≈ 1.5·log₁₀Re',S.prof?F(u.n,3):'—',S.prof?F(p.n,3):'—','—'],
+   ['k','w<sub>med</sub>/w<sub>max</sub>','2n²/((n+1)(2n+1))',F(u.k,4),F(p.k,4),'—'],
+   ['w<sub>med</sub>','viteza medie','k·w<sub>max</sub>',F(u.w,4),F(p.w,4),'m/s'],
+   ['q<sub>m</sub>','debitul masic (4.19)','ρ·A·w<sub>med</sub>',F(u.qm,4),F(p.qm,4),'kg/s'],
+   ['q<sub>v</sub>','debitul volumic','q<sub>m</sub>/ρ·3600',F(u.V,4),F(p.V,4),'m³/h']];
+  $('pitSteps').innerHTML=table(['Simbol','Mărime','Relație','Pitot, tub U','Pitot, piezo','U.M.'],rows.map(x=>({c:[`<span class="sym">${x[0]}</span>`,x[1],`<span class="rel">${x[2]}</span>`,x[3],x[4],x[5]],hl:x[0].startsWith('q<sub>v')})),['','','rel','res','res','']);
+  // arii egale
+  const n=S.ntr,Rr=e.D/2*1000,nExp=p.n||kProf(p.Re).n,wc=p.wc;
+  const ri=[];for(let i=1;i<=n;i++)ri.push(Rr*Math.sqrt((2*i-1)/(2*n)));
+  const wi=ri.map(x=>wc*Math.pow(1-x/Rr,1/nExp));
+  const wmean=wi.reduce((a,b)=>a+b,0)/n,kth=kProf(p.Re);
+  $('trav').innerHTML=table(['i','r<sub>i</sub> [mm]','r<sub>i</sub>/R','w<sub>i</sub> [m/s]'],ri.map((x,i)=>({c:[i+1,F(x,4),F(x/Rr,4),F(wi[i],4)]})).concat([
+    {c:['','w<sub>med</sub> din puncte','',F(wmean,4)],hl:1},{c:['','k = w<sub>med</sub>/w<sub>max</sub>','',F(wmean/wc,4)]},{c:['','k din profil continuu','',F(kth.k,4)]}]),['n','n','n','n']);
+  // SVG
+  const c=110,rad=95;let svg=`<svg viewBox="0 0 220 220" width="100%" style="max-width:260px;display:block;margin:6px auto" role="img" aria-label="Divizarea secțiunii în arii egale">`;
+  svg+=`<circle cx="${c}" cy="${c}" r="${rad}" fill="var(--surface2)" stroke="var(--fg)" stroke-width="1.5"/>`;
+  for(let i=1;i<n;i++)svg+=`<circle cx="${c}" cy="${c}" r="${rad*Math.sqrt(i/n)}" fill="none" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  svg+=`<line x1="${c-rad}" y1="${c}" x2="${c+rad}" y2="${c}" stroke="var(--line)"/><line x1="${c}" y1="${c-rad}" x2="${c}" y2="${c+rad}" stroke="var(--line)"/>`;
+  ri.forEach((x,i)=>{const s=x/Rr*rad;[[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{svg+=`<circle cx="${c+a*s}" cy="${c+b*s}" r="3.5" fill="var(--c-pit)"/>`;});
+    svg+=`<text x="${c+s+3}" y="${c-5}" font-size="9" fill="var(--fg)">r${i+1}</text>`;});
+  svg+=`<circle cx="${c}" cy="${c}" r="2" fill="var(--fg)"/></svg>`;
+  $('ringSvg').innerHTML=svg;
+  const prof=curve(x=>wc*Math.pow(Math.max(1-Math.abs(x),0),1/nExp),-1,1,100);
+  const pts=[];ri.forEach((x,i)=>{pts.push({x:x/Rr,y:wi[i]});pts.push({x:-x/Rr,y:wi[i]});});
+  chart('chProf','scatter',{datasets:[ds('w(r) = w_max·(1 − r/R)^(1/n)',prof,'--c-dia'),pt('Puncte de măsurare',pts,'--c-pit'),
+    ds('w medie',[{x:-1,y:p.w},{x:1,y:p.w}],'--c-ven',{borderDash:[6,4],borderWidth:1.5})]},{scales:sc('r/R','w [m/s]')});
+  $('profNote').textContent=`Conducta de ${F(e.D*1000,3)} mm este sub 100 mm: îndrumarul acceptă măsurarea în centru. Exercițiul cu ${n} inele este didactic (pentru 100–300 mm se ia n = 3, pentru 300–900 mm n = 5).`;
+}
+function renderPres(){
+  const r=RZ,e=r.e,pb=S.pb,rel=S.prel,pa=pb+rel;
+  $('prelo').textContent=(rel>=0?'+':'')+rel+' mbar';
+  const top=Math.max(pb,pa)+120,W=380,H=330,y=p=>H-20-(p/top)*(H-50);
+  const over=rel>=0;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:440px;display:block;margin:8px auto" role="img" aria-label="Relația între presiuni">
+   <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="var(--fg)"/></marker></defs>
+   <line x1="30" y1="${y(0)}" x2="${W-10}" y2="${y(0)}" stroke="var(--fg)" stroke-width="2"/><text x="${W-12}" y="${y(0)-5}" font-size="11" text-anchor="end" fill="var(--muted)">vid absolut, p = 0</text>
+   <line x1="30" y1="${y(pb)}" x2="${W-10}" y2="${y(pb)}" stroke="var(--c-dia)" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${W-12}" y="${y(pb)-5}" font-size="11" text-anchor="end" fill="var(--c-dia)">p<tspan font-size="8" dy="2">b</tspan><tspan dy="-2"> = ${pb} mbar</tspan></text>
+   <line x1="30" y1="${y(pa)}" x2="${W-10}" y2="${y(pa)}" stroke="var(--c-ven)" stroke-width="1.5"/><text x="${W-12}" y="${y(pa)+(over?-5:14)}" font-size="11" text-anchor="end" fill="var(--c-ven)">p<tspan font-size="8" dy="2">a</tspan><tspan dy="-2"> = ${pa} mbar</tspan></text>
+   <line x1="90" y1="${y(0)}" x2="90" y2="${y(pa)}" stroke="var(--fg)" marker-end="url(#ar)" marker-start="url(#ar)"/><text x="82" y="${(y(0)+y(pa))/2}" font-size="12" text-anchor="end" fill="var(--fg)">p<tspan font-size="8" dy="2">a</tspan></text>
+   <line x1="150" y1="${y(0)}" x2="150" y2="${y(pb)}" stroke="var(--fg)" marker-end="url(#ar)" marker-start="url(#ar)"/><text x="142" y="${(y(0)+y(pb))/2}" font-size="12" text-anchor="end" fill="var(--fg)">p<tspan font-size="8" dy="2">b</tspan></text>
+   <line x1="230" y1="${y(pb)}" x2="230" y2="${y(pa)}" stroke="var(--c-pit)" stroke-width="2.5" marker-end="url(#ar)" marker-start="url(#ar)"/>
+   <text x="238" y="${(y(pb)+y(pa))/2+4}" font-size="12" fill="var(--c-pit)">${over?'p<tspan font-size="8" dy="2">m</tspan><tspan dy="-2"> (suprapresiune)</tspan>':'p<tspan font-size="8" dy="2">v</tspan><tspan dy="-2"> (vacuum)</tspan>'}</text></svg>`;
+  $('presSvg').innerHTML=s;
+  $('presTxt').innerHTML=over?`p<sub>m</sub> = p<sub>a</sub> − p<sub>b</sub> = ${pa} − ${pb} = <b>${rel} mbar</b> = ${F(rel*100,4)} Pa = ${F(Pa2mm(rel*100),4)} mm H₂O`:`p<sub>v</sub> = p<sub>b</sub> − p<sub>a</sub> = ${pb} − ${pa} = <b>${-rel} mbar</b> = ${F(-rel*100,4)} Pa = ${F(Pa2mm(-rel*100),4)} mm H₂O`;
+  // Bernoulli
+  const ps=mm2Pa(S.hst),pd=r.pitP.dp,pt_=ps+pd,tot=pt_,Wd=380,bx=20,bw=Wd-40;
+  $('bernSvg').innerHTML=`<svg viewBox="0 0 ${Wd} 110" width="100%" style="max-width:440px;display:block;margin:8px auto" role="img" aria-label="Presiunea totală ca sumă dintre statică și dinamică">
+   <rect x="${bx}" y="30" width="${bw*ps/tot}" height="30" fill="var(--c-dia)"/><rect x="${bx+bw*ps/tot}" y="30" width="${Math.max(bw*pd/tot,1)}" height="30" fill="var(--c-ven)"/>
+   <text x="${bx}" y="22" font-size="11" fill="var(--fg)">p<tspan font-size="8" dy="2">t</tspan><tspan dy="-2"> = ${F(pt_,4)} Pa</tspan></text>
+   <text x="${bx}" y="80" font-size="11" fill="var(--c-dia)">p<tspan font-size="8" dy="2">s</tspan><tspan dy="-2"> = ${F(ps,4)} Pa</tspan></text>
+   <text x="${Wd-20}" y="80" font-size="11" text-anchor="end" fill="var(--c-ven)">p<tspan font-size="8" dy="2">d</tspan><tspan dy="-2"> = ρw²/2 = ${F(pd,4)} Pa</tspan></text>
+   <text x="${bx}" y="100" font-size="10" fill="var(--muted)">Presiunea dinamică este ${(pd/pt_*100).toFixed(2)} % din cea totală, la presiuni relative.</text></svg>`;
+  const cv_=[['p<sub>t</sub> (relativă)',pt_],['p<sub>s</sub> = p<sub>st</sub> (relativă)',ps],['p<sub>d</sub> = Δp Pitot',pd],['p<sub>s</sub> absolută',e.p1]];
+  $('presTbl').innerHTML=table(['Presiune','Pa','mbar','mm H₂O','mm Hg'],cv_.map(([n,v])=>({c:[n,F(v,5),F(v/100,5),F(Pa2mm(v),5),F(v/133.322,5)]})),['','n','n','n','n']);
+}
+function uncRows(){
+  const u=Math.max(S.res,0.5),du=Math.SQRT2*u;
+  return{u,du};
+}
+function renderUnc(){
+  const r=RZ,{u,du}=uncRows();
+  const dpmm=[Pa2mm(r.dia.dp),Pa2mm(r.ven.dp),Pa2mm(r.pitU.dp),Pa2mm(r.pitP.dp)];
+  const dPa=[mm2Pa(du),mm2Pa(du),mm2Pa(du),1];
+  const rel=r.list.map((x,i)=>50*dPa[i]/x.dp);
+  $('uncTbl').innerHTML=table(['Instrument','Δp [Pa]','δ(Δp) [Pa]','δ(Δp)/Δp [%]','δq/q [%]','± δq<sub>v</sub> [m³/h]'],r.list.map((x,i)=>({c:[`<span class="dot" style="background:var(${x.col})"></span> ${x.name}`,F(x.dp,4),F(dPa[i],3),F(2*rel[i],3),F(rel[i],3),F(x.V*rel[i]/100,3)],hl:i===2&&rel[2]>5}) ),['','n','n','n','n','n']);
+  const e=r.e,fn=i=>curve(w=>{const g=genIdeal(w),dp=[g.dpD,g.dpV,g.dpP,g.dpP][i];return 50*dPa[i]/dp;},3,14,40);
+  const wv=[r.dia.wv,r.ven.wv,r.pitU.wv,r.pitP.wv];
+  chart('chErr','scatter',{datasets:[ds('Diafragmă',fn(0),'--c-dia'),ds('Venturi',fn(1),'--c-ven'),ds('Pitot (tub U)',fn(2),'--c-pitu'),ds('Pitot (piezo)',fn(3),'--c-pit'),
+    pt('Diafragmă (curent)',[{x:wv[0],y:rel[0]}],'--c-dia'),pt('Venturi (curent)',[{x:wv[1],y:rel[1]}],'--c-ven'),pt('Pitot U (curent)',[{x:wv[2],y:rel[2]}],'--c-pitu'),pt('Pitot piezo (curent)',[{x:wv[3],y:rel[3]}],'--c-pit')]},
+    {scales:sc('w [m/s]','δq/q [%]',[false,true])});
+}
+function renderQuiz(){
+  const r=RZ,e=r.e,h=window._qh??0.08,mode=window._qm||'over';
+  const pbPa=S.pb*100,pm=S.rhow*G*h,pa=mode==='over'?pbPa+pm:pbPa-pm;
+  const eps=r.dia.eps,epsB=[0.2,0.388,0.6,0.75].map(b=>epsDia(b,r.dia.tau));
+  $('quiz').innerHTML=`
+  <div class="q"><h3>1. Care este presiunea absolută a unui gaz în starea normală fizică?</h3>
+    <div class="ans">p = <b>101 325 Pa</b> = 1.01325 bar = 1013.25 mbar = 760 mm Hg, la T = 273.15 K.</div></div>
+  <div class="q"><h3>2. Relațiile dintre presiunile absolută, barometrică, manometrică și vacuumetrică</h3>
+    <div class="ans">p<sub>m</sub> = p<sub>a</sub> − p<sub>b</sub> pentru p<sub>a</sub> &gt; p<sub>b</sub> (suprapresiune), p<sub>v</sub> = p<sub>b</sub> − p<sub>a</sub> pentru p<sub>a</sub> &lt; p<sub>b</sub> (vacuum). Ambele sunt presiuni relative, măsurate față de cea barometrică. Vezi fila „Presiuni”.</div></div>
+  <div class="q"><h3>3. Presiunea măsurată prin înălțimea h a unei coloane de lichid de densitate ρ</h3>
+    <div class="ans">p = ρ·g·h. Exemplu cu apa din panou (ρ<sub>w</sub> = ${F(S.rhow,4)} kg/m³): 1 mm H₂O = ${F(S.rhow*G/1000,5)} Pa; h<sub>st</sub> = ${F(S.hst,4)} mm → ${F(mm2Pa(S.hst),5)} Pa.</div></div>
+  <div class="q"><h3>4. Doi factori de care depinde coeficientul de detentă ε</h3>
+    <div class="ans">Raportul presiunilor τ = p₂/p₁ și raportul diametrelor β = d/D (precum și exponentul izentropic κ). În instalația curentă: τ = ${F(r.dia.tau,6)}, β = ${F(r.dia.beta,4)} → ε = <b>${F(eps,5)}</b>.<br>
+    Pentru același τ, dar β = 0.2 / 0.388 / 0.6 / 0.75: ε = ${epsB.map(x=>F(x,5)).join(' / ')}.</div></div>
+  <div class="q"><h3>5. Presiunea absolută din instalație, manometru cu tub U cu apă</h3>
+    <div class="f" style="grid-template-columns:minmax(0,1fr) 96px 38px"><label for="qh">Înălțimea coloanei h</label><input type="number" id="qh" step="0.005" value="${h}"><span class="u">m</span></div>
+    <div class="f" style="grid-template-columns:minmax(0,1fr) 150px"><label for="qm">Tipul presiunii</label><select id="qm"><option value="over" ${mode==='over'?'selected':''}>suprapresiune</option><option value="vac" ${mode==='vac'?'selected':''}>vacuum</option></select></div>
+    <div class="ans">p<sub>m</sub> = ρ<sub>w</sub>·g·h = ${F(S.rhow,4)}·9.807·${h} = <b>${F(pm,5)} Pa</b>.<br>
+    p<sub>a</sub> = p<sub>b</sub> ${mode==='over'?'+':'−'} p<sub>${mode==='over'?'m':'v'}</sub> = ${F(pbPa,5)} ${mode==='over'?'+':'−'} ${F(pm,5)} = <b>${F(pa,6)} Pa</b> = <b>${F(pa/100,6)} mbar</b>.<br>
+    <span class="note">Cu valorile din enunț (p<sub>b</sub> = 1012 mbar, h = 0.08 m, ρ = 1000 kg/m³, g = 9.81 m/s²) rezultă p<sub>a</sub> = 101200 + 785 ≈ 101985 Pa ≈ 1019.9 mbar. Pentru a le obține, setează p<sub>b</sub> = 1012 mbar și ρ<sub>w</sub> = 1000.</span></div></div>`;
+  $('qh').addEventListener('input',ev=>{window._qh=parseFloat(ev.target.value)||0;renderQuiz();$('qh').focus();});
+  $('qm').addEventListener('change',ev=>{window._qm=ev.target.value;renderQuiz();});
+}
+
+/* ---------- pornire ---------- */
+function resetCharts(){Object.values(CH).forEach(c=>c.destroy());CH={};themeChart();render();}
+window.addEventListener('load',()=>{
+  themeChart();generate();setFields();render();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',resetCharts);
+  new MutationObserver(resetCharts).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+});
+</script>
+
+</body></html>
