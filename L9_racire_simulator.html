@@ -1,0 +1,935 @@
+<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lucrarea 9 – Sistemul de răcire</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDF0F2; --panel:#FFFFFF; --panel2:#F6F8F9; --ink:#16324A; --ink2:#4E6072; --muted:#7B8A97;
+  --fuel:#D9961A; --fuel-soft:#F6E3B8; --fuel-deep:#A8680A; --steel:#8A99A6; --steel-d:#5E6E7B; --line:#CBD3DA;
+  --alert:#B3362B; --ok:#2E7D4F; --blue:#2F6CA8; --violet:#6B4FA0; --teal:#1F8A8A;
+  --canvas-bg:#FBFCFC; --grid:#E1E6EA; --shadow:0 1px 2px rgba(22,50,74,.08);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}}
+:root[data-theme="dark"]{
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow","Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5}
+.num,.ro{font-family:"Barlow Condensed","Arial Narrow","Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 10px;border-bottom:3px solid var(--ink)}
+header.top .lab{font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink2);letter-spacing:.02em}
+header.top h1{margin:0;font-size:26px;line-height:1.15;font-weight:700}
+header.top .inst{margin-left:auto;text-align:right;font-size:13px;color:var(--ink2)}
+.fuelbar{height:6px;background:linear-gradient(90deg,var(--fuel) 0 38%,transparent 38%)}
+nav.tabs{display:flex;gap:2px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+nav.tabs button{font:inherit;font-weight:600;border:0;background:none;color:var(--ink2);padding:12px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fuel)}
+nav.tabs .sp{flex:1}
+nav.tabs .tool{font-weight:500;font-size:13px}
+main{padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+section.tab{display:none} section.tab.on{display:block}
+.grid3{display:grid;grid-template-columns:300px minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:1150px){.grid3{grid-template-columns:280px minmax(0,1fr)} .grid3>.readouts{grid-column:1/-1}}
+@media (max-width:760px){.grid3{grid-template-columns:1fr} main{padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow)}
+.card>h3{margin:0;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card>.bd{padding:12px 14px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink2)}
+.ctrl label b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:600}
+.ctrl input[type=range]{width:100%;accent-color:var(--fuel)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text],.field{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink)}
+fieldset{border:0;border-top:1px solid var(--line);margin:12px 0 6px;padding:10px 0 0}
+fieldset legend{font-weight:700;font-size:13.5px;padding-right:8px;color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:4px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.fuel{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative}
+canvas{display:block;width:100%;background:var(--canvas-bg);border-radius:4px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px}
+.ro-table td{padding:4px 2px;border-bottom:1px dashed var(--line)}
+.ro-table td:first-child{width:56%}
+.ro-table td:last-child{text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:600}
+.ro-table tr.hl td:last-child{color:var(--fuel-deep)}
+.ro-table .sym{color:var(--muted);font-style:italic;font-family:"Times New Roman",serif}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--fuel-soft);color:var(--ink)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent)} .tag.bad{background:color-mix(in srgb,var(--alert) 22%,transparent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table.data{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+table.data th{background:var(--ink);color:var(--panel);font-weight:600;padding:6px 8px;text-align:center;white-space:nowrap}
+table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:15px;white-space:nowrap}
+table.data td.l{text-align:left;font-family:inherit;font-size:13.5px}
+table.data tr:nth-child(even) td{background:var(--panel2)}
+table.data tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.copybar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.copybar .t{font-weight:700;margin-right:auto}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.charts{grid-template-columns:1fr}}
+.prose{max-width:860px}
+.prose h2{font-size:21px;margin:26px 0 8px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.prose h3{font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{line-height:1.62}
+.eq{font-family:"Cambria Math","Times New Roman",serif;font-size:17px;background:var(--panel);border-left:4px solid var(--fuel);padding:8px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-size:14px;font-family:"Barlow",sans-serif}
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);padding:8px 12px;border-radius:4px;margin:10px 0}
+.warn{border-left-color:var(--alert)}
+ol.steps{counter-reset:s;list-style:none;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;margin:0 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700}
+ol.steps>li b.h{display:block;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);max-width:760px;width:100%;border-radius:8px;padding:16px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;height:260px;font-family:Consolas,monospace;font-size:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
+.toast.on{opacity:1}
+.legend-inline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend-inline i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.small{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{nav.tabs,.copybar,.btn{display:none!important} section.tab{display:block!important} body{background:#fff}}
+.info-h{margin:0 0 6px;font-size:18px;color:var(--ink)}
+.info-s{margin-top:10px;font-size:14px;line-height:1.45}
+.info-t{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fuel-deep);margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:3px 10px;cursor:pointer}
+.chips button.on{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-top:8px}
+.mcq{border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;background:var(--panel)}
+.mcq p{margin:0 0 6px}.mcq label{display:block;padding:2px 0;cursor:pointer;font-size:14.5px}
+.mcq.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.mcq.badq{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 7%,var(--panel))}
+.mcq .expl{font-size:13.5px;color:var(--ink2);margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:5px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:600;font-size:13.5px;border:0;background:transparent;color:var(--ink);padding:6px 11px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--panel)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.kpi div{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:6px 10px}
+.kpi small{display:block;color:var(--ink2);font-size:12px}.kpi b{font-family:"Barlow Condensed",sans-serif;font-size:19px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0}
+@media(max-width:1050px){.grid2{grid-template-columns:1fr}}
+.ctlbar{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end}
+.ctlbar .ctrl{margin:0;min-width:200px}
+.wraptbl td{white-space:normal!important;text-align:left!important;font-family:"Barlow",sans-serif!important;font-size:14px!important}
+.infobox{max-height:560px;overflow:auto}
+</style>
+<body>
+<header class="top">
+  <div>
+    <div class="lab">Laborator Sisteme auxiliare ale autovehiculelor rutiere — Lucrarea nr. 9</div>
+    <h1>Cunoașterea sistemului de răcire al motorului - autor: S.L dr. ing Vetreș Ion</h1>
+  </div>
+  <div class="inst">Universitatea Politehnica Timișoara<br>Facultatea de Mecanică, Departamentul MMUT</div>
+</header>
+<div class="fuelbar"></div>
+<nav class="tabs" aria-label="Secțiuni">
+  <button data-tab="t-teorie">1. Teorie</button>
+  <button data-tab="t-sch">2. Schema sistemului</button>
+  <button data-tab="t-fun">3. Funcționarea</button>
+  <button data-tab="t-mas">4. Măsurători</button>
+  <button data-tab="t-tut">5. Tutorial și test</button>
+  <button data-tab="t-ref">6. Referat</button>
+  <span class="sp"></span>
+  <button class="tool" id="decBtn">Zecimale</button>
+  <button class="tool" id="themeBtn">Temă luminoasă / întunecată</button>
+</nav>
+<main>
+<!-- ============ TEORIE ============ -->
+<section class="tab prose" id="t-teorie">
+  <h2>Scopul lucrării</h2>
+  <p>Lucrarea are ca scop cunoașterea construcției și funcționării sistemului de răcire cu lichid al motorului: identificarea componentelor, înțelegerea bilanțului termic al motorului, a funcționării pompei centrifuge, a termostatului, a radiatorului și a ventilatorului, a rolului presurizării și al lichidului antigel, precum și efectuarea verificărilor de atelier (încercarea de presiune, bușonul, termostatul, concentrația antigelului).</p>
+  <h2>Rolul sistemului de răcire</h2>
+  <p>Din energia combustibilului, numai 25–42 % devine lucru mecanic; 30–40 % pleacă cu gazele de evacuare, iar 20–35 % trece prin pereții camerei de ardere în lichidul de răcire și în ulei. Sistemul de răcire menține pereții cilindrilor, chiulasa și pistoanele în domeniul admis de materiale și de ulei (lichidul la 85–110 °C), aduce rapid motorul la temperatura de regim după pornire (frecări și emisii mici) și furnizează căldura pentru încălzirea habitaclului.</p>
+  <div class="eq">Q̇<sub>r</sub> = q<sub>r</sub> · P<sub>c</sub> = q<sub>r</sub> · P<sub>e</sub> / η<sub>e</sub> ,&nbsp;&nbsp; P<sub>e</sub>(n) = P<sub>max</sub> [a (n/n<sub>P</sub>) + b (n/n<sub>P</sub>)² − c (n/n<sub>P</sub>)³]<span class="n">(1)</span></div>
+  <h2>Clasificare și structură</h2>
+  <p>Răcirea cu <b>aer</b> (aripioare și ventilator — motoare mici, motociclete) și răcirea cu <b>lichid</b> (soluția generală la autovehicule). Circuitul cu lichid este închis și <b>presurizat</b> (bușonul vasului de expansiune menține 1,0–1,6 bar suprapresiune), cu <b>circulație forțată</b> de pompa centrifugă. <b>Termostatul</b> împarte circuitul în <b>circuitul mic</b> (motor → by-pass → pompă), folosit la încălzire, și <b>circuitul mare</b> (motor → radiator → pompă). Variantele moderne folosesc termostat cartografic încălzit electric, ventilator cu turație variabilă, pompă comutabilă sau electrică și supape rotative de management termic.</p>
+  <h2>Pompa centrifugă și rețeaua hidraulică</h2>
+  <p>Înălțimea de pompare crește cu pătratul turației; rezistența circuitului crește cu pătratul debitului, iar termostatul o modifică puternic. Punctul de funcționare rezultă din intersecția celor două curbe:</p>
+  <div class="eq">H<sub>p</sub> = H<sub>0</sub> (N/N<sub>0</sub>)² − k<sub>p</sub> Q² ,&nbsp;&nbsp; H<sub>c</sub> = k<sub>c</sub>(x) Q² &nbsp;⇒&nbsp; Q = (N/N<sub>0</sub>) √[H<sub>0</sub> / (k<sub>p</sub> + k<sub>c</sub>)]<span class="n">(2)</span></div>
+  <h2>Radiatorul — metoda ε–NTU</h2>
+  <p>Radiatorul este un schimbător cu curgere încrucișată (ambele fluide neamestecate). Cu capacitățile termice C = ṁ c<sub>p</sub> ale lichidului și aerului, C<sub>min</sub>, C<sub>r</sub> = C<sub>min</sub>/C<sub>max</sub> și NTU = UA/C<sub>min</sub>:</p>
+  <div class="eq">ε = 1 − exp{ (NTU<sup>0,22</sup>/C<sub>r</sub>) [exp(−C<sub>r</sub> NTU<sup>0,78</sup>) − 1] } ,&nbsp;&nbsp; Q̇<sub>rad</sub> = ε C<sub>min</sub> (T<sub>e</sub> − T<sub>a</sub>)<span class="n">(3)</span></div>
+  <p>Viteza aerului prin radiator este dată de presiunea dinamică (≈ 20–25 % din viteza vehiculului) și de ventilator; la viteză mică și sarcină mare (urcare, remorcă, trafic aglomerat vara) ventilatorul devine indispensabil.</p>
+  <h2>Termostatul, presurizarea și lichidul de răcire</h2>
+  <p>Termostatul cu ceară începe să se deschidă la T<sub>d</sub> (80–92 °C) și este complet deschis la T<sub>d</sub> + 12…15 °C (cursă ≥ 7–8 mm). Lichidul este un amestec de apă cu monoetilenglicol și aditivi anticorozivi; concentrația uzuală de 40–50 % asigură protecție la −25…−37 °C. Presurizarea ridică punctul de fierbere:</p>
+  <div class="eq">T<sub>f</sub> = T<sub>sat,apă</sub>(p<sub>0</sub> + Δp<sub>bușon</sub>) + ΔT<sub>glicol</sub>(x) ,&nbsp;&nbsp; lg p<sub>sat</sub> = A − B / (C + T)<span class="n">(4)</span></div>
+  <div class="eq">C<sub>e</sub> dT<sub>e</sub>/dt = Q̇<sub>r</sub> − ṁ<sub>r</sub> c<sub>p</sub> (T<sub>e</sub> − T<sub>r</sub>) − Q̇<sub>înc</sub> − (hA)<sub>ext</sub>(T<sub>e</sub> − T<sub>a</sub>)<span class="n">(5)</span></div>
+  <div class="note warn"><b>Protecția muncii.</b> Nu deschideți niciodată bușonul cu motorul cald: lichidul presurizat la 120 °C se vaporizează brusc și produce arsuri grave. Ventilatorul electric poate porni și cu contactul întrerupt — țineți mâinile departe de palete. Lichidul antigel (etilenglicol) este toxic la ingerare și are gust dulce: se colectează și se predă la centre autorizate.</div>
+</section>
+
+<!-- ============ SCHEMA ============ -->
+<section class="tab" id="t-sch">
+  <div class="card"><div class="bd ctlbar">
+    <div class="ctrl"><label><span>Tipul sistemului</span></label><div class="seg" id="segVar"></div></div>
+    <div class="ctrl" style="min-width:230px"><label><span>Temperatura lichidului (animație)</span> <b id="v_sreg"></b></label><input type="range" id="sreg" min="0" max="1" step="0.01" value="0.7"></div>
+    <div class="ctrl"><label><span><input type="checkbox" id="sAnim" checked> Animă fluxurile</span></label></div>
+    <div class="ctrl"><label><span>Test de identificare (denumirile dispar)</span></label><div class="row"><button class="btn fuel" id="qStart">Începe testul</button><button class="btn alt" id="qSkip">Arată / sari</button></div></div>
+    <p class="small" id="qState" style="margin:0"></p>
+  </div></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Schema sistemului de răcire <span class="tag" id="varTag"></span></h3><div class="bd"><canvas id="cvSch"></canvas><div class="legend2" id="leg"></div></div></div>
+    <div class="card"><h3>Fișa componentei</h3><div class="bd infobox"><div id="info"></div><div class="chips" id="chips"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Componentele sistemului</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 1. Componentele sistemului de răcire</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblComp">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblComp" data-cap="Tabelul 1. Componentele sistemului de răcire">Copiază pentru Word</button><button class="btn sm alt" data-copy="img" data-target="#cvSch" data-cap="Schema sistemului">Copiază schema</button></div>
+    <div class="tbl-wrap wraptbl" id="tblComp"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 2. Rezultatele testului de identificare</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblQuiz">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblQuiz" data-cap="Tabelul 2. Rezultatele testului de identificare">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblQuiz"></div>
+  </div></div>
+</section>
+
+<!-- ============ FUNCTIONARE ============ -->
+<section class="tab" id="t-fun">
+  <div class="grid3">
+    <div class="card"><h3>Regimul și condițiile</h3><div class="bd">
+      <div class="ctrl"><label><span>Motorul</span></label><select id="eng"></select></div>
+      <div class="ctrl"><label><span>Turația motorului n</span> <b id="v_n"></b></label><input type="range" id="n" min="800" max="6500" step="50" value="2500"></div>
+      <div class="ctrl"><label><span>Sarcina motorului</span> <b id="v_ld"></b></label><input type="range" id="ld" min="0" max="100" step="1" value="40"></div>
+      <div class="ctrl"><label><span>Viteza vehiculului v</span> <b id="v_v"></b></label><input type="range" id="v" min="0" max="180" step="5" value="80"></div>
+      <div class="ctrl"><label><span>Temperatura aerului T<sub>a</sub></span> <b id="v_Ta"></b></label><input type="range" id="Ta" min="-25" max="45" step="1" value="25"></div>
+      <fieldset><legend>Sistemul de răcire</legend>
+        <div class="ctrl"><label><span>Termostatul</span></label><select id="tst"><option value="wax">Termostat cu ceară</option><option value="map">Termostat cartografic (încălzit electric)</option></select></div>
+        <div class="ctrl"><label><span>Începutul deschiderii T<sub>d</sub></span> <b id="v_Td"></b></label><input type="range" id="Td" min="80" max="95" step="1" value="87"></div>
+        <div class="ctrl"><label><span>Concentrația de glicol x</span> <b id="v_x"></b></label><input type="range" id="x" min="0" max="60" step="1" value="50"></div>
+        <div class="ctrl"><label><span>Suprapresiunea bușonului</span> <b id="v_pcap"></b></label><input type="range" id="pcap" min="0.8" max="1.8" step="0.05" value="1.4"></div>
+        <div class="ctrl"><label><span><input type="checkbox" id="heater"> Încălzirea habitaclului pornită</span></label></div>
+        <div class="ctrl"><label><span>Defect simulat</span></label><select id="flt"></select></div>
+      </fieldset>
+      <div class="row"><button class="btn fuel" id="fPlay">Pornire la rece</button><button class="btn alt" id="fPause">Pauză</button><button class="btn alt" id="fReset">Regim stabilizat</button></div>
+      <div class="ctrl" style="margin-top:10px"><label><span>Viteza redării</span> <b id="v_slow"></b></label><input type="range" id="slow" min="10" max="100" step="5" value="40"></div>
+    </div></div>
+    <div class="card stage"><h3>Circuitul de răcire în funcționare <span class="tag" id="funTag"></span></h3><div class="bd">
+      <canvas id="cvFun"></canvas>
+      <h4 style="margin:12px 0 6px">Osciloscop — încălzirea motorului după pornirea la rece (temperatura aerului = temperatura inițială)</h4>
+      <canvas id="cvScope"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvFun" data-cap="Circuitul de răcire">Copiază imaginea</button><button class="btn sm alt" data-copy="img" data-target="#cvScope" data-cap="Încălzirea motorului">Copiază oscilogramele</button></div>
+    </div></div>
+    <div class="card readouts"><h3>Calculul punctului de funcționare</h3><div class="bd"><table class="ro-table" id="roCalc"></table>
+      <div class="copybar"><button class="btn sm alt" data-copy="excel" data-target="#tblCalc">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblCalc" data-cap="Tabelul 3. Calculul punctului de funcționare">Copiază pentru Word</button></div>
+      <div id="tblCalc" style="display:none"></div></div></div>
+  </div>
+</section>
+
+<!-- ============ MASURATORI ============ -->
+<section class="tab" id="t-mas">
+  <div class="grid3">
+    <div class="card"><h3>Verificări de atelier</h3><div class="bd">
+      <fieldset style="margin-top:0;border-top:0;padding-top:0"><legend>Starea sistemului încercat</legend>
+        <div class="ctrl"><label><span>Neetanșeitate — diametru echivalent</span> <b id="v_dl"></b></label><input type="range" id="dl" min="0" max="0.6" step="0.02" value="0.16"></div>
+        <div class="ctrl"><label><span>Abaterea arcului supapei bușonului</span> <b id="v_capd"></b></label><input type="range" id="capd" min="-40" max="20" step="1" value="-10"></div>
+        <div class="ctrl"><label><span>Îmbătrânirea termostatului</span> <b id="v_tage"></b></label><input type="range" id="tage" min="0" max="100" step="1" value="30"></div>
+        <div class="ctrl"><label><span>Concentrația de glicol în lichidul probei</span> <b id="v_conc"></b></label><input type="range" id="conc" min="0" max="60" step="1" value="38"></div>
+        <div class="ctrl"><label><span>Seria de măsurători</span> <b id="v_bseed"></b></label><input type="range" id="bseed" min="1" max="9" step="1" value="3"></div>
+      </fieldset>
+      <div class="row"><button class="btn fuel" id="bPress">Încercarea de presiune</button><button class="btn alt" id="bCap">Bușonul</button><button class="btn alt" id="bTst">Termostatul</button><button class="btn alt" id="bRefr">Refractometrul</button></div>
+      <p class="small">Presiune: cu pompa de mână se aduce circuitul (rece) la 1,5 bar; admis — scădere ≤ 0,1 bar în 2 min. Bușon: deschiderea supapei de presiune la 1,4 ± 0,15 bar. Termostat (vas cu apă încălzită): început de deschidere la 87 ± 2 °C, cursă ≥ 7 mm la 100 °C. Antigel: protecție la cel puțin −25 °C.</p>
+    </div></div>
+    <div class="card stage"><h3>Standul de verificare <span class="tag" id="benchTag">oprit</span></h3><div class="bd"><canvas id="cvBench"></canvas></div></div>
+    <div class="card readouts"><h3>Rezultatele verificărilor</h3><div class="bd"><table class="ro-table" id="roBench"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabele de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 4. Verificări de atelier ale sistemului de răcire</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblBench">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblBench" data-cap="Tabelul 4. Verificări de atelier">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblBench"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 5. Bilanțul termic la sarcină plină în funcție de turație (setările din secțiunea 3)</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblFL">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblFL" data-cap="Tabelul 5. Bilanțul termic la sarcină plină">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblFL"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 1. Încălzirea motorului după pornirea la rece</span></h3><div class="bd"><canvas id="ch1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch1" data-cap="Fig. 1">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 2. Caracteristica termostatului — cursa în funcție de temperatură</span></h3><div class="bd"><canvas id="ch2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch2" data-cap="Fig. 2">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 3. Pompa centrifugă și caracteristicile circuitului</span></h3><div class="bd"><canvas id="ch3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch3" data-cap="Fig. 3">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 4. Căldura de evacuat și capacitatea radiatorului</span></h3><div class="bd"><canvas id="ch4"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch4" data-cap="Fig. 4">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 5. Punctele de congelare și de fierbere ale lichidului</span></h3><div class="bd"><canvas id="ch5"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch5" data-cap="Fig. 5">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 6. Încercarea de presiune — scăderea presiunii în circuit</span></h3><div class="bd"><canvas id="ch6"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch6" data-cap="Fig. 6">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ TUTORIAL ============ -->
+<section class="tab prose" id="t-tut">
+  <h2>Desfășurarea lucrării</h2>
+  <ol class="steps">
+    <li><b>Teorie.</b> Citiți secțiunea 1 și notați relațiile (1)–(5).</li>
+    <li><b>Schema sistemului.</b> Pentru fiecare variantă (MAS cu termostat cu ceară, sistem cartografic, MAC cu răcitoare suplimentare) parcurgeți componentele. Modificați temperatura lichidului și urmăriți trecerea de la circuitul mic la circuitul mare și pornirea ventilatorului.</li>
+    <li><b>Testul de identificare.</b> Pe prima variantă apăsați „Începe testul” și identificați toate componentele fără denumiri. Rezultatul intră în Tabelul 2.</li>
+    <li><b>Bilanțul termic.</b> La n = 2500 rot/min, sarcină 40 %, verificați cu relația (1) căldura cedată lichidului și cu relațiile (2)–(3) debitul și puterea radiatorului.</li>
+    <li><b>Ventilatorul.</b> Reduceți viteza vehiculului la 20 km/h, sarcina 90 %, T<sub>a</sub> = 40 °C și urmăriți treptele ventilatorului; apoi introduceți defectul „ventilator defect”.</li>
+    <li><b>Pornirea la rece.</b> Apăsați „Pornire la rece” și notați timpul până la 80 °C și momentul deschiderii termostatului; repetați cu „termostat blocat deschis” la −10 °C.</li>
+    <li><b>Lichidul.</b> Pentru x = 0 %, 30 % și 50 % notați punctele de congelare și de fierbere (Fig. 5); explicați rolul bușonului.</li>
+    <li><b>Măsurători.</b> Efectuați încercarea de presiune, verificarea bușonului, a termostatului și a concentrației; stabiliți verdictul.</li>
+    <li><b>Referat.</b> Completați datele, copiați referatul în Word și adăugați figurile.</li>
+  </ol>
+  <h2>Experimente dirijate</h2>
+  <div class="row"><button class="btn alt" data-exp="A">A — Urcare vara, 40 °C, remorcă</button><button class="btn alt" data-exp="B">B — Termostat blocat deschis, iarna</button><button class="btn alt" data-exp="C">C — Termostat blocat închis</button><button class="btn alt" data-exp="D">D — Apă fără antigel și bușon defect</button></div>
+  <p class="small">A: urmăriți deschiderea completă a termostatului și treptele ventilatorului; introduceți apoi „radiator colmatat”. B: motorul nu atinge temperatura de regim, încălzirea habitaclului este slabă. C: temperatura crește până la fierbere. D: comparați punctul de fierbere cu cel al lichidului cu 50 % glicol și bușon de 1,4 bar.</p>
+  <h2>Test grilă</h2>
+  <div id="mcq"></div>
+</section>
+
+<!-- ============ REFERAT ============ -->
+<section class="tab" id="t-ref">
+  <div class="card"><h3>Date de identificare</h3><div class="bd"><div class="row">
+    <input class="field" style="max-width:260px" id="stName" placeholder="Numele și prenumele studentului">
+    <input class="field" style="max-width:140px" id="stGroup" placeholder="Grupa">
+    <input class="field" style="max-width:170px" id="stDate" type="date">
+    <button class="btn fuel" id="bRef">Copiază referatul pentru Word</button><button class="btn alt" id="bRefTxt">Copiază ca text</button></div>
+    <p class="small">Referatul include tabelul componentelor, testul de identificare, calculul punctului de funcționare, verificările de atelier, bilanțul termic și concluziile. Schema și graficele se copiază separat.</p></div></div>
+  <div class="card" style="margin-top:16px"><div class="bd prose" id="refBody" style="max-width:none"></div></div>
+</section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box"><div class="row" style="justify-content:space-between"><b id="modalT"></b><button class="btn sm alt" onclick="document.getElementById('modal').classList.remove('on')">Închide</button></div><div id="modalB"></div></div></div>
+<script>/* ===== Utilitare comune simulatoare laborator ===== */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let DEC = ',';
+try { const d = localStorage.getItem('lab_dec'); if (d) DEC = d; } catch(e){}
+function fmt(x, d=2){ if (x===null||x===undefined||!isFinite(x)) return '–'; return x.toFixed(d).replace('.', DEC); }
+function fmtS(x, s=3){ if(!isFinite(x)) return '–'; if (x===0) return '0'; const d = Math.max(0, s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x, Math.min(d,6)); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaFn(z){ // Lanczos
+  if (z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gammaFn(1-z));
+  z-=1; const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0]; for(let i=1;i<g+2;i++) x+=c[i]/(z+i); const t=z+g+0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x; }
+function linreg(x,y){ const n=x.length; let sx=0,sy=0,sxx=0,sxy=0,syy=0; for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];syy+=y[i]*y[i];}
+  const b=(n*sxy-sx*sy)/(n*sxx-sx*sx), a=(sy-b*sx)/n; const r=(n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy)); return {a,b,r2:r*r}; }
+function toast(msg){ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---- Tab-uri ---- */
+function initTabs(onChange){
+  $$('nav.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    $$('nav.tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('section.tab').forEach(s=>s.classList.toggle('on', s.id===b.dataset.tab));
+    try{localStorage.setItem(document.title+'_tab', b.dataset.tab);}catch(e){}
+    onChange && onChange(b.dataset.tab); window.scrollTo({top:0});
+  }));
+  let t=null; try{t=localStorage.getItem(document.title+'_tab');}catch(e){}
+  const btn = t && $(`nav.tabs button[data-tab="${t}"]`); (btn||$('nav.tabs button[data-tab]')).click();
+}
+function initTheme(){
+  const b=$('#themeBtn'); if(!b) return; let th=null; try{th=localStorage.getItem('lab_theme');}catch(e){}
+  if(th) document.documentElement.dataset.theme=th;
+  b.addEventListener('click',()=>{ const cur=document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx; try{localStorage.setItem('lab_theme',nx);}catch(e){} window.dispatchEvent(new Event('themechange')); });
+  const d=$('#decBtn'); if(d){ d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct');
+    d.addEventListener('click',()=>{ DEC = DEC===','?'.':','; d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct'); try{localStorage.setItem('lab_dec',DEC);}catch(e){} window.dispatchEvent(new Event('decchange')); toast('Separator zecimal: '+(DEC===','?'virgulă (Excel RO)':'punct (Excel EN)')); }); }
+}
+
+/* ---- Canvas HiDPI ---- */
+function fitCanvas(cv, h){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=cv.clientWidth||cv.parentElement.clientWidth; const H=h||cv._h||Math.round(w*0.56);
+  cv._h=h||cv._h; cv.style.height=H+'px'; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(H*dpr);} const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h:H}; }
+
+/* ---- Grafic generic ---- */
+function niceTicks(min,max,n=6){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const t=[]; for(let v=Math.ceil(min/step-1e-9)*step; v<=max+step*1e-6; v+=step) t.push(+v.toFixed(12)); return {t,step}; }
+function plot(cv, o){
+  if(!cv.clientWidth) return null;
+  const {c,w,h}=fitCanvas(cv, o.height||300);
+  const ink=css('--ink'), ink2=css('--ink2'), grid=css('--grid'), bg=css('--canvas-bg');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const L=62,R=o.y2?60:18,T=o.title?30:14,B=46; const pw=w-L-R, ph=h-T-B;
+  let xs=[],ys=[],y2s=[]; o.series.forEach(s=>{ s.x.forEach((v,i)=>{ if(isFinite(v)&&isFinite(s.y[i])){ xs.push(v); (s.axis===2?y2s:ys).push(s.y[i]); } }); });
+  let xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs); if(!(xmax>xmin)){xmax=xmin+1;}
+  const lg=o.logx, lgy=o.logy;
+  const tx=v=>lg?Math.log10(v):v, ty=v=>lgy?Math.log10(v):v;
+  let ymin=o.ymin??Math.min(...ys), ymax=o.ymax??Math.max(...ys); if(!isFinite(ymin)){ymin=0;ymax=1;} if(ymax===ymin){ymax+=1;ymin-=lgy?0:1;}
+  if(o.ymax===undefined && o.ymin!==undefined && !lgy){ ymax+=(ymax-ymin)*0.08; }
+  if(o.ymin===undefined && !lgy){ const pad=(ymax-ymin)*0.08; ymax+=pad; if(ymin>0 && ymin<(ymax-ymin)*0.6) ymin=0; else ymin-=pad; }
+  let y2min=o.y2min??Math.min(...y2s), y2max=o.y2max??Math.max(...y2s); if(o.y2 && o.y2min===undefined){const p=(y2max-y2min)*0.08||1; y2max+=p; y2min=Math.max(0,y2min-p);}
+  const X=v=>L+(tx(v)-tx(xmin))/(tx(xmax)-tx(xmin))*pw, Y=v=>T+ph-(ty(v)-ty(ymin))/(ty(ymax)-ty(ymin))*ph, Y2=v=>T+ph-(v-y2min)/(y2max-y2min)*ph;
+  c.font='12px Barlow Condensed, Arial Narrow, sans-serif'; c.lineWidth=1;
+  // grid
+  const xt = o.xcats? o.xcats.map((_,i)=>i+1) : lg? logTicks(xmin,xmax) : niceTicks(xmin,xmax,o.xticks||7).t; const yt = lgy? logTicks(ymin,ymax): niceTicks(ymin,ymax,6).t;
+  c.strokeStyle=grid; c.fillStyle=ink2; c.textAlign='center'; c.textBaseline='top';
+  xt.forEach(v=>{ if(v<xmin-1e-12||v>xmax+1e-12) return; const x=X(v); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.fillText(o.xcats? o.xcats[v-1] : fmtTick(v), x, T+ph+5); });
+  c.textAlign='right'; c.textBaseline='middle';
+  yt.forEach(v=>{ if(v<ymin-1e-12||v>ymax+1e-12) return; const y=Y(v); c.beginPath(); c.moveTo(L,y); c.lineTo(L+pw,y); c.stroke(); c.fillText(fmtTick(v), L-6, y); });
+  if(o.y2){ c.textAlign='left'; niceTicks(y2min,y2max,6).t.forEach(v=>{ if(v<y2min||v>y2max) return; c.fillText(fmtTick(v), L+pw+6, Y2(v)); }); }
+  c.strokeStyle=ink; c.lineWidth=1.2; c.strokeRect(L,T,pw,ph);
+  c.fillStyle=ink; c.font='13px Barlow, Arial, sans-serif'; c.textAlign='center'; c.textBaseline='bottom'; c.fillText(o.xlabel||'', L+pw/2, h-4);
+  c.save(); c.translate(14, T+ph/2); c.rotate(-Math.PI/2); c.textBaseline='middle'; c.fillText(o.ylabel||'',0,0); c.restore();
+  if(o.y2){ c.save(); c.translate(w-10, T+ph/2); c.rotate(Math.PI/2); c.textBaseline='middle'; c.fillText(o.y2label||'',0,0); c.restore(); }
+  if(o.title){ c.font='600 14px Barlow, Arial, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(o.title, L, 8); }
+  // series
+  c.save(); c.beginPath(); c.rect(L,T,pw,ph); c.clip();
+  o.series.forEach(s=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const YY=s.axis===2?Y2:Y;
+    if(s.bars){ const n=s.x.length; const bw=s.bw? (X(s.x[0]+s.bw)-X(s.x[0])) : pw/n*0.8; c.fillStyle=col; c.globalAlpha=s.alpha??0.75;
+      s.x.forEach((v,i)=>{ const x=X(v)-bw/2+(s.shift||0)*bw; const y=YY(s.y[i]); c.fillRect(x+ (s.gap||1), y, bw*(s.wf||1)-2*(s.gap||1), YY(s.axis===2?y2min:Math.max(ymin,0))-y); }); c.globalAlpha=1; return; }
+    c.strokeStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+    if(!s.pointsOnly){ c.beginPath(); let st=false; s.x.forEach((v,i)=>{ if(!isFinite(v)||!isFinite(s.y[i])){st=false;return;} const x=X(v),y=YY(s.y[i]); st?c.lineTo(x,y):c.moveTo(x,y); st=true; }); c.stroke(); }
+    c.setLineDash([]);
+    if(s.markers){ c.fillStyle=css('--canvas-bg'); c.strokeStyle=col; c.lineWidth=1.8; s.x.forEach((v,i)=>{ if(!isFinite(s.y[i]))return; const x=X(v),y=YY(s.y[i]); c.beginPath();
+      if(s.markers==='sq') c.rect(x-3.5,y-3.5,7,7); else if(s.markers==='tri'){c.moveTo(x,y-4.5);c.lineTo(x+4.2,y+3.5);c.lineTo(x-4.2,y+3.5);c.closePath();} else c.arc(x,y,3.6,0,7); c.fill(); c.stroke(); }); }
+  });
+  (o.vlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(X(v.x),T); c.lineTo(X(v.x),T+ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(v.label||'', X(v.x)+4, T+4+(v.dy||0)); });
+  (o.hlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(L,Y(v.y)); c.lineTo(L+pw,Y(v.y)); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='right'; c.textBaseline='bottom'; c.fillText(v.label||'', L+pw-4, Y(v.y)-2); });
+  c.restore();
+  // legend
+  const named=o.series.filter(s=>s.name); if(named.length){ c.font='12.5px Barlow, Arial, sans-serif'; let lx=L+10, ly=o.legendBR? T+ph-named.length*18-4 : T+10; const lw=Math.max(...named.map(s=>c.measureText(s.name).width))+36;
+    let lxr = o.legendLeft? L+10 : L+pw-lw-8; c.fillStyle=css('--canvas-bg'); c.globalAlpha=.88; c.fillRect(lxr-6, ly-6, lw+4, named.length*18+8); c.globalAlpha=1;
+    named.forEach((s,i)=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const yy=ly+i*18+6; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+      if(s.bars){ c.globalAlpha=.75; c.fillRect(lxr,yy-5,22,10); c.globalAlpha=1;} else if(s.pointsOnly){ c.beginPath(); c.arc(lxr+11,yy,3.6,0,7); c.stroke(); } else { c.beginPath(); c.moveTo(lxr,yy); c.lineTo(lxr+22,yy); c.stroke(); }
+      c.setLineDash([]); c.fillStyle=ink; c.textAlign='left'; c.textBaseline='middle'; c.fillText(s.name, lxr+28, yy); }); }
+  cv._plot={o,X,Y,L,T,pw,ph};
+  return cv._plot;
+}
+function logTicks(a,b){ const t=[]; for(let e=Math.floor(Math.log10(a)); e<=Math.ceil(Math.log10(b)); e++){ [1,2,5].forEach(m=>{ const v=m*Math.pow(10,e); if(v>=a*0.999&&v<=b*1.001) t.push(v); }); } return t; }
+function fmtTick(v){ const a=Math.abs(v); if(a===0) return '0'; if(a>=1000) return String(Math.round(v)); if(a>=10) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=1) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=0.1) return fmt(v,2); return fmt(v,3); }
+
+/* ---- Tabele & copiere ---- */
+function buildTable(el, T){ // T={head:[..], rows:[[..]], foot:[..]?, left:[colIdx]}
+  const left=new Set(T.left||[0]);
+  let h='<table class="data"><thead><tr>'+T.head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  T.rows.forEach(r=>{ h+='<tr>'+r.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr>'; });
+  h+='</tbody>'; if(T.foot) h+='<tfoot><tr>'+T.foot.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr></tfoot>'; h+='</table>';
+  el.innerHTML=h; el._T=T; }
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,'$1').replace(/<sup>(.*?)<\/sup>/g,'^$1').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+function tableTSV(T){ const lines=[T.head.map(strip).join('\t')]; T.rows.forEach(r=>lines.push(r.map(strip).join('\t'))); if(T.foot) lines.push(T.foot.map(strip).join('\t')); return lines.join('\r\n'); }
+function tableHTMLWord(T, caption){
+  const th='border:1px solid #16324A;background:#16324A;color:#fff;padding:3pt 5pt;font:bold 9.5pt Calibri,Arial;text-align:center';
+  const td='border:1px solid #9AA8B4;padding:2pt 5pt;font:9.5pt Calibri,Arial;text-align:right'; const tdl=td.replace('right','left');
+  const left=new Set(T.left||[0]);
+  let h=(caption?`<p style="font:bold 10pt Calibri,Arial;color:#16324A;margin:6pt 0 3pt">${caption}</p>`:'')+'<table style="border-collapse:collapse;mso-table-lspace:0">';
+  h+='<tr>'+T.head.map(x=>`<th style="${th}">${x}</th>`).join('')+'</tr>';
+  T.rows.forEach((r,j)=>{ h+='<tr>'+r.map((x,i)=>`<td style="${left.has(i)?tdl:td};${j%2?'background:#F2F5F7':''}">${x}</td>`).join('')+'</tr>'; });
+  if(T.foot) h+='<tr>'+T.foot.map((x,i)=>`<td style="${left.has(i)?tdl:td};font-weight:bold;border-top:2px solid #16324A">${x}</td>`).join('')+'</tr>';
+  return h+'</table>'; }
+async function copyRich(html, text){
+  try{ if(navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  try{ const d=document.createElement('div'); d.contentEditable='true'; d.style.cssText='position:fixed;left:-9999px;top:0'; d.innerHTML=html; document.body.appendChild(d);
+    const r=document.createRange(); r.selectNodeContents(d); const s=getSelection(); s.removeAllRanges(); s.addRange(r); const ok=document.execCommand('copy'); s.removeAllRanges(); d.remove(); if(ok) return true; }catch(e){}
+  return false; }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) return true; }catch(e){}
+  return false; }
+function manualModal(title, content, isHTML){ const m=$('#modal'); $('#modalT').textContent=title;
+  const b=$('#modalB'); b.innerHTML=''; if(isHTML){ const d=document.createElement('div'); d.innerHTML=content; d.style.cssText='border:1px solid var(--line);padding:8px;background:#fff;color:#000;overflow:auto'; b.appendChild(d);
+    b.insertAdjacentHTML('afterbegin','<p class="small">Selectați conținutul de mai jos (Ctrl+A în chenar nu funcționează – trageți cu mouse-ul) și apăsați Ctrl+C.</p>'); }
+  else { const t=document.createElement('textarea'); t.value=content; b.appendChild(t); setTimeout(()=>{t.focus();t.select();},50); b.insertAdjacentHTML('afterbegin','<p class="small">Copierea automată a fost blocată de browser. Textul este selectat – apăsați Ctrl+C (Cmd+C).</p>'); }
+  m.classList.add('on'); }
+async function copyTableExcel(T){ const txt=tableTSV(T); if(await copyText(txt)) toast('Tabel copiat – lipiți în Excel (Ctrl+V)'); else manualModal('Copiere pentru Excel', txt); }
+async function copyTableWord(T, cap){ const html=tableHTMLWord(T,cap); if(await copyRich(html, tableTSV(T))) toast('Tabel copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere pentru Word', html, true); }
+async function copyCanvas(cv, name){
+  // exportă pe fundal alb pentru documente
+  const tmp=document.createElement('canvas'); tmp.width=cv.width; tmp.height=cv.height; const c=tmp.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,tmp.width,tmp.height); c.drawImage(cv,0,0);
+  try{ const blob=await new Promise(r=>tmp.toBlob(r,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Grafic copiat ca imagine – lipiți în Word/Excel'); return; }catch(e){}
+  const url=tmp.toDataURL('image/png'); manualModal('Copiere grafic: '+(name||''), `<img src="${url}" style="max-width:100%"><p style="font:12px Arial">Clic dreapta pe imagine → „Copiere imagine”, apoi lipiți în Word.</p>`, true); }
+function wireCopy(scope){ $$('[data-copy]',scope).forEach(b=>{ if(b._w) return; b._w=1; b.addEventListener('click',()=>{ const tgt=$(b.dataset.target); const mode=b.dataset.copy;
+  if(mode==='excel') copyTableExcel(tgt._T); else if(mode==='word') copyTableWord(tgt._T, b.dataset.cap); else if(mode==='img') copyCanvas(tgt, b.dataset.cap); }); }); }
+function copyButtons(target, cap, img){ return img? `<button class="btn sm alt" data-copy="img" data-target="${target}" data-cap="${cap||''}">Copiază graficul</button>`
+  : `<button class="btn sm alt" data-copy="excel" data-target="${target}">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="${target}" data-cap="${cap||''}">Copiază pentru Word</button>`; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#modal')?.classList.remove('on'); });
+</script><script>/* ======================================================================
+   Motor comun pentru lucrările de cunoaștere (L3–L5):
+   schemă interactivă, osciloscop, test de identificare, test grilă
+   ====================================================================== */
+const HOT='#E0561E';
+const FLOW={lp:{c:'--fuel',w:5,sp:22},hp:{c:HOT,w:5,sp:34},ret:{c:'--fuel-deep',w:3,sp:14,dash:[7,5]},air:{c:'#7FAEDB',w:13,sp:30},exh:{c:'#A08C78',w:13,sp:36},
+  sig:{c:'--violet',w:1.6,sp:30,dash:[4,4]},act:{c:'--teal',w:1.6,sp:30,dash:[4,4]},vap:{c:'--ok',w:3,sp:12,dash:[5,4]},urea:{c:'#2BA3C7',w:3.5,sp:16},cool:{c:'--blue',w:4,sp:12},oil:{c:'#8A6A2A',w:3,sp:10}};
+const FLOWNAME={lp:'combustibil joasă presiune',hp:'combustibil înaltă presiune',ret:'retur combustibil',air:'aer de admisie',exh:'gaze de evacuare',sig:'semnale senzori → ECU',act:'comenzi ECU → actuatori',vap:'vapori de benzină',urea:'soluție AdBlue',cool:'lichid de răcire'};
+const col=v=>v&&v.startsWith('--')?css(v):v;
+
+/* ---------- glife pentru componente ---------- */
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function body(c,b,fill,stroke,r=6){ rr(c,b.x,b.y,b.w,b.h,r); c.fillStyle=fill||css('--panel2'); c.fill(); c.lineWidth=1.4; c.strokeStyle=stroke||css('--steel-d'); c.stroke(); }
+const G={
+  box(c,b){ body(c,b); },
+  tank(c,b,s,cm){ body(c,b,css('--panel2'),css('--steel-d'),8); const lv=b.y+b.h*(1-(cm.level??0.62)); c.save(); rr(c,b.x+2,b.y+2,b.w-4,b.h-4,6); c.clip(); c.fillStyle=cm.fluid?col(cm.fluid):css('--fuel-soft'); c.beginPath(); c.moveTo(b.x,lv); for(let x=0;x<=b.w;x+=6) c.lineTo(b.x+x,lv+Math.sin(x/9+s.t*2)*1.6); c.lineTo(b.x+b.w,b.y+b.h); c.lineTo(b.x,b.y+b.h); c.fill(); c.restore(); },
+  pump(c,b,s,cm){ const r=Math.min(b.w,b.h)/2, x=b.x+b.w/2, y=b.y+b.h/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.4; c.stroke();
+    c.save(); c.translate(x,y); c.rotate(cm.on===false?0:s.t*6); c.strokeStyle=css('--fuel-deep'); for(let k=0;k<4;k++){ c.rotate(Math.PI/2); c.beginPath(); c.arc(r*0.35,0,r*0.35,Math.PI,Math.PI*1.8); c.stroke(); } c.restore();
+    c.fillStyle=css('--ink'); c.font=`600 ${Math.max(10,r*0.7)}px Barlow Condensed,sans-serif`; c.textAlign='center'; c.fillText(cm.sym||'M',x,y+r*0.25); },
+  filter(c,b){ body(c,b); c.strokeStyle=css('--steel'); c.lineWidth=1; for(let x=b.x+6;x<b.x+b.w-4;x+=5){ c.beginPath(); c.moveTo(x,b.y+5); c.lineTo(x+2.5,b.y+b.h/2); c.lineTo(x,b.y+b.h-5); c.stroke(); } },
+  rail(c,b,s,cm){ rr(c,b.x,b.y,b.w,b.h,b.h/2); c.fillStyle=cm.hp?'rgba(224,86,30,.25)':css('--fuel-soft'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke(); },
+  preg(c,b){ body(c,b,css('--panel2'),css('--steel-d'),b.w/2); const x=b.x+b.w/2; c.strokeStyle=css('--blue'); c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+4,b.y+b.h*0.55); c.lineTo(b.x+b.w-4,b.y+b.h*0.55); c.stroke(); c.strokeStyle=css('--steel-d'); c.beginPath(); for(let i=0;i<=6;i++) c.lineTo(x+(i%2?5:-5),b.y+4+i*(b.h*0.5-6)/6); c.stroke(); },
+  inj(c,b,s,cm){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); rr(c,b.x+b.w*0.2,b.y,b.w*0.6,b.h*0.78,3); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke();
+    c.fillStyle=cm.coil||css('--ink'); c.fillRect(b.x+b.w*0.2,b.y+b.h*0.18,b.w*0.6,b.h*0.18);
+    c.beginPath(); c.moveTo(x-b.w*0.15,b.y+b.h*0.78); c.lineTo(x+b.w*0.15,b.y+b.h*0.78); c.lineTo(x,b.y+b.h); c.fillStyle=css('--steel-d'); c.fill();
+    if(cm.spray){ const L=b.h*0.9*cm.spray; c.fillStyle=cm.sprayCol||css('--fuel'); c.globalAlpha=.55; const d=cm.dir||1; c.beginPath(); c.moveTo(x,b.y+b.h); c.lineTo(x-L*0.35,b.y+b.h+L*d); c.lineTo(x+L*0.35,b.y+b.h+L*d); c.fill(); c.globalAlpha=1; } },
+  ecu(c,b,s){ body(c,b,'#20303D','#0e1a24',5); c.fillStyle='#9fb3c4'; for(let i=0;i<8;i++) c.fillRect(b.x+8+i*(b.w-16)/8,b.y+b.h-5,3,5); const k=Math.floor(s.t*4)%3; c.fillStyle=['#4ade80','#20303D','#4ade80'][k]; c.beginPath(); c.arc(b.x+b.w-10,b.y+9,3,0,7); c.fill();
+    c.fillStyle='#fff'; c.font='600 13px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('ECU',b.x+b.w/2,b.y+b.h/2+4); },
+  sens(c,b){ const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--violet'); c.lineWidth=2; c.stroke(); c.fillStyle=css('--violet'); c.beginPath(); c.arc(x,y,r*0.35,0,7); c.fill(); },
+  maf(c,b,s){ body(c,b,'rgba(127,174,219,.25)',css('--steel-d'),4); c.strokeStyle=HOT; c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+b.w/2,b.y+3); c.lineTo(b.x+b.w/2,b.y+b.h-3); c.stroke(); },
+  throttle(c,b,s,cm){ body(c,b,'rgba(127,174,219,.25)',css('--steel-d'),4); const a=(cm.open??0.3)*Math.PI/2; const x=b.x+b.w/2,y=b.y+b.h/2,L=b.h*0.42; c.strokeStyle=css('--ink'); c.lineWidth=3; c.beginPath(); c.moveTo(x-Math.sin(a)*L*0.2-Math.cos(a)*0,y-Math.cos(a)*L); c.lineTo(x+Math.sin(a)*L*0.2,y+Math.cos(a)*L); c.stroke(); c.fillStyle=css('--ink'); c.beginPath(); c.arc(x,y,3,0,7); c.fill(); },
+  airf(c,b){ body(c,b); c.strokeStyle=css('--steel'); for(let y=b.y+5;y<b.y+b.h-3;y+=4){ c.beginPath(); c.moveTo(b.x+5,y); c.lineTo(b.x+b.w-5,y); c.stroke(); } },
+  engine(c,b,s,cm){ body(c,b,'#7d8c99','#56636e',6); const z=cm.z||4, cw=(b.w-16)/z; for(let i=0;i<z;i++){ const x=b.x+8+i*cw, ph=s.t*(cm.rpm||3)+[0,Math.PI,Math.PI,0,Math.PI/2,Math.PI*1.5][i%6]; const py=b.y+b.h*0.45+Math.cos(ph)*b.h*0.14;
+      c.fillStyle='#dfe5ea'; c.fillRect(x+3,b.y+8,cw-6,b.h*0.62); c.fillStyle='#8a99a6'; c.fillRect(x+4,py,cw-8,b.h*0.16); c.fillStyle=cm.flame&&Math.cos(ph)<-0.8?'rgba(224,86,30,.8)':'transparent'; c.fillRect(x+4,b.y+9,cw-8,py-b.y-10); }
+    c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(cm.txt||'MOTOR',b.x+b.w/2,b.y+b.h-8); },
+  cat(c,b,s,cm){ rr(c,b.x,b.y,b.w,b.h,b.h/2); c.fillStyle=css('--panel2'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.6; c.stroke(); c.save(); rr(c,b.x+b.h*0.35,b.y+4,b.w-b.h*0.7,b.h-8,3); c.clip();
+    c.fillStyle=cm.hot?`rgba(224,86,30,${0.15+0.5*cm.hot})`:css('--fuel-soft'); c.fillRect(b.x,b.y,b.w,b.h); c.strokeStyle=css('--steel'); c.lineWidth=0.8;
+    const pat=cm.pat||'honey'; if(pat==='check'){ for(let x=b.x;x<b.x+b.w;x+=7) for(let y=b.y;y<b.y+b.h;y+=7) if(((x-b.x)/7+(y-b.y)/7)%2<1){ c.fillStyle=cm.soot?`rgba(30,30,30,${0.2+0.7*cm.soot})`:'rgba(94,110,123,.35)'; c.fillRect(x,y,7,7);} }
+    else for(let x=b.x;x<b.x+b.w;x+=6){ c.beginPath(); c.moveTo(x,b.y); c.lineTo(x,b.y+b.h); c.stroke(); } c.restore(); },
+  muffler(c,b){ rr(c,b.x,b.y,b.w,b.h,b.h/2.4); c.fillStyle=css('--panel2'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.6; c.stroke(); for(let i=1;i<4;i++){ c.beginPath(); c.moveTo(b.x+i*b.w/4,b.y+4); c.lineTo(b.x+i*b.w/4,b.y+b.h-4); c.stroke(); } },
+  valve(c,b,s,cm){ body(c,b,css('--panel2'),css('--teal'),3); c.strokeStyle=css('--teal'); c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+4,b.y+4); c.lineTo(b.x+b.w-4,b.y+b.h-4); c.moveTo(b.x+b.w-4,b.y+4); c.lineTo(b.x+4,b.y+b.h-4); c.stroke(); if(cm.open!==undefined){ c.fillStyle=css('--teal'); c.fillRect(b.x,b.y+b.h+2,b.w*Math.max(0,Math.min(1,cm.open)),3); } },
+  canister(c,b){ body(c,b,css('--panel2'),css('--ok'),8); c.fillStyle='#39433f'; const r=mulberry32(5); for(let i=0;i<40;i++){ c.beginPath(); c.arc(b.x+4+r()*(b.w-8),b.y+6+r()*(b.h-12),1.3,0,7); c.fill(); } },
+  hpp(c,b,s){ body(c,b,css('--panel2'),css('--steel-d'),6); const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)*0.32; c.save(); c.translate(x,y); for(let k=0;k<3;k++){ c.rotate(Math.PI*2/3); const e=Math.sin(s.t*8+k*2.1)*r*0.15; c.fillStyle=css('--steel'); c.fillRect(-4,-r-e-8,8,12); } c.restore(); c.fillStyle=css('--steel-d'); c.beginPath(); c.arc(x+Math.cos(s.t*8)*3,y+Math.sin(s.t*8)*3,r*0.45,0,7); c.fill(); },
+  turbo(c,b,s){ const r=b.h*0.42; [[b.x+r+2,css('--steel')],[b.x+b.w-r-2,'#b9a08a']].forEach(([x,f],i)=>{ c.fillStyle=f; c.beginPath(); c.arc(x,b.y+b.h/2,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke(); c.save(); c.translate(x,b.y+b.h/2); c.rotate(s.t*12); c.strokeStyle='#fff'; for(let k=0;k<6;k++){ c.rotate(Math.PI/3); c.beginPath(); c.moveTo(0,0); c.lineTo(r*0.8,0); c.stroke(); } c.restore(); }); c.fillStyle=css('--steel-d'); c.fillRect(b.x+r+2,b.y+b.h/2-3,b.w-2*r-4,6); },
+  cooler(c,b){ body(c,b,'rgba(47,108,168,.15)',css('--blue'),4); c.strokeStyle=css('--blue'); c.lineWidth=1; for(let x=b.x+5;x<b.x+b.w-3;x+=4){ c.beginPath(); c.moveTo(x,b.y+3); c.lineTo(x,b.y+b.h-3); c.stroke(); } },
+  lambda(c,b){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); c.beginPath(); for(let k=0;k<6;k++){ const a=k*Math.PI/3; c.lineTo(x+Math.cos(a)*b.w*0.45,b.y+b.h*0.3+Math.sin(a)*b.w*0.3); } c.fill(); c.fillStyle=css('--violet'); c.fillRect(x-b.w*0.18,b.y+b.h*0.45,b.w*0.36,b.h*0.55); c.fillStyle=css('--steel-d'); c.fillRect(x-2,b.y,4,b.h*0.2); },
+  dosing(c,b,s,cm){ G.inj(c,b,s,{...cm,coil:'#2BA3C7',sprayCol:'#2BA3C7'}); },
+  mixer(c,b){ body(c,b,css('--panel2'),css('--steel-d'),4); c.strokeStyle=css('--steel-d'); for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(b.x+6+i*(b.w-12)/4,b.y+4); c.lineTo(b.x+6+(i+0.8)*(b.w-12)/4,b.y+b.h-4); c.stroke(); } },
+  battery(c,b){ body(c,b,'#2d3a45','#111',3); c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('+   −',b.x+b.w/2,b.y+b.h/2+4); },
+  inpump(c,b,s,cm){ body(c,b,'#8193a3','#5e6e7b',4); const z=cm.z||4; for(let i=0;i<z;i++){ const x=b.x+8+i*(b.w-16)/z; c.fillStyle='#dfe5ea'; c.fillRect(x+2,b.y-10+Math.sin(s.t*6+i*1.6)*2,(b.w-16)/z-4,14); } },
+  vepump(c,b,s){ body(c,b,'#8193a3','#5e6e7b',b.h/2); c.save(); c.translate(b.x+b.h/2,b.y+b.h/2); c.rotate(s.t*5); c.strokeStyle='#fff'; c.lineWidth=2; c.beginPath(); c.moveTo(-b.h*0.3,0); c.lineTo(b.h*0.3,0); c.stroke(); c.restore(); },
+  psens(c,b){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); c.fillRect(x-b.w*0.3,b.y+b.h*0.35,b.w*0.6,b.h*0.65); c.fillStyle=css('--violet'); rr(c,b.x,b.y,b.w,b.h*0.4,3); c.fill(); },
+  coil(c,b){ body(c,b,'#2d3a45','#111',3); c.strokeStyle='#e9a93a'; c.beginPath(); for(let i=0;i<=8;i++) c.lineTo(b.x+4+i*(b.w-8)/8,b.y+b.h/2+(i%2?-5:5)); c.stroke(); },
+  cam(c,b,s){ const x=b.x+b.w/2,y=b.y+b.h/2,r=b.h*0.35; c.save(); c.translate(x,y); c.rotate(s.t*4); c.fillStyle=css('--steel'); c.beginPath(); c.ellipse(r*0.2,0,r*1.2,r,0,0,7); c.fill(); c.restore(); },
+};
+/* ---------- schema interactivă ---------- */
+const ckey=cm=>cm.grp||cm.id;
+function Schem(cv,spec,opt={}){
+  const S={cv,spec,sel:null,hover:null,t:0,quiz:null,flash:null,run:false,last:0,sc:1,active:()=>true,onSel:opt.onSel||(()=>{}),onQuiz:opt.onQuiz||(()=>{})};
+  S.setSpec=sp=>{ S.spec=sp; S.sel=null; S.draw(); };
+  S.draw=()=>{ if(!cv.clientWidth) return; const sp=S.spec, Wv=sp.W||1000, Hv=sp.H||560; const {c,w,h}=fitCanvas(cv,Math.round(cv.clientWidth*Hv/Wv)); S.sc=w/Wv;
+    c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); c.save(); c.scale(S.sc,S.sc);
+    // zone de fond
+    (sp.zones||[]).forEach(z=>{ c.fillStyle=col(z.c)||'rgba(0,0,0,.03)'; c.globalAlpha=z.a??0.07; rr(c,z.x,z.y,z.w,z.h,10); c.fill(); c.globalAlpha=1; c.fillStyle=css('--ink2'); c.font='600 13px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText(z.t,z.x+10,z.y+18); });
+    // legături
+    (sp.links||[]).forEach(L=>{ const F=FLOW[L.type]; const on=L.on?L.on():true; const cc=col(F.c); c.lineJoin='round'; c.lineCap='round';
+      c.beginPath(); L.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+      if(F.w>8){ c.strokeStyle=css('--steel-d'); c.lineWidth=F.w+2.5; c.stroke(); c.strokeStyle=cc; c.globalAlpha=on?0.45:0.2; c.lineWidth=F.w; c.stroke(); c.globalAlpha=1;
+        if(on){ c.setLineDash([3,F.w*1.4]); c.lineDashOffset=-S.t*F.sp*(L.speed||1); c.strokeStyle=L.dot?col(L.dot):'#fff'; c.lineWidth=4; c.stroke(); c.setLineDash([]); } }
+      else { c.strokeStyle=cc; c.lineWidth=F.w; c.globalAlpha=on?0.35:0.18; c.setLineDash(F.dash||[]); c.stroke(); c.globalAlpha=1;
+        if(on){ c.setLineDash(F.dash||[F.w*2,F.w*2.2]); c.lineDashOffset=-S.t*F.sp*(L.speed||1); c.lineWidth=F.w; c.stroke(); } c.setLineDash([]); } });
+    // componente
+    sp.comps.forEach(cm=>{ const b={x:cm.x,y:cm.y,w:cm.w,h:cm.h}; const st=cm.st?cm.st():{}; (G[cm.type]||G.box)(c,b,S,{...cm,...st});
+      const K=ckey(cm), isSel=S.sel===K, isHov=S.hover===K, fl=S.flash&&S.flash.id===K?S.flash:null;
+      if(isSel||isHov||fl){ c.strokeStyle=fl?(fl.ok?css('--ok'):css('--alert')):isSel?css('--fuel'):css('--blue'); c.lineWidth=isSel||fl?3:1.6; rr(c,b.x-5,b.y-5,b.w+10,b.h+10,8); c.stroke(); }
+      const hideLab=S.quiz&&!S.quiz.done; if(cm.lab&&!hideLab){ c.fillStyle=css('--ink'); c.font='600 12.5px Barlow Condensed,sans-serif'; const pos=cm.lp||'b'; c.textAlign=pos==='r'?'left':pos==='l'?'right':'center';
+        const tx=pos==='r'?b.x+b.w+6:pos==='l'?b.x-6:b.x+b.w/2, ty=pos==='a'?b.y-7:pos==='b'?b.y+b.h+14:b.y+b.h/2+4; cm.lab.split('|').forEach((t,i)=>c.fillText(t,tx,ty+i*13)); }
+      if(S.quiz&&!S.quiz.done&&S.quiz.found.includes(K)&&!cm.grpSub){ c.fillStyle=css('--ok'); c.beginPath(); c.arc(b.x+b.w,b.y,7,0,7); c.fill(); c.fillStyle='#fff'; c.font='bold 10px Arial'; c.textAlign='center'; c.fillText('✓',b.x+b.w,b.y+3.5); } });
+    (sp.texts||[]).forEach(t=>{ c.fillStyle=col(t.c)||css('--ink2'); c.font=(t.f||'12px')+' Barlow Condensed,sans-serif'; c.textAlign=t.al||'left'; c.fillText(t.t,t.x,t.y); });
+    if(sp.overlay) sp.overlay(c,S);
+    c.restore();
+    if(S.quiz&&!S.quiz.done){ c.fillStyle='rgba(22,50,74,.92)'; c.fillRect(0,0,w,34); c.fillStyle='#fff'; c.font='600 15px Barlow,sans-serif'; c.textAlign='left'; c.fillText(`Indicați: ${S.quiz.cur.name}`,12,22); c.textAlign='right'; c.fillText(`${S.quiz.i+1} / ${S.quiz.list.length}   corecte: ${S.quiz.ok}`,w-12,22); } };
+  S.hit=(e)=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)/S.sc, y=(e.clientY-r.top)/S.sc; let best=null;
+    S.spec.comps.forEach(cm=>{ if(x>=cm.x-6&&x<=cm.x+cm.w+6&&y>=cm.y-6&&y<=cm.y+cm.h+6){ const a=cm.w*cm.h; if(!best||a<best.a) best={id:ckey(cm),a}; } }); return best?best.id:null; };
+  cv.addEventListener('mousemove',e=>{ const id=S.hit(e); if(id!==S.hover){ S.hover=id; cv.style.cursor=id?'pointer':'default'; if(!S.run) S.draw(); } });
+  cv.addEventListener('click',e=>{ const id=S.hit(e); if(!id) return; if(S.quiz&&!S.quiz.done){ S.answer(id); return; } S.sel=id; S.onSel(S.spec.comps.find(c=>ckey(c)===id)); S.draw(); });
+  S.select=id=>{ S.sel=id; S.onSel(S.spec.comps.find(c=>ckey(c)===id)); S.draw(); };
+  S.startQuiz=()=>{ const r=mulberry32(Date.now()%100000); const seen=new Set(); const list=S.spec.comps.filter(c=>c.quiz!==false&&!c.grpSub&&!seen.has(ckey(c))&&seen.add(ckey(c))).map(c=>({c,k:r()})).sort((a,b)=>a.k-b.k).map(o=>o.c);
+    S.quiz={list,i:0,cur:list[0],ok:0,tries:0,found:[],log:[],done:false,first:true}; S.sel=null; S.draw(); S.onQuiz(S.quiz); };
+  S.answer=id=>{ const q=S.quiz; const good=id===ckey(q.cur); S.flash={id,ok:good}; setTimeout(()=>{ S.flash=null; if(!S.run) S.draw(); },600);
+    if(good){ if(q.first) q.ok++; q.log.push({name:q.cur.name,res:q.first?'corect':'corect după greșeală'}); q.found.push(ckey(q.cur)); q.i++; q.first=true; if(q.i>=q.list.length){ q.done=true; } else q.cur=q.list[q.i]; }
+    else { q.first=false; toast('Nu este '+q.cur.name+' — mai încercați'); }
+    S.draw(); S.onQuiz(q); };
+  S.skip=()=>{ const q=S.quiz; if(!q||q.done) return; q.log.push({name:q.cur.name,res:'sărit'}); S.select(ckey(q.cur)); q.i++; q.first=true; if(q.i>=q.list.length) q.done=true; else q.cur=q.list[q.i]; S.draw(); S.onQuiz(q); };
+  S.loop=ts=>{ if(!S.run) return; const dt=S.last?Math.min(0.05,(ts-S.last)/1000):0; S.last=ts; S.t+=dt; if(S.active()) S.draw(); requestAnimationFrame(S.loop); };
+  S.start=()=>{ if(S.run) return; S.run=true; S.last=0; requestAnimationFrame(S.loop); }; S.stop=()=>{ S.run=false; };
+  return S;
+}
+function infoHTML(cm){ if(!cm) return '<p class="small">Selectați o componentă pe schemă (clic) sau din lista de mai jos.</p>'; const i=cm.info||{};
+  const sec=(t,v)=>v?`<div class="info-s"><div class="info-t">${t}</div><div>${v}</div></div>`:'';
+  return `<h4 class="info-h">${cm.name}</h4>${cm.cat?`<span class="tag">${cm.cat}</span>`:''}${sec('Rol funcțional',i.rol)}${sec('Construcție',i.con)}${sec('Parametri tipici',i.par)}${sec('Defecte și simptome',i.def)}${sec('Verificare',i.ver)}`; }
+function legendHTML(types){ return types.map(t=>{ const F=FLOW[t]; return `<span><i style="display:inline-block;width:22px;height:${Math.min(8,F.w)}px;background:${col(F.c)};vertical-align:middle;margin-right:5px;border-radius:2px;${F.dash?'opacity:.8':''}"></i>${FLOWNAME[t]}</span>`; }).join(''); }
+function compTable(comps){ comps=comps.filter(c=>!c.grpSub); return {head:['Nr.','Componenta','Categoria','Rol funcțional'],rows:comps.map((c,i)=>[i+1,c.name,c.cat||'',(c.info&&c.info.rol||'').replace(/<[^>]+>/g,'')]),left:[1,2,3]}; }
+
+/* ---------- osciloscop ---------- */
+function scope(cv,o){ if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,o.height||300); c.fillStyle='#0c1418'; c.fillRect(0,0,w,h);
+  const L=46,T=10,R=10,B=26, pw=w-L-R, ph=h-T-B; c.strokeStyle='rgba(120,180,160,.18)'; c.lineWidth=1;
+  for(let i=0;i<=10;i++){ c.beginPath(); c.moveTo(L+i*pw/10,T); c.lineTo(L+i*pw/10,T+ph); c.stroke(); } for(let i=0;i<=8;i++){ c.beginPath(); c.moveTo(L,T+i*ph/8); c.lineTo(L+pw,T+i*ph/8); c.stroke(); }
+  const n=o.traces.length, bh=ph/n, cols=['#F2D34B','#4FE3C1','#FF6FB5','#7FB6FF','#FF9A3C'];
+  o.traces.forEach((tr,k)=>{ const y0=T+k*bh; const Y=v=>y0+bh-6-(v-tr.min)/(tr.max-tr.min)*(bh-14); c.strokeStyle=tr.col||cols[k%5]; c.lineWidth=1.6; c.beginPath();
+    const N=Math.max(400,Math.round(pw*1.5)); for(let i=0;i<=N;i++){ const t=o.t0+(o.t1-o.t0)*i/N; const v=tr.f(t); const x=L+pw*i/N, y=Y(Math.max(tr.min-0.1*(tr.max-tr.min),Math.min(tr.max+0.1*(tr.max-tr.min),v))); i?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
+    c.fillStyle=tr.col||cols[k%5]; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText(`CH${k+1}  ${tr.name}`,L+6,y0+13); c.textAlign='right'; c.fillStyle='rgba(220,235,230,.7)'; c.font='11px Barlow Condensed,sans-serif';
+    c.fillText(fmt(tr.max,tr.dec??1)+' '+tr.unit,L-4,y0+12); c.fillText(fmt(tr.min,tr.dec??1),L-4,y0+bh-4); if(k) { c.strokeStyle='rgba(120,180,160,.4)'; c.beginPath(); c.moveTo(L,y0); c.lineTo(L+pw,y0); c.stroke(); } });
+  (o.marks||[]).forEach(m=>{ const x=L+(m.t-o.t0)/(o.t1-o.t0)*pw; c.strokeStyle='rgba(255,255,255,.35)'; c.setLineDash([3,3]); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.setLineDash([]); c.fillStyle='rgba(255,255,255,.75)'; c.font='11px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(m.l,x,T+ph+12); });
+  c.fillStyle='rgba(220,235,230,.8)'; c.font='11.5px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(o.xlabel||'',L+pw/2,h-4);
+  if(o.cursor!==undefined){ const x=L+(o.cursor-o.t0)/(o.t1-o.t0)*pw; c.strokeStyle='#fff'; c.lineWidth=1; c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); } }
+
+/* ---------- test grilă ---------- */
+function quizRender(el,Q,onDone){ el.innerHTML=Q.map((q,i)=>`<div class="mcq" data-i="${i}"><p><b>${i+1}.</b> ${q.q}</p>${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}<div class="expl"></div></div>`).join('')+'<div class="row"><button class="btn fuel" id="mcqCheck">Verifică răspunsurile</button><span id="mcqScore" class="tag"></span></div>';
+  $('#mcqCheck',el).onclick=()=>{ let ok=0; Q.forEach((q,i)=>{ const d=$(`.mcq[data-i="${i}"]`,el), s=$(`input[name=q${i}]:checked`,el); const g=s&&+s.value===q.a; if(g) ok++;
+    d.classList.remove('good','badq'); d.classList.add(g?'good':'badq'); $('.expl',d).innerHTML=(g?'<b>Corect.</b> ':'<b>'+(s?'Greșit':'Fără răspuns')+'.</b> Răspuns corect: '+q.o[q.a]+'. ')+q.e; });
+    $('#mcqScore',el).textContent=`Scor: ${ok} / ${Q.length} (nota ${fmt(1+9*ok/Q.length,1)})`; onDone&&onDone(ok,Q.length); }; }
+</script><script>
+/* ===== Lucrarea 9 — Sistemul de răcire: modelul fizic (fără DOM) ===== */
+const cl9=(x,a,b)=>Math.max(a,Math.min(b,x));
+const lerpT=(T,x)=>{ for(let i=1;i<T.length;i++) if(x<=T[i][0]){ const [x0,y0]=T[i-1],[x1,y1]=T[i]; return y0+(y1-y0)*(x-x0)/(x1-x0); } return T[T.length-1][1]; };
+/* proprietăți ale amestecului apă – monoetilenglicol (fracțiune masică x) */
+const TFREEZE=[[0,0],[0.1,-3.4],[0.2,-7.9],[0.3,-15.4],[0.4,-24.0],[0.5,-36.8],[0.6,-52.0]];
+const TBOIL1=[[0,100],[0.1,100.6],[0.2,101.7],[0.3,103.3],[0.4,104.4],[0.5,106.7],[0.6,110.0]];
+function coolProps(x,T){ const rho=1002+135*x-0.45*(T-20)*(1-0.3*x), cp=4190-1250*x+1.0*x*(T-20); return {rho,cp}; }
+function psatW(T){ // presiunea de saturație a apei [bar], ecuația Antoine
+  const P=T<=100?Math.pow(10,8.07131-1730.63/(233.426+T)):Math.pow(10,8.14019-1810.94/(244.485+T)); return P/750.062; }
+function tsatW(pbar){ let lo=50,hi=200; for(let k=0;k<60;k++){ const m=(lo+hi)/2; if(psatW(m)<pbar) lo=m; else hi=m; } return (lo+hi)/2; }
+function boilPoint(x,prel){ return tsatW(1.01325+Math.max(0,prel))+(lerpT(TBOIL1,x)-100); }
+/* motoare de referință */
+const ENG9={mas:{lab:'MAS 2,0 L, 110 kW la 5500 rot/min',Pmax:110,np:5500,a:1,b:1,c:1,eta:0.34,qr:0.26,nmax:6500},
+           mac:{lab:'MAC 2,0 L, 110 kW la 4000 rot/min',Pmax:110,np:4000,a:0.5,b:1.5,c:1,eta:0.40,qr:0.20,nmax:4800}};
+const SYS9={Af:0.36,UAref:1000,va0:5.0,mref:1.25,H0:4.0,N0:3000,kp:1.0e-4,ipump:1.0,keng:1.6e-4,kby:1.2e-3,krad:2.0e-4,kv:0.8e-4,kh:1.5e-3,
+  Ce:70000,Cr:21000,Vtot:7.0,lift:8.0,dTth:13,hyst:2,tau:15,fan1:[97,92],fan2:[103,99],vfan1:3.6,vfan2:5.8,Pfan1:160,Pfan2:380,etaP:0.50};
+const FLT9=[['none','fără defect'],['tclosed','termostat blocat închis'],['topen','termostat blocat deschis'],['rad','radiator colmatat (exterior și interior)'],
+  ['fan','ventilator defect (nu pornește)'],['pump','pompă slăbită (rotor erodat, curea patinează)'],['cap','bușonul nu ține presiunea'],['air','aer în circuit (aerisire incompletă)']];
+
+/* puterea efectivă (Leiderman) și căldura cedată lichidului */
+function enginePow(e,n,ld){ const E=ENG9[e], r=n/E.np; const Pfl=Math.max(0,E.Pmax*(E.a*r+E.b*r*r-E.c*r*r*r)); const Pe=Pfl*cl9(ld,0,1);
+  const eta=E.eta*(0.45+0.55*Math.pow(cl9(ld,0,1),0.4)); const Pid=14.0*Math.pow(n/1000,1.25); const Pc=Math.max(Pe/eta,Pid); const qr=E.qr+0.12*(1-cl9(ld,0,1)); return {Pfl,Pe,eta:Pe>0?Pe/Pc:0,Pc,Pid,qr,Qr:qr*Pc}; }
+/* pompa și rețeaua hidraulică */
+function hydro(n,x,f,heater){ const S=SYS9; const N=n*S.ipump; const H0=S.H0*Math.pow(N/S.N0,2)*(f==='pump'?0.45:f==='air'?0.65:1);
+  const kr=S.krad*(f==='rad'?2.2:1)+S.kv/Math.max(x*x,2.5e-7); const kb=S.kby/Math.max(0.15,1-0.85*x); const kh=heater?S.kh:S.kh*25;
+  const C=1/Math.sqrt(kr)+1/Math.sqrt(kb)+1/Math.sqrt(kh); const kpar=1/(C*C); const ktot=S.keng+kpar; const Q=Math.sqrt(H0/(S.kp+ktot)); // L/min
+  const Hs=ktot*Q*Q; const dpar=kpar*Q*Q; const Qr=Math.sqrt(dpar/kr), Qb=Math.sqrt(dpar/kb), Qh=Math.sqrt(dpar/kh); return {N,H0,Q,H:Hs,Qr,Qb,Qh,kr,kb,kh,ktot}; }
+/* radiatorul: metoda ε–NTU, curgere încrucișată, ambele fluide neamestecate */
+function radiator(p,mr,cp,Tin,fan){ const S=SYS9; const vram=0.22*p.v/3.6; const vf=fan===2?S.vfan2:fan===1?S.vfan1:0; let va=Math.sqrt(vram*vram+vf*vf)+0.25; if(p.flt==='rad') va*=0.75;
+  const rhoa=101325/(287*(p.Ta+273.15)), ma=rhoa*S.Af*va, Ca=ma*1007, Cc=Math.max(1e-3,mr*cp); const Cmin=Math.min(Ca,Cc), Cmax=Math.max(Ca,Cc), Cr=Cmin/Cmax;
+  const UA=S.UAref*Math.pow(va/S.va0,0.55)*Math.pow(Math.max(mr,0.02)/S.mref,0.25)*(p.flt==='rad'?0.6:1); const NTU=UA/Cmin;
+  const eps=1-Math.exp(Math.pow(NTU,0.22)/Cr*(Math.exp(-Cr*Math.pow(NTU,0.78))-1)); const Q=eps*Cmin*Math.max(0,Tin-p.Ta); return {va,vram,vf,rhoa,ma,Ca,Cc,Cmin,Cr,UA,NTU,eps,Q}; }
+function thermoX(p,T){ if(p.flt==='tclosed') return 0; if(p.flt==='topen') return 1; let Td=p.Td; if(p.tst==='map') Td=Math.min(p.Td,103-14*cl9(p.ld,0,1)-4); return cl9((T-Td)/SYS9.dTth,0,1); }
+/* regim stabilizat */
+function coolSS(p){ const E=enginePow(p.eng,p.n,p.ld); const heaterQ=p.heater?Math.min(6000,180*Math.max(0,60-p.Ta)+1500):0; const Qr=E.Qr*1000;
+  const solve=fan=>{ let lo=p.Ta+0.5,hi=170; for(let k=0;k<60;k++){ const T=(lo+hi)/2; const x=thermoX(p,T); const h=hydro(p.n,x,p.flt,p.heater); const pr=coolProps(p.x,T);
+      const mr=h.Qr/60000*pr.rho; const R=radiator(p,mr,pr.cp,T,fan); const qh=p.heater?Math.min(heaterQ,h.Qh/60000*pr.rho*pr.cp*(T-p.Ta)*0.7):0; const out=R.Q+qh+25*(T-p.Ta);
+      if(out<Qr) lo=T; else hi=T; } return (lo+hi)/2; };
+  let fan=0, T=solve(0), cyc=false; if(p.flt!=='fan'){ if(T>SYS9.fan1[0]){ const T1=solve(1); if(T1<SYS9.fan1[1]){ cyc=true; T=(SYS9.fan1[0]+SYS9.fan1[1])/2; fan=1; } else { T=T1; fan=1; if(T>SYS9.fan2[0]){ const T2=solve(2); if(T2<SYS9.fan2[1]){ cyc=true; T=(SYS9.fan2[0]+SYS9.fan2[1])/2; fan=2; } else { T=T2; fan=2; } } } } }
+  const x=thermoX(p,T), h=hydro(p.n,x,p.flt,p.heater), pr=coolProps(p.x,T), mr=h.Qr/60000*pr.rho, mt=h.Q/60000*pr.rho; const R=radiator(p,mr,pr.cp,T,fan);
+  const qh=p.heater?Math.min(heaterQ,h.Qh/60000*pr.rho*pr.cp*(T-p.Ta)*0.7):0; const Tro=mr>1e-4?T-R.Q/(mr*pr.cp):T; const dTe=Qr/(mt*pr.cp); const Tin=T-dTe;
+  const pcap=p.flt==='cap'?0:p.pcap; const Tb=boilPoint(p.x,pcap), Tb0=boilPoint(p.x,0), Tf=lerpT(TFREEZE,p.x); const Pp=1000*9.81*h.H*(h.Q/60000)/SYS9.etaP; const Pfan=fan===2?SYS9.Pfan2:fan===1?SYS9.Pfan1:0;
+  const fl=[]; const Tshow=Math.min(T,Tb+3);
+  if(T>Tb-2) fl.push([`lichidul fierbe (T = ${f9(Tshow,0)} °C ≥ punctul de fierbere ${f9(Tb,0)} °C la ${f9(pcap,2)} bar) — supraîncălzire`,'b']); else if(T>115) fl.push(['temperatură excesivă — martorul de temperatură se aprinde','b']); else if(T>108) fl.push(['temperatură ridicată — rezervă mică până la fierbere','w']);
+  if(T<75&&p.ld>0.05) fl.push(['motorul nu atinge temperatura de regim — consum și uzură mari, încălzire slabă a habitaclului','w']);
+  if(cyc) fl.push([`ventilatorul treapta ${fan} funcționează ciclic (pornire ${SYS9['fan'+fan][0]} °C / oprire ${SYS9['fan'+fan][1]} °C)`,'i']);
+  if(p.Ta<Tf+3) fl.push([`pericol de îngheț: punctul de congelare al lichidului este ${f9(Tf,1)} °C`,'b']);
+  if(p.flt==='air') fl.push(['aer în circuit: debit redus, încălzirea habitaclului slabă, zgomot de curgere','w']);
+  return {...p,E,Qr,heaterQ:qh,fan,cyc,T:Tshow,Traw:T,x,lift:x*SYS9.lift,h,pr,mr,mt,R,Tro,Tin,dTe,Tb,Tb0,Tf,pcap,Pp,Pfan,flags:fl}; }
+function f9(x,d){ return (typeof fmt==='function')?fmt(x,d):x.toFixed(d); }
+/* încălzirea motorului (regim tranzitoriu, două noduri: motor + radiator) */
+function warmUp(p,tend=1200,dt=0.5){ const S=SYS9; const E=enginePow(p.eng,p.n,p.ld); const Qr=E.Qr*1000; let Te=p.Ta, Tr=p.Ta, x=0, fan=0; const o={t:[],Te:[],Tr:[],lift:[],fan:[],Q:[]}; let t80=null, topen=null;
+  for(let k=0;k*dt<=tend;k++){ const t=k*dt; const xs=thermoX(p,Te); const xt=(p.flt==='tclosed'||p.flt==='topen')?xs:(xs>x?xs:Math.max(xs,thermoX(p,Te+S.hyst))); x+=(xt-x)*dt/S.tau;
+    if(p.flt!=='fan'){ if(fan<2&&Te>S.fan2[0]) fan=2; else if(fan<1&&Te>S.fan1[0]) fan=1; if(fan===2&&Te<S.fan2[1]) fan=1; if(fan===1&&Te<S.fan1[1]) fan=0; }
+    const h=hydro(p.n,x,p.flt,p.heater), pr=coolProps(p.x,Te), mr=h.Qr/60000*pr.rho; const R0=radiator(p,mr,pr.cp,Te,fan); const Tro=Te-R0.Q/Math.max(1e-3,mr*pr.cp); const R={...R0,Q:R0.Q*cl9((Tr-p.Ta)/Math.max(0.5,Tro-p.Ta),0,1.5)};
+    const qh=p.heater?Math.min(6000,h.Qh/60000*pr.rho*pr.cp*(Te-p.Ta)*0.7):0; const qx=mr*pr.cp*(Te-Tr);
+    Te+=(Qr-qx-qh-25*(Te-p.Ta))*dt/S.Ce; Tr+=(qx-R.Q)*dt/S.Cr;
+    if(k%4===0){ o.t.push(t); o.Te.push(Te); o.Tr.push(Tr); o.lift.push(x*S.lift); o.fan.push(fan); o.Q.push(R.Q/1000); }
+    if(t80===null&&Te>=80) t80=t; if(topen===null&&x>0.02) topen=t; }
+  return {...o,t80,topen}; }
+/* încercarea de presiune a circuitului */
+function pressTest(dl,p0=1.5,T=120){ const Va0=0.0006, pa=1.01325e5; let pabs=pa+p0*1e5, Va=Va0*(pa+p0*1e5)/(pa+p0*1e5); const C=pabs*Va; const A=Math.PI*Math.pow(dl*1e-3,2)/4; const o={t:[],p:[]};
+  for(let k=0;k<=T*4;k++){ const t=k*0.25; o.t.push(t); o.p.push((pabs-pa)/1e5); const dp=Math.max(0,pabs-pa); const q=0.62*A*Math.sqrt(2*dp/1050); Va+=q*0.25; pabs=C/Va; } return o; }
+
+if(typeof module!=='undefined') module.exports={TFREEZE,TBOIL1,coolProps,psatW,tsatW,boilPoint,ENG9,SYS9,FLT9,enginePow,hydro,radiator,thermoX,coolSS,warmUp,pressTest};
+
+/* ======================================================================
+   Lucrarea 9 — Sistemul de răcire: interfață, schemă, grafice, referat
+   ====================================================================== */
+const LAB={nr:9,ref:'Cunoașterea sistemului de răcire al motorului',
+  scop:'Cunoașterea construcției și funcționării sistemului de răcire cu lichid al motorului (pompa centrifugă, termostatul, radiatorul, electroventilatorul, vasul de expansiune cu bușon, radiatorul de încălzire), întocmirea bilanțului termic, analiza punctului de funcționare hidraulic și termic, a încălzirii motorului după pornire și efectuarea verificărilor de atelier: încercarea de presiune, bușonul, termostatul și concentrația lichidului antigel.'};
+const clamp=cl9;
+Object.assign(FLOW,{chot:{c:'#E0561E',w:5,sp:22},ccold:{c:'#2F6CA8',w:5,sp:22},cby:{c:'#9C5AB8',w:3.5,sp:18},vent:{c:'#4FA3C7',w:1.8,sp:10,dash:[4,4]},belt:{c:'#39424a',w:2.4,sp:40,dash:[7,4]},
+  exh:{c:'#A08C78',w:9,sp:30},oil:{c:'#8A6A2A',w:3.5,sp:14}});
+Object.assign(FLOWNAME,{chot:'lichid cald (ieșire motor)',ccold:'lichid răcit (intrare pompă)',cby:'circuitul mic (by-pass)',vent:'aerisire / compensare',belt:'curea de antrenare',exh:'gaze de evacuare (EGR)',oil:'ulei'});
+const LEG=['chot','ccold','cby','vent','belt','sig','act'];
+function tcol(T,a=1){ const s=[[20,[47,108,168]],[60,[31,138,138]],[85,[217,150,26]],[105,[224,86,30]],[125,[179,54,43]]]; let c=s[s.length-1][1];
+  for(let i=1;i<s.length;i++) if(T<=s[i][0]){ const f=clamp((T-s[i-1][0])/(s[i][0]-s[i-1][0]),0,1); c=s[i-1][1].map((v,k)=>Math.round(v+(s[i][1][k]-v)*f)); break; } if(T<s[0][0]) c=s[0][1]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
+
+/* ---------- glife suplimentare ---------- */
+G.tst=(c,b,s,cm)=>{ const x=b.x+b.w/2,y=b.y+b.h/2,R=Math.min(b.w,b.h)/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,R,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.5; c.stroke();
+  const L=(cm.lift??0)/8; c.fillStyle='#C9B27A'; rr(c,x-R*0.25,y-R*0.1,R*0.5,R*0.7,3); c.fill(); c.fillStyle=css('--steel-d'); c.fillRect(x-R*0.7,y-R*0.25-L*R*0.4,R*1.4,R*0.16);
+  if(cm.heat){ c.strokeStyle=css('--alert'); c.lineWidth=1.2; c.beginPath(); for(let i=0;i<6;i++) c.lineTo(x-R*0.2+i*R*0.08,y+R*0.65+(i%2?3:-3)); c.stroke(); } };
+G.rad=(c,b,s,cm)=>{ const th=cm.thot??90, tc=cm.tcold??70; c.fillStyle=css('--steel'); rr(c,b.x,b.y,b.w,b.h*0.07,3); c.fill(); rr(c,b.x,b.y+b.h*0.93,b.w,b.h*0.07,3); c.fill();
+  const g=c.createLinearGradient(0,b.y,0,b.y+b.h); g.addColorStop(0,tcol(th,0.55)); g.addColorStop(1,tcol(tc,0.55)); c.fillStyle=g; c.fillRect(b.x+2,b.y+b.h*0.07,b.w-4,b.h*0.86);
+  c.strokeStyle=css('--steel-d'); c.lineWidth=1; for(let xx=b.x+6;xx<b.x+b.w-3;xx+=7){ c.beginPath(); c.moveTo(xx,b.y+b.h*0.07); c.lineTo(xx,b.y+b.h*0.93); c.stroke(); }
+  c.strokeStyle='rgba(94,110,123,.35)'; for(let yy=b.y+b.h*0.09;yy<b.y+b.h*0.92;yy+=5){ c.beginPath(); c.moveTo(b.x+2,yy); c.lineTo(b.x+b.w-2,yy); c.stroke(); } c.strokeStyle=css('--steel-d'); c.strokeRect(b.x,b.y,b.w,b.h); };
+G.fan=(c,b,s,cm)=>{ const x=b.x+b.w/2,y=b.y+b.h/2,R=Math.min(b.w,b.h)/2; c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.beginPath(); c.arc(x,y,R,0,7); c.stroke(); c.fillStyle='rgba(138,153,166,.12)'; c.fill();
+  c.save(); c.translate(x,y); c.rotate(s.t*(cm.spd??0)); c.fillStyle=cm.spd>0?css('--blue'):css('--steel'); for(let k=0;k<5;k++){ c.rotate(2*Math.PI/5); c.beginPath(); c.ellipse(R*0.48,0,R*0.42,R*0.15,0.35,0,7); c.fill(); } c.restore();
+  c.fillStyle=css('--steel-d'); c.beginPath(); c.arc(x,y,R*0.16,0,7); c.fill(); };
+G.pul=(c,b,s,cm)=>{ const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke(); c.save(); c.translate(x,y); c.rotate(s.t*(cm.spd??5)); c.fillStyle=css('--teal'); c.fillRect(-2,-r*0.9,4,r*0.5); c.restore(); };
+G.tlamp=(c,b,s,cm)=>{ body(c,b,'#20303D','#0e1a24',5); const x=b.x+b.w/2,y=b.y+b.h/2; c.strokeStyle=cm.on?'#E53935':'#4a5560'; c.fillStyle=c.strokeStyle; c.lineWidth=2.4; c.beginPath(); c.moveTo(x,y-9); c.lineTo(x,y+3); c.stroke(); c.beginPath(); c.arc(x,y+6,4,0,7); c.fill();
+  c.lineWidth=1.3; for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(x+3,y-7+i*4); c.lineTo(x+8,y-7+i*4); c.stroke(); } };
+
+/* ---------- mărimi de intrare ---------- */
+function readF(){ const g=id=>{ const e=$('#'+id); return e?+e.value:0; }; return {eng:$('#eng').value,n:g('n'),ld:g('ld')/100,v:g('v'),Ta:g('Ta'),tst:$('#tst').value,Td:g('Td'),x:g('x')/100,pcap:g('pcap'),heater:$('#heater').checked,flt:$('#flt').value}; }
+const ss=p=>coolSS(p);
+
+/* ---------- desenul funcțional ---------- */
+const F={t:0,play:false,last:0,wu:null,anim:0,trans:false};
+function gaugeT(c,x,y,R,T){ c.fillStyle=css('--panel'); c.beginPath(); c.arc(x,y,R,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=3; c.stroke(); const a0=Math.PI*0.8,a1=Math.PI*2.2, A=v=>a0+(a1-a0)*(v-40)/90;
+  c.lineWidth=6; c.strokeStyle=css('--blue'); c.beginPath(); c.arc(x,y,R*0.82,A(40),A(70)); c.stroke(); c.strokeStyle=css('--ok'); c.beginPath(); c.arc(x,y,R*0.82,A(75),A(105)); c.stroke(); c.strokeStyle=css('--alert'); c.beginPath(); c.arc(x,y,R*0.82,A(115),A(130)); c.stroke();
+  c.fillStyle=css('--ink2'); c.font=`${Math.max(10,R*0.16)}px Barlow Condensed,sans-serif`; c.textAlign='center'; c.textBaseline='middle'; [40,60,80,100,120].forEach(v=>c.fillText(v,x+Math.cos(A(v))*R*0.6,y+Math.sin(A(v))*R*0.6));
+  const a=A(clamp(T,35,132)); c.strokeStyle=css('--alert'); c.lineWidth=3; c.beginPath(); c.moveTo(x,y); c.lineTo(x+Math.cos(a)*R*0.78,y+Math.sin(a)*R*0.78); c.stroke(); c.fillStyle=css('--ink'); c.beginPath(); c.arc(x,y,5,0,7); c.fill();
+  c.font=`600 ${Math.max(12,R*0.2)}px Barlow,sans-serif`; c.fillText(fmt(T,1)+' °C',x,y+R*0.48); c.font='12px Barlow,sans-serif'; c.fillStyle=css('--ink2'); c.fillText('temperatura lichidului',x,y+R+14); c.textBaseline='alphabetic'; }
+function flowLine(c,pts,col,w,spd,t,on=true){ c.lineJoin='round'; c.lineCap='round'; c.beginPath(); pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.strokeStyle=css('--steel-d'); c.lineWidth=w+2.4; c.globalAlpha=on?1:0.35; c.stroke();
+  c.strokeStyle=col; c.lineWidth=w; c.stroke(); if(on&&spd>0){ c.setLineDash([4,w*1.6]); c.lineDashOffset=-t*spd; c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=Math.max(2,w*0.45); c.stroke(); c.setLineDash([]); } c.globalAlpha=1; }
+function stateNow(){ const p=readF(), r=ss(p); if(!F.trans||!F.wu) return {p,r,Te:r.T,Tr:r.Tro,lift:r.lift,fan:r.fan,Qr:r.h.Qr,Qb:r.h.Qb,Qh:r.h.Qh,Qt:r.h.Q};
+  const W=F.wu, k=clamp(Math.round(F.t/2),0,W.t.length-1); const x=W.lift[k]/SYS9.lift; const h=hydro(p.n,x,p.flt,p.heater); return {p,r,Te:W.Te[k],Tr:W.Tr[k],lift:W.lift[k],fan:W.fan[k],Qr:h.Qr,Qb:h.Qb,Qh:h.Qh,Qt:h.Q}; }
+function drawFun(){ const cv=$('#cvFun'); if(!cv.clientWidth) return; const S=stateNow(), p=S.p, r=S.r; const {c,w,h}=fitCanvas(cv,Math.max(380,Math.round(cv.clientWidth*0.56))); const t=F.anim;
+  c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); const sx=w/1000, sy=h/560; c.save(); c.scale(sx,sy);
+  // motor cu manta de apă
+  c.fillStyle=tcol(S.Te,0.55); rr(c,250,150,340,210,12); c.fill(); c.fillStyle='#7d8c99'; rr(c,268,168,304,174,8); c.fill();
+  for(let i=0;i<4;i++){ const xx=282+i*72; c.fillStyle='#dfe5ea'; c.fillRect(xx,182,58,110); const py=230+Math.cos(t*(2+p.n/700)+i*Math.PI*(i%3?1:0))*22; c.fillStyle='#8a99a6'; c.fillRect(xx+3,py,52,26); }
+  c.fillStyle='#fff'; c.font='600 14px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('MOTOR — MANTA DE APĂ  '+fmt(S.Te,0)+' °C',420,330);
+  const sp=q=>8+q*0.9;
+  // conducte
+  flowLine(c,[[590,180],[640,180]],tcol(S.Te),9,sp(S.Qt),t);
+  flowLine(c,[[700,165],[760,165],[760,120],[810,120]],tcol(S.Te),9,sp(S.Qr),t,S.Qr>0.3);
+  flowLine(c,[[670,210],[670,420],[210,420],[210,395]],'#9C5AB8',6,sp(S.Qb),t,S.Qb>0.3);
+  flowLine(c,[[860,470],[860,500],[180,500],[180,395]],tcol(S.Tr),9,sp(S.Qr),t,S.Qr>0.3);
+  flowLine(c,[[180,335],[180,250],[250,250]],tcol(S.Te-6),9,sp(S.Qt),t);
+  flowLine(c,[[420,150],[420,80],[470,80]],tcol(S.Te),5,sp(S.Qh),t,p.heater);
+  flowLine(c,[[560,80],[610,80],[610,40],[150,40],[150,365]],tcol(S.Te-10),5,sp(S.Qh),t,p.heater);
+  // termostat
+  G.tst(c,{x:640,y:150,w:60,h:60},{t},{lift:S.lift,heat:p.tst==='map'}); c.fillStyle=css('--ink'); c.font='600 12.5px Barlow Condensed,sans-serif'; c.fillText('Termostat '+fmt(S.lift,1)+' mm',670,232);
+  // radiator + ventilator + aer
+  G.rad(c,{x:810,y:110,w:100,h:360},{t},{thot:S.Te,tcold:S.Tr}); c.fillStyle=css('--ink'); c.fillText('Radiator',860,100);
+  const fspd=S.fan===2?18:S.fan===1?9:(p.v>5?p.v/40:0); G.fan(c,{x:925,y:210,w:64,h:160},{t},{spd:fspd}); c.textAlign='right'; c.fillText(S.fan?('Ventilator treapta '+S.fan):'Ventilator oprit',995,200); c.textAlign='center';
+  c.strokeStyle='rgba(127,174,219,.8)'; c.lineWidth=2; const va=r.R.va; for(let k=0;k<5;k++){ const yy=150+k*70, off=(t*20*va)%40; c.setLineDash([10,8]); c.lineDashOffset=-off; c.beginPath(); c.moveTo(740,yy); c.lineTo(800,yy); c.stroke(); } c.setLineDash([]);
+  c.fillStyle=css('--blue'); c.font='12px Barlow Condensed,sans-serif'; c.fillText('aer '+fmt(va,1)+' m/s',770,140);
+  // pompa
+  G.pump(c,{x:150,y:335,w:60,h:60},{t:t*(p.n/2000)},{sym:'P'}); c.fillStyle=css('--ink'); c.font='600 12.5px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText('Pompa '+fmt(S.Qt,0)+' L/min',218,388); c.textAlign='center';
+  // încălzire
+  G.cooler(c,{x:470,y:62,w:90,h:36},{t}); c.fillStyle=css('--ink'); c.fillText('Radiator încălzire'+(p.heater?' (pornit)':' (oprit)'),515,56);
+  // vas de expansiune
+  G.tank(c,{x:690,y:20,w:90,h:44},{t},{fluid:'rgba(79,163,199,.5)',level:0.5}); c.fillStyle=css('--ink'); c.fillText('Vas de expansiune, bușon '+fmt(r.pcap,2)+' bar',735,80);
+  c.restore();
+  gaugeT(c,w*0.075,h*0.17,Math.min(w*0.065,h*0.13),S.Te);
+  G.tlamp(c,{x:w*0.05,y:h*0.36,w:44,h:28},null,{on:S.Te>115});
+  // bilanț
+  c.fillStyle=css('--ink2'); c.font='12.5px Barlow,sans-serif'; c.textAlign='left'; const y0=h*0.93;
+  c.fillText(`Q̇ în lichid ${fmt(r.Qr/1000,1)} kW · radiator ${F.trans?'—':fmt(r.R.Q/1000,1)+' kW'} · T ieșire radiator ${fmt(S.Tr,1)} °C · debit radiator ${fmt(S.Qr,1)} L/min · by-pass ${fmt(S.Qb,1)} L/min`,10,y0);
+  $('#funTag').textContent=F.trans?('pornire la rece — t = '+fmt(F.t,0)+' s'):(r.flags.length?r.flags[0][0]:'funcționare normală'); $('#funTag').className='tag '+(!F.trans&&r.flags.some(f=>f[1]==='b')?'bad':(!F.trans&&!r.flags.length)?'ok':''); }
+
+/* ---------- osciloscop: încălzirea ---------- */
+const TEND=1800;
+function getWU(){ if(!F.wu){ const p=readF(); F.wu=warmUp(p,TEND,0.5); } return F.wu; }
+function drawScope(){ const cv=$('#cvScope'); if(!cv.clientWidth) return; const W=getWU(); const at2=(A,t)=>A[clamp(Math.round(t/2),0,A.length-1)];
+  const mk=[]; if(W.topen!==null) mk.push({t:W.topen,l:'termostatul se deschide: '+fmt(W.topen,0)+' s'}); if(W.t80!==null) mk.push({t:W.t80,l:'80 °C: '+fmt(W.t80,0)+' s'});
+  scope(cv,{height:300,t0:0,t1:TEND,xlabel:'timp [s]',cursor:F.trans?F.t:undefined,traces:[{name:'temperatura motorului [°C]',unit:'',min:-20,max:130,dec:0,f:t=>at2(W.Te,t)},{name:'temperatura la ieșirea radiatorului [°C]',unit:'',min:-20,max:130,dec:0,f:t=>at2(W.Tr,t)},
+    {name:'cursa termostatului [mm]',unit:'',min:0,max:9,f:t=>at2(W.lift,t)},{name:'ventilator [treapta]',unit:'',min:0,max:2.2,dec:0,f:t=>at2(W.fan,t)},{name:'puterea radiatorului [kW]',unit:'',min:0,max:Math.max(10,Math.max(...W.Q)*1.1),dec:0,f:t=>at2(W.Q,t)}],marks:mk}); }
+function funLoop(ts){ const dt=F.last?Math.min(0.05,(ts-F.last)/1000):0; F.last=ts; F.anim+=dt;
+  if(F.play){ F.t+=dt*(+$('#slow').value)*1.5; if(F.t>=TEND){ F.t=TEND; F.play=false; } }
+  if($('#t-fun').classList.contains('on')){ drawFun(); if(F.play) drawScope(); } requestAnimationFrame(funLoop); }
+
+/* ---------- tabelul de calcul ---------- */
+function calcRows(){ const p=readF(), r=ss(p), E=r.E, R=r.R, h=r.h, Q=(a,b,hl)=>[a,b,hl]; return [
+  Q('Motorul',ENG9[p.eng].lab),
+  Q('Puterea la sarcină plină P<sub>e,max</sub>(n) (Leiderman)',fmt(E.Pfl,1)+' kW'),
+  Q('Puterea efectivă P<sub>e</sub> / randamentul η<sub>e</sub>',fmt(E.Pe,1)+' kW / '+fmt(E.eta,3)),
+  Q('Puterea combustibilului P<sub>c</sub>',fmt(E.Pc,1)+' kW'),
+  Q('Fracțiunea cedată lichidului q<sub>r</sub>',fmt(E.qr,3)),
+  Q('Căldura cedată lichidului Q̇<sub>r</sub>',fmt(r.Qr/1000,2)+' kW',1),
+  Q('Turația pompei / înălțimea H<sub>0</sub>',fmt(h.N,0)+' rot/min / '+fmt(h.H0,2)+' m'),
+  Q('Deschiderea termostatului x / cursa',fmt(r.x,3)+' / '+fmt(r.lift,2)+' mm'),
+  Q('Debitul pompei Q<sub>p</sub> / înălțimea H',fmt(h.Q,1)+' L/min / '+fmt(h.H,2)+' m',1),
+  Q('Debit radiator / by-pass / încălzire',fmt(h.Qr,1)+' / '+fmt(h.Qb,1)+' / '+fmt(h.Qh,1)+' L/min'),
+  Q('Densitatea / căldura specifică a lichidului',fmt(r.pr.rho,0)+' kg/m³ / '+fmt(r.pr.cp,0)+' J/(kg·K)'),
+  Q('Creșterea de temperatură în motor ΔT<sub>m</sub>',fmt(r.dTe,2)+' °C'),
+  Q('Viteza aerului prin radiator (dinamică / ventilator)',fmt(R.va,2)+' m/s ('+fmt(R.vram,2)+' / '+fmt(R.vf,1)+')'),
+  Q('Debitul de aer ṁ<sub>a</sub> / C<sub>a</sub>',fmt(R.ma,3)+' kg/s / '+fmt(R.Ca,0)+' W/K'),
+  Q('Capacitatea termică a lichidului C<sub>c</sub>',fmt(R.Cc,0)+' W/K'),
+  Q('C<sub>min</sub> / C<sub>r</sub>',fmt(R.Cmin,0)+' W/K / '+fmt(R.Cr,3)),
+  Q('UA / NTU',fmt(R.UA,0)+' W/K / '+fmt(R.NTU,3)),
+  Q('Eficiența radiatorului ε',fmt(R.eps,3),1),
+  Q('Puterea radiatorului Q̇<sub>rad</sub>',fmt(R.Q/1000,2)+' kW',1),
+  Q('Căldura cedată de radiatorul de încălzire',fmt(r.heaterQ/1000,2)+' kW'),
+  Q('Temperatura la ieșirea din motor T<sub>e</sub>',fmt(r.T,1)+' °C',1),
+  Q('Temperatura la intrarea în motor / ieșirea radiatorului',fmt(r.Tin,1)+' / '+fmt(r.Tro,1)+' °C'),
+  Q('Ventilatorul',r.fan?('treapta '+r.fan+(r.cyc?' (ciclic)':'')+', '+fmt(r.Pfan,0)+' W'):'oprit'),
+  Q('Punctul de congelare al lichidului',fmt(r.Tf,1)+' °C'),
+  Q('Punctul de fierbere la 1 atm / sub bușon',fmt(r.Tb0,1)+' / '+fmt(r.Tb,1)+' °C',1),
+  Q('Rezerva până la fierbere',fmt(r.Tb-r.T,1)+' °C'),
+  Q('Puterea hidraulică a pompei (η = 0,50)',fmt(r.Pp,0)+' W'),
+  Q('Diagnoza',r.flags.length?r.flags.map(f=>f[0]).join('; '):'fără anomalii')]; }
+function ro2(el,rows){ el.innerHTML=rows.map(r=>`<tr class="${r[2]?'hl':''}"><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''); }
+function renderCalc(){ const rows=calcRows(); ro2($('#roCalc'),rows); buildTable($('#tblCalc'),{head:['Mărimea','Valoarea'],rows:rows.map(r=>[r[0],r[1]]),left:[0]}); }
+
+/* ---------- standul de verificare ---------- */
+const B9={run:null,press:null,cap:null,tst:null,refr:null,last:0,lastKind:'press'};
+function benchPar(){ const rng=mulberry32(+$('#bseed').value*71+3); const dl=+$('#dl').value, capd=+$('#capd').value/100, tage=+$('#tage').value/100, conc=+$('#conc').value/100;
+  return {rng,dl,capd,tage,conc,popen:1.4*(1+capd)+0.02*gauss(rng),Tst:87+3.5*tage+0.4*gauss(rng),lmax:8.6*(1-0.35*tage)+0.1*gauss(rng)}; }
+function tstLift(q,T){ return clamp((T-q.Tst)/13,0,1)*q.lmax; }
+function benchStart(kind){ if(B9.run) return; const q=benchPar(); B9.run={kind,t:0,T:kind==='press'?6:kind==='tst'?6:3,q}; B9.lastKind=kind; $('#benchTag').textContent='în lucru…'; B9.last=0; requestAnimationFrame(benchLoop); }
+function benchLoop(ts){ const dt=B9.last?Math.min(0.05,(ts-B9.last)/1000):0; B9.last=ts; const R=B9.run; if(!R) return; R.t+=dt; drawBench(R);
+  if(R.t>=R.T){ const q=R.q; if(R.kind==='press'){ const o=pressTest(q.dl); B9.press={dl:q.dl,t:o.t,p:o.p.map(v=>v+0.004*gauss(q.rng)),drop:o.p[0]-o.p[o.p.length-1]}; }
+    if(R.kind==='cap') B9.cap={p:q.popen}; if(R.kind==='tst'){ const pts=[]; for(let T=70;T<=105;T+=2.5) pts.push({T,l:Math.max(0,tstLift(q,T)+0.08*gauss(q.rng))}); B9.tst={pts,Tst:q.Tst,l100:tstLift(q,100)}; }
+    if(R.kind==='refr') B9.refr={x:q.conc,Tf:lerpT(TFREEZE,q.conc)+0.4*gauss(q.rng)};
+    B9.run=null; $('#benchTag').textContent='încercare încheiată'; renderBench(); schedCharts(); drawBench(null); return; }
+  requestAnimationFrame(benchLoop); }
+function drawBench(R){ const cv=$('#cvBench'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,Math.round(cv.clientWidth*0.62)); c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); const q=R?R.q:benchPar(); const kind=R?R.kind:B9.lastKind; const k=R?clamp(R.t/R.T,0,1):1;
+  c.fillStyle=css('--ink'); c.font='600 14px Barlow,sans-serif'; c.textAlign='left';
+  const dial=(x,y,Rr,v,vmax,lab)=>{ c.fillStyle=css('--panel'); c.beginPath(); c.arc(x,y,Rr,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=3; c.stroke(); const a0=Math.PI*0.75,a1=Math.PI*2.25; c.fillStyle=css('--ink2'); c.font='12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    for(let i=0;i<=4;i++){ const a=a0+(a1-a0)*i/4; c.fillText(fmt(vmax*i/4,1),x+Math.cos(a)*Rr*0.65,y+Math.sin(a)*Rr*0.65); } const a=a0+(a1-a0)*clamp(v/vmax,0,1); c.strokeStyle=css('--alert'); c.lineWidth=3; c.beginPath(); c.moveTo(x,y); c.lineTo(x+Math.cos(a)*Rr*0.8,y+Math.sin(a)*Rr*0.8); c.stroke();
+    c.fillStyle=css('--ink'); c.font='600 14px Barlow,sans-serif'; c.fillText(fmt(v,2)+' bar',x,y+Rr*0.45); c.font='12px Barlow,sans-serif'; c.fillStyle=css('--ink2'); c.fillText(lab,x,y+Rr+14); c.textBaseline='alphabetic'; c.textAlign='left'; };
+  if(kind==='press'){ c.fillText('Încercarea de presiune a circuitului (motor rece)',14,22); const o=pressTest(q.dl); const tt=k*120; const pv=o.p[clamp(Math.round(tt*4),0,o.p.length-1)];
+    G.rad(c,{x:w*0.08,y:h*0.2,w:w*0.22,h:h*0.6},{t:0},{thot:30,tcold:25}); G.tank(c,{x:w*0.38,y:h*0.25,w:w*0.16,h:h*0.16},{t:0},{fluid:'rgba(79,163,199,.5)',level:0.5});
+    c.strokeStyle=css('--steel-d'); c.lineWidth=3; c.beginPath(); c.moveTo(w*0.46,h*0.25); c.lineTo(w*0.46,h*0.15); c.lineTo(w*0.62,h*0.15); c.stroke(); dial(w*0.76,h*0.42,Math.min(w*0.14,h*0.27),pv,2.0,'manometrul pompei de probă');
+    c.fillStyle=css('--ink'); c.font='13px Barlow,sans-serif'; c.fillText(`t = ${fmt(tt,0)} s   scădere: ${fmt(o.p[0]-pv,3)} bar`,w*0.08,h*0.92); if(q.dl>0.05){ c.fillStyle='rgba(79,163,199,.8)'; for(let i=0;i<4;i++){ c.beginPath(); c.arc(w*0.3+5,h*0.82+((tt*15+i*12)%40),2.5,0,7); c.fill(); } } }
+  else if(kind==='cap'){ c.fillText('Verificarea bușonului (supapa de presiune)',14,22); const pv=Math.min(q.popen,2.0*k); const open=pv>=q.popen-0.005&&k>0.5;
+    c.fillStyle=css('--steel'); rr(c,w*0.15,h*0.3,w*0.25,h*0.18,10); c.fill(); c.fillStyle=css('--steel-d'); c.fillRect(w*0.22,h*0.48,w*0.11,h*0.14); if(open){ c.fillStyle='rgba(127,174,219,.8)'; for(let i=0;i<5;i++){ c.beginPath(); c.arc(w*0.42+i*12,h*0.39-((R?R.t:0)*40+i*8)%30,3,0,7); c.fill(); } }
+    dial(w*0.72,h*0.45,Math.min(w*0.14,h*0.27),pv,2.0,'presiunea aplicată'); c.fillStyle=css('--ink'); c.font='13px Barlow,sans-serif'; c.fillText(open?'supapa s-a deschis la '+fmt(q.popen,2)+' bar':'presiunea crește…',w*0.1,h*0.85); }
+  else if(kind==='tst'){ c.fillText('Termostatul în vas cu apă încălzită',14,22); const T=70+35*k; const l=tstLift(q,T);
+    c.fillStyle='rgba(79,163,199,.35)'; rr(c,w*0.08,h*0.25,w*0.4,h*0.6,8); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke(); G.tst(c,{x:w*0.2,y:h*0.42,w:w*0.16,h:w*0.16},{t:0},{lift:l*8/q.lmax*q.lmax/8});
+    c.fillStyle=css('--ink'); c.font='13px Barlow,sans-serif'; c.fillText('temperatura apei: '+fmt(T,1)+' °C',w*0.55,h*0.4); c.fillText('cursa supapei: '+fmt(l,2)+' mm',w*0.55,h*0.4+22);
+    c.fillStyle=tcol(T); c.fillRect(w*0.55,h*0.55,w*0.35*(T-60)/50,12); c.strokeStyle=css('--steel-d'); c.strokeRect(w*0.55,h*0.55,w*0.35,12); }
+  else { c.fillText('Refractometrul — concentrația lichidului de răcire',14,22); const cx=w*0.35, cy=h*0.52, Rr=Math.min(w,h)*0.3; c.fillStyle='#E8F4FA'; c.beginPath(); c.arc(cx,cy,Rr,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=3; c.stroke();
+    const sh=cy-Rr*0.8+Rr*1.6*clamp((-lerpT(TFREEZE,q.conc))/60,0,1)*k; c.fillStyle='rgba(47,108,168,.55)'; c.save(); c.beginPath(); c.arc(cx,cy,Rr-2,0,7); c.clip(); c.fillRect(cx-Rr,sh,2*Rr,cy+Rr-sh); c.restore();
+    c.strokeStyle=css('--ink'); c.lineWidth=1; c.fillStyle=css('--ink'); c.font='11px Barlow Condensed,sans-serif'; for(let v=0;v<=60;v+=10){ const yy=cy-Rr*0.8+Rr*1.6*v/60; c.beginPath(); c.moveTo(cx-10,yy); c.lineTo(cx+10,yy); c.stroke(); c.fillText((v?'−':'')+v+' °C',cx+14,yy+4); }
+    c.font='13px Barlow,sans-serif'; c.fillText((R&&k<1)?'citire…':'punct de congelare: '+fmt(lerpT(TFREEZE,q.conc),1)+' °C',w*0.68,h*0.45); }
+}
+function benchT(){ const rows=[]; const P=B9.press; rows.push(['Încercarea de presiune (1,5 bar, 2 min)','pompă de mână + manometru',P?'scădere '+fmt(P.drop,3)+' bar':'–','≤ 0,10 bar',P?(P.drop<=0.10?'admis':'respins — neetanșeitate'):'–']);
+  const C=B9.cap; rows.push(['Presiunea de deschidere a bușonului','adaptor + pompă de probă',C?fmt(C.p,2)+' bar':'–','1,40 ± 0,15 bar',C?(Math.abs(C.p-1.4)<=0.15?'admis':'respins'):'–']);
+  const T=B9.tst; rows.push(['Începutul deschiderii termostatului','vas cu apă + termometru',T?fmt(T.Tst,1)+' °C':'–','87 ± 2 °C',T?(Math.abs(T.Tst-87)<=2?'admis':'respins'):'–']); rows.push(['Cursa termostatului la 100 °C','șubler',T?fmt(T.l100,2)+' mm':'–','≥ 7,0 mm',T?(T.l100>=7?'admis':'respins'):'–']);
+  const F2=B9.refr; rows.push(['Punctul de congelare al lichidului','refractometru',F2?fmt(F2.Tf,1)+' °C ('+fmt(F2.x*100,0)+' % glicol)':'–','≤ −25 °C',F2?(F2.Tf<=-25?'admis':'respins — se corectează concentrația'):'–']);
+  return {head:['Verificarea','Metoda','Valoare','Valoare admisă','Verdict'],rows,left:[0,1,3,4]}; }
+function renderBench(){ const T=benchT(); buildTable($('#tblBench'),T); ro2($('#roBench'),T.rows.map(r=>[r[0],r[2]+(r[4]!=='–'?' — '+r[4]:''),r[4].startsWith('respins')])); }
+
+/* ---------- tabelul bilanțului și graficele ---------- */
+const NS9=e=>{ const a=[]; for(let n=1000;n<=ENG9[e].nmax;n+=500) a.push(n); return a; };
+function flT(){ const p=readF(); return {head:['n [rot/min]','P<sub>e</sub> [kW]','Q̇<sub>r</sub> [kW]','Q<sub>p</sub> [L/min]','Q<sub>rad</sub> [L/min]','x','T<sub>e</sub> [°C]','ΔT<sub>m</sub> [°C]','ε','ventilator','P<sub>pompă</sub> [W]'],
+  rows:NS9(p.eng).map(n=>{ const r=ss({...p,n,ld:1}); return [n,fmt(r.E.Pe,1),fmt(r.Qr/1000,1),fmt(r.h.Q,0),fmt(r.h.Qr,0),fmt(r.x,2),fmt(r.T,1),fmt(r.dTe,1),fmt(r.R.eps,2),r.fan?'T'+r.fan+(r.cyc?' c':''):'–',fmt(r.Pp,0)]; })}; }
+let chT=null; function schedCharts(){ clearTimeout(chT); chT=setTimeout(()=>{ renderTables(); renderCharts(); },120); }
+function renderTables(){ buildTable($('#tblFL'),flT()); }
+function renderCharts(){ if(!$('#t-mas').classList.contains('on')) return; const p=readF(); const W=getWU(), W2=warmUp({...p,flt:'topen'},TEND,1), W3=warmUp({...p,Ta:-10},TEND,1);
+  plot($('#ch1'),{height:300,xlabel:'timp [s]',ylabel:'T [°C]',xmin:0,xmax:TEND,series:[{name:'motor, T_a = '+p.Ta+' °C',x:W.t,y:W.Te,color:'--alert'},{name:'ieșire radiator',x:W.t,y:W.Tr,color:'--blue'},{name:'motor, T_a = −10 °C',x:W3.t,y:W3.Te,color:'--violet'},{name:'termostat blocat deschis',x:W2.t,y:W2.Te,color:'--muted',dash:[6,4]}],hlines:[{y:80,label:'80 °C',color:'--muted'}],legendBR:true});
+  const Ts=[]; for(let T=70;T<=108;T+=0.5) Ts.push(T); const nom=Ts.map(T=>clamp((T-p.Td)/13,0,1)*8), cool=Ts.map(T=>clamp((T+SYS9.hyst-p.Td)/13,0,1)*8);
+  const s2=[{name:'nominal, la încălzire',x:Ts,y:nom,color:'--fuel'},{name:'la răcire (histerezis)',x:Ts,y:cool,color:'--fuel',dash:[5,4],lw:1.4}]; if(B9.tst) s2.push({name:'măsurat',x:B9.tst.pts.map(o=>o.T),y:B9.tst.pts.map(o=>o.l),color:'--ink',pointsOnly:true,markers:'sq'});
+  plot($('#ch2'),{height:300,xlabel:'temperatura lichidului [°C]',ylabel:'cursa [mm]',ymin:0,ymax:9.5,series:s2,legendLeft:true,vlines:[{x:p.Td,label:'T_d = '+p.Td+' °C'}]});
+  const Qs=[]; for(let q=0;q<=200;q+=4) Qs.push(q); const sP=[2000,4000,6000].map((N,i)=>({name:'pompă N = '+N+' rot/min',x:Qs,y:Qs.map(q=>Math.max(0,SYS9.H0*Math.pow(N/SYS9.N0,2)-SYS9.kp*q*q)),color:['--blue','--fuel','--alert'][i]}));
+  const sys=[0,0.5,1].map((x,i)=>{ const hh=hydro(3000/SYS9.ipump,x,'none',false); return {name:'circuit, x = '+fmt(x,1),x:Qs,y:Qs.map(q=>hh.ktot*q*q),color:['--violet','--teal','--ok'][i],dash:[6,4]}; });
+  plot($('#ch3'),{height:300,xlabel:'debitul Q [L/min]',ylabel:'H [m col. lichid]',ymin:0,ymax:22,series:[...sP,...sys],legendLeft:true});
+  const V=[]; for(let v=0;v<=160;v+=10) V.push(v); const ld=Math.max(0.6,p.ld), Tref=105; const capF=fan=>V.map(v=>{ const pr=coolProps(p.x,Tref); return radiator({...p,v},1.4,pr.cp,Tref,fan).Q/1000; });
+  const need=V.map(v=>{ const n=clamp(900+v*28,900,ENG9[p.eng].nmax); return enginePow(p.eng,n,ld).Qr; });
+  plot($('#ch4'),{height:300,xlabel:'viteza vehiculului [km/h]',ylabel:'putere termică [kW]',ymin:0,series:[{name:'căldura de evacuat (sarcină '+fmt(ld*100,0)+' %)',x:V,y:need,color:'--alert',lw:2.6},{name:'radiator, ventilator oprit',x:V,y:capF(0),color:'--blue'},{name:'radiator, treapta 1',x:V,y:capF(1),color:'--teal'},{name:'radiator, treapta 2',x:V,y:capF(2),color:'--ok'}],legendBR:true});
+  const X=[]; for(let x=0;x<=0.6001;x+=0.02) X.push(x);
+  plot($('#ch5'),{height:300,xlabel:'concentrația masică de glicol [%]',ylabel:'temperatura [°C]',series:[{name:'congelare',x:X.map(x=>x*100),y:X.map(x=>lerpT(TFREEZE,x)),color:'--blue'},{name:'fierbere la 1 atm',x:X.map(x=>x*100),y:X.map(x=>boilPoint(x,0)),color:'--fuel'},{name:'fierbere sub bușon '+fmt(p.pcap,2)+' bar',x:X.map(x=>x*100),y:X.map(x=>boilPoint(x,p.pcap)),color:'--alert'}],vlines:[{x:p.x*100,label:'x = '+fmt(p.x*100,0)+' %'}],legendLeft:true});
+  const s6=[0,0.15,0.3,0.5].map((d,i)=>{ const o=pressTest(d); return {name:'d = '+fmt(d,2)+' mm',x:o.t,y:o.p,color:['--ok','--fuel','--alert','--violet'][i]}; }); if(B9.press) s6.push({name:'măsurat',x:B9.press.t.filter((_,i)=>i%40===0),y:B9.press.p.filter((_,i)=>i%40===0),color:'--ink',pointsOnly:true,markers:'sq'});
+  plot($('#ch6'),{height:300,xlabel:'timp [s]',ylabel:'suprapresiunea [bar]',ymin:0,ymax:1.7,series:s6,hlines:[{y:1.4,label:'limita admisă (−0,10 bar)',color:'--muted'}],legendBR:true}); }
+
+/* ---------- informații despre componente ---------- */
+const INFO={
+ eng:{name:'Mantaua de apă a blocului și a chiulasei',cat:'motor',rol:'Canalele din jurul cilindrilor și al camerelor de ardere prin care lichidul preia căldura; chiulasa primește cel mai mare flux termic (zona supapelor de evacuare și a bujiei/injectorului).',con:'Canale turnate în bloc și chiulasă; la motoarele moderne curgere transversală prin chiulasă și răcire separată bloc / chiulasă (split cooling).',par:'Flux termic local 1–3 MW/m²; lichidul cedează 20–35 % din energia combustibilului.',def:'Depuneri de calcar (apă dură, fără antigel) — supraîncălzire locală, fisuri; coroziune; garnitura de chiulasă arsă — gaze în lichid.',ver:'Testul de CO₂ în vasul de expansiune (garnitura de chiulasă); încercarea de presiune.'},
+ pump:{name:'Pompa de apă (centrifugă)',cat:'pompă',rol:'Asigură circulația forțată a lichidului prin motor, radiator și radiatorul de încălzire.',con:'Rotor cu palete curbate înapoi într-o carcasă spirală, antrenat prin cureaua de accesorii sau de distribuție; garnitură mecanică frontală și rulment.',par:'Debit 80–250 L/min la turația maximă; înălțime de pompare 10–25 m; putere 0,3–2 kW.',def:'Garnitura frontală neetanșă (picurare prin orificiul de control), rulment uzat (zgomot, joc), rotor erodat de cavitație sau slăbit pe ax — debit insuficient.',ver:'Vizual (urme la orificiul de control), jocul axului, diferența de temperatură motor–radiator.'},
+ belt:{name:'Cureaua și fulia arborelui cotit',cat:'antrenare',rol:'Transmit mișcarea de la arborele cotit la pompa de apă (și la alternator, compresor).',con:'Curea poli-V cu întinzător automat; la unele motoare pompa este antrenată de cureaua de distribuție.',par:'Raport de transmitere 1,0–1,3.',def:'Curea patinată sau ruptă — supraîncălzire rapidă.',ver:'Starea și tensiunea curelei.'},
+ tst:{name:'Termostatul cu ceară',cat:'reglare',rol:'Menține temperatura de regim: ține închis circuitul mare până la T_d, apoi dozează debitul prin radiator; asigură încălzirea rapidă după pornire.',con:'Element dilatabil cu ceară în capsulă metalică, piston, supapă principală (spre radiator) și, adesea, supapă de by-pass dublă; orificiu de aerisire cu clapetă (jiggle valve).',par:'Început de deschidere 80–92 °C; deschidere completă la T_d + 12…15 °C; cursă 7–10 mm; histerezis 1–3 °C.',def:'Blocat deschis — motorul nu atinge temperatura de regim, consum ridicat, încălzire slabă; blocat închis — supraîncălzire rapidă, fierbere.',ver:'În vas cu apă încălzită, cu termometru: temperatura de început de deschidere și cursa.'},
+ tstm:{name:'Termostatul cartografic (încălzit electric)',cat:'reglare / actuator',rol:'ECU încălzește electric elementul de ceară și poate deschide termostatul la temperaturi mai mici decât cea nominală: la sarcini mici lichidul este ținut la 100–110 °C (frecare mică), la sarcini mari la 85–95 °C (detonație, putere).',con:'Termostat cu ceară cu rezistență de încălzire integrată, comandată PWM.',par:'Rezistență 12–16 Ω; temperatură nominală 103–110 °C.',def:'Rezistență întreruptă — cod de eroare (P0597–P0599), temperatură prea mare la sarcină mare.',ver:'Rezistența, testul de acționare cu testerul.'},
+ rad:{name:'Radiatorul',cat:'schimbător de căldură',rol:'Cedează căldura lichidului aerului care îl traversează.',con:'Tuburi plate din aluminiu cu aripioare ondulate cu jaluzele, brazate; bazine din material plastic armat cu fibră de sticlă; curgere încrucișată, de regulă cu trecere orizontală (cross-flow).',par:'Suprafață frontală 0,25–0,5 m²; putere 40–120 kW la autoturisme; eficiență ε = 0,3–0,7.',def:'Colmatare exterioară (insecte, praf) sau interioară (depuneri), aripioare îndoite, scurgeri la bazine.',ver:'Diferența de temperatură intrare–ieșire, termografie, încercarea de presiune.'},
+ fan:{name:'Electroventilatorul',cat:'ventilație',rol:'Asigură debitul de aer prin radiator la viteze mici ale vehiculului și la sarcini mari.',con:'Motor electric de curent continuu cu una–două trepte (rezistență serie) sau cu comandă PWM; carcasă cu clapete care se deschid la viteză mare.',par:'Putere 150–800 W; pornire la 95–100 °C, treapta a doua la 102–105 °C.',def:'Releu sau rezistență defecte, motor blocat — supraîncălzire în trafic urban vara.',ver:'Testul de acționare, curentul absorbit, pornirea la temperatura prescrisă.'},
+ exp:{name:'Vasul de expansiune',cat:'presurizare',rol:'Preia dilatarea lichidului (≈ 6–8 % între 20 și 110 °C), separă aerul și vaporii și menține sistemul presurizat; servește la umplere și la controlul nivelului.',con:'Rezervor transparent din plastic cu marcaje MIN/MAX, conectat la partea superioară a radiatorului/termostatului (aerisire) și la aspirația pompei.',par:'Volum 1–2 L; volum de aer 30–50 % la rece.',def:'Fisurare, nivel scăzut; ulei sau emulsie în vas (garnitura de chiulasă, răcitorul de ulei).',ver:'Nivelul la rece; aspectul lichidului.'},
+ cap:{name:'Bușonul cu supape',cat:'presurizare',rol:'Supapa de presiune limitează suprapresiunea (1,0–1,6 bar), ridicând punctul de fierbere cu 20–30 °C; supapa de vacuum lasă aerul să intre la răcire.',con:'Capac cu garnitură, supapă cu arc pentru presiune și supapă cu arc slab pentru vacuum.',par:'Deschidere 1,2–1,6 bar (marcat pe capac).',def:'Garnitura sau arcul slăbite — pierderi de lichid, fierbere; supapa de vacuum blocată — furtunuri strânse la răcire.',ver:'Cu adaptor pe pompa de probă: presiunea de deschidere.'},
+ heat:{name:'Radiatorul de încălzire',cat:'schimbător de căldură',rol:'Încălzește aerul introdus în habitaclu; la supraîncălzire, încălzirea la maximum ajută la răcirea motorului.',con:'Schimbător mic din aluminiu, în blocul climatizării; robinet sau supapă electrică (la unele sisteme pompă electrică auxiliară).',par:'Putere 4–8 kW.',def:'Colmatare sau aer — aer rece în habitaclu; scurgeri — geamuri aburite, miros dulceag.',ver:'Temperatura la intrare și ieșire, la regim cald.'},
+ hv:{name:'Supapa de încălzire / pompa auxiliară',cat:'reglare',rol:'Reglează debitul spre radiatorul de încălzire și îl întrerupe în faza de încălzire a motorului; pompa electrică asigură încălzirea și cu motorul oprit (start–stop).',con:'Supapă electromagnetică PWM; pompă electrică centrifugă de 15–30 W.',par:'—',def:'Supapă blocată — încălzire permanentă sau lipsă.',ver:'Testul de acționare.'},
+ cts:{name:'Senzorul de temperatură a lichidului (ECT)',cat:'senzor',rol:'Informează ECU pentru corecția injecției și a aprinderii, comanda ventilatorului și afișarea temperaturii.',con:'Termistor NTC în corp de alamă, montat la ieșirea din chiulasă.',par:'≈ 2,5 kΩ la 20 °C, ≈ 0,2 kΩ la 90 °C.',def:'Semnal eronat — pornire grea, consum ridicat, ventilator permanent pornit (valoare de avarie).',ver:'Rezistența în funcție de temperatură; valoarea citită cu testerul.'},
+ rts:{name:'Senzorul de temperatură la ieșirea radiatorului',cat:'senzor',rol:'Măsoară temperatura lichidului răcit; ECU o folosește pentru comanda ventilatorului și pentru diagnoza termostatului.',con:'Termistor NTC.',par:'—',def:'Diagnoza falsă a termostatului.',ver:'Valoarea citită cu testerul.'},
+ ecu:{name:'Unitatea electronică de comandă',cat:'comandă',rol:'Citește senzorii de temperatură, comandă electroventilatorul, termostatul cartografic și pompele/supapele de management termic; supraveghează termostatul (OBD).',con:'ECU motor.',par:'—',def:'Coduri P0115–P0119 (senzor), P0128 (termostatul nu atinge temperatura).',ver:'Testerul de diagnoză.'},
+ lamp:{name:'Indicatorul și martorul de temperatură',cat:'semnalizare',rol:'Afișează temperatura lichidului și avertizează la supraîncălzire.',con:'Indicator pe tabloul de bord, comandat prin CAN.',par:'Martor la ≈ 115–120 °C.',def:'—',ver:'—'},
+ oilc:{name:'Răcitorul de ulei (lichid–ulei)',cat:'schimbător de căldură',rol:'Transferă căldura uleiului lichidului de răcire; după pornire încălzește uleiul.',con:'Schimbător cu plăci montat în suportul filtrului de ulei.',par:'3–15 kW.',def:'Fisurare — amestec ulei–lichid.',ver:'Încercarea de presiune separată.'},
+ egrc:{name:'Răcitorul EGR',cat:'schimbător de căldură',rol:'Răcește gazele recirculate la MAC, reducând NOx; adaugă 5–15 kW în circuitul de răcire.',con:'Schimbător din oțel inoxidabil cu tuburi sau plăci, cu clapetă de by-pass.',par:'Răcește gazele de la 400–600 °C la 100–200 °C.',def:'Fisurare — pierderi de lichid fără urme exterioare, fum alb; colmatare cu funingine.',ver:'Încercarea de presiune, test de etanșeitate.'},
+ pulley:{name:'Fulia arborelui cotit',cat:'antrenare',rol:'Antrenează cureaua accesoriilor.',con:'Fulie cu amortizor de vibrații torsionale.',par:'—',def:'Amortizor deteriorat.',ver:'Vizual.'}};
+function mk(id,type,x,y,w,h,lab,lp,o={}){ const I=INFO[id]||{name:id}; return {id,type,x,y,w,h,lab,lp,name:I.name,cat:I.cat,info:I,...o}; }
+function mkSpec(v){ const Tn=()=>40+75*+$('#sreg').value; const xo=()=>clamp((Tn()-87)/13,0,1); const fanS=()=>Tn()>103?2:Tn()>97?1:0; const C=[], L=[]; const add=(...a)=>{ C.push(mk(...a)); return C[C.length-1]; }; const f=(type,pts,o={})=>L.push({type,pts,...o});
+  add('eng','engine',360,150,340,170,'','b',{st:()=>({rpm:5,txt:v==='mac'?'MOTOR MAC — MANTA DE APĂ':'MOTOR — MANTA DE APĂ'})});
+  if(v==='map') add('tstm','tst',715,150,40,40,'Termostat|cartografic','b',{st:()=>({lift:xo()*8,heat:true})}); else add('tst','tst',715,150,40,40,'Termostat','b',{st:()=>({lift:xo()*8})});
+  add('rad','rad',820,110,80,300,'Radiator','a',{st:()=>({thot:Tn(),tcold:Tn()-8*xo()-2})});
+  add('fan','fan',912,190,76,140,'Electro-|ventilator','b',{st:()=>({spd:fanS()*9})});
+  add('pump','pump',300,330,50,50,'Pompa de apă','b',{sym:'P'}); add('pulley','pul',430,346,34,34,'Fulie arbore cotit','b',{spd:5}); f('belt',[[325,345],[447,346]]); f('belt',[[325,365],[447,380]]);
+  // circuitul mare
+  f('chot',[[700,170],[715,170]]); f('chot',[[755,162],[790,162],[790,120],[820,120]],{on:()=>xo()>0.01,speed:()=>0.3+xo()}); f('ccold',[[860,410],[860,460],[325,460],[325,380]],{on:()=>xo()>0.01});
+  f('ccold',[[325,330],[325,300],[360,300]]);
+  // by-pass
+  f('cby',[[735,190],[735,355],[350,355]],{on:()=>xo()<0.98});
+  // încălzire
+  add('heat','cooler',480,50,70,40,'Radiator încălzire','a'); f('chot',[[600,150],[600,70],[550,70]]); f('ccold',[[480,70],[262,70],[262,365],[300,365]]);
+  if(v==='map'){ add('hv','valve',590,96,20,20,'Supapă|încălzire','r'); }
+  // vas de expansiune și bușon
+  add('exp','tank',650,18,100,46,'Vas de expansiune','r',{fluid:'rgba(79,163,199,.5)',level:0.5}); add('cap','valve',626,30,16,16,'Bușon','l');
+  f('vent',[[880,110],[880,30],[750,30]]); f('vent',[[670,64],[670,110],[282,110],[282,374],[300,374]]);
+  // senzori, comandă
+  add('cts','sens',700,128,16,16,'ECT','a'); if(v!=='mac') add('rts','sens',852,428,16,16,'T radiator','l');
+  add('ecu','ecu',30,20,100,56,'','b'); add('lamp','tlamp',40,92,44,28,'Indicator','b',{st:()=>({on:Tn()>115})});
+  f('sig',[[708,128],[708,100],[160,100],[160,48],[130,48]]); if(v!=='mac') f('sig',[[868,436],[990,436],[990,6],[150,6],[150,40],[130,40]]); f('act',[[130,66],[176,66],[176,12],[950,12],[950,190]]);
+  if(v==='map') f('act',[[130,58],[168,58],[168,18],[735,18]]);
+  if(v==='mac'){ add('oilc','cooler',170,200,60,40,'Răcitor|ulei','l'); f('chot',[[360,220],[230,220]]); f('ccold',[[200,240],[200,330],[300,345]]);
+    add('egrc','cooler',500,380,90,34,'Răcitor EGR','b'); f('chot',[[560,320],[560,380]]); f('ccold',[[500,397],[440,397],[440,355]]); f('exh',[[590,397],[680,397]]); }
+  return {W:1000,H:500,comps:C,links:L,texts:[{t:{mec:'Răcire cu lichid, termostat cu ceară, electroventilator în trepte',map:'Management termic: termostat cartografic, supapă de încălzire, ventilator PWM',mac:'MAC: răcitor EGR și răcitor de ulei în circuitul de răcire'}[v],x:370,y:485,f:'600 14px',c:'--ink'}]}; }
+const VARS=[{id:'mec',lab:'Termostat cu ceară',on:true},{id:'map',lab:'Termostat cartografic'},{id:'mac',lab:'MAC + răcitoare'}];
+
+/* ---------- schema: interacțiune ---------- */
+let SCH=null, VAR=null, QZ=null, MCQS=null;
+function renderInfo(cm){ $('#info').innerHTML=infoHTML(cm); $$('#chips button').forEach(b=>b.classList.toggle('on',cm&&b.dataset.id===ckey(cm))); }
+function renderChips(){ const seen=new Set(); $('#chips').innerHTML=SCH.spec.comps.filter(c=>!c.grpSub&&!seen.has(ckey(c))&&seen.add(ckey(c))).map(c=>`<button data-id="${ckey(c)}">${c.name}</button>`).join('');
+  $$('#chips button').forEach(b=>b.onclick=()=>SCH.select(b.dataset.id)); buildTable($('#tblComp'),compTable(SCH.spec.comps)); }
+function quizT(){ const q=QZ; const H=['Nr.','Componenta cerută','Rezultat']; if(!q) return {head:H,rows:[],left:[1,2]}; return {head:H,rows:q.log.map((l,i)=>[i+1,l.name,l.res]),left:[1,2],foot:q.done?['','Corecte din prima încercare',`${q.ok} / ${q.list.length}`]:undefined}; }
+function onQuiz(q){ QZ=q; $('#qState').innerHTML=q.done?`<b>Test încheiat:</b> ${q.ok} din ${q.list.length} corecte din prima încercare.`:`Componenta ${q.i+1} din ${q.list.length}`; buildTable($('#tblQuiz'),quizT()); renderReport(); }
+
+/* ---------- concluzii și referat ---------- */
+function conclusions(){ const p=readF(), r=ss(p), L=[];
+  L.push(`Pentru n = ${p.n} rot/min și sarcina ${fmt(p.ld*100,0)} %, motorul dezvoltă ${fmt(r.E.Pe,1)} kW, consumă ${fmt(r.E.Pc,1)} kW prin combustibil și cedează lichidului ${fmt(r.Qr/1000,1)} kW. Pompa vehiculează ${fmt(r.h.Q,0)} L/min, din care ${fmt(r.h.Qr,1)} L/min prin radiator (termostat deschis ${fmt(r.x*100,0)} %). Temperatura de regim este ${fmt(r.T,1)} °C.`);
+  L.push(`Radiatorul lucrează cu ε = ${fmt(r.R.eps,3)} (NTU = ${fmt(r.R.NTU,2)}, C_r = ${fmt(r.R.Cr,2)}) la o viteză a aerului de ${fmt(r.R.va,1)} m/s; ventilatorul este ${r.fan?'pornit (treapta '+r.fan+')':'oprit'}.`);
+  L.push(`Lichidul cu ${fmt(p.x*100,0)} % glicol îngheață la ${fmt(r.Tf,1)} °C și fierbe la ${fmt(r.Tb0,1)} °C la presiune atmosferică, respectiv la ${fmt(r.Tb,1)} °C sub bușon (${fmt(r.pcap,2)} bar) — rezervă de ${fmt(r.Tb-r.T,1)} °C.`);
+  const W=getWU(); L.push(`După pornirea la ${p.Ta} °C, termostatul se deschide după ${W.topen===null?'mai mult de '+TEND+' s':fmt(W.topen,0)+' s'}, iar lichidul atinge 80 °C după ${W.t80===null?'mai mult de '+TEND+' s':fmt(W.t80,0)+' s'}.`);
+  if(r.flags.length) L.push('Diagnoza: '+r.flags.map(f=>f[0]).join('; ')+'.');
+  benchT().rows.forEach(x=>{ if(x[2]!=='–') L.push(`${x[0]}: ${x[2]} (admis ${x[3]}) — ${x[4]}.`); });
+  if(QZ&&QZ.done) L.push(`La testul de identificare au fost recunoscute corect din prima încercare ${QZ.ok} din ${QZ.list.length} componente.`);
+  if(MCQS) L.push(`Scorul la testul grilă: ${MCQS[0]} din ${MCQS[1]}.`); return L; }
+function reportHTML(forWord){ const name=$('#stName').value||'…………………………', grp=$('#stGroup').value||'……', dt=$('#stDate').value||'…………';
+  const H=t=>forWord?`<h2 style="font:bold 13pt Calibri,Arial;color:#16324A;border-bottom:1.5pt solid #D9961A;margin:14pt 0 6pt">${t}</h2>`:`<h2>${t}</h2>`;
+  const Pp=t=>forWord?`<p style="font:11pt Calibri,Arial;text-align:justify;margin:0 0 6pt">${t}</p>`:`<p>${t}</p>`;
+  const tb=(T,cap)=>forWord?tableHTMLWord(T,cap):`<p><b>${cap}</b></p><div class="tbl-wrap${T.head.length<=5?' wraptbl':''}">${(()=>{const d=document.createElement('div'); buildTable(d,T); return d.innerHTML;})()}</div>`;
+  const title=`Referat — Lucrarea nr. ${LAB.nr}: ${LAB.ref}`;
+  let h=forWord?`<p style="font:10pt Calibri,Arial;color:#4E6072">Universitatea Politehnica Timișoara, Facultatea de Inginerie Mecanică</p><h1 style="font:bold 16pt Calibri,Arial;color:#16324A;margin:4pt 0">${title}</h1><p style="font:11pt Calibri,Arial">Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`:`<h1 style="font-size:22px;margin:0 0 4px">${title}</h1><p>Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`;
+  h+=H('1. Scopul lucrării')+Pp(LAB.scop);
+  h+=H('2. Componentele sistemului')+tb(compTable(SCH.spec.comps),'Tabelul 1. Componentele sistemului ('+VARS.find(v=>v.id===VAR).lab.toLowerCase()+')');
+  if(QZ&&QZ.log.length) h+=tb(quizT(),'Tabelul 2. Testul de identificare');
+  const p=readF(); h+=H('3. Calculul punctului de funcționare')+Pp(`Regim: ${ENG9[p.eng].lab}, n = ${p.n} rot/min, sarcina ${fmt(p.ld*100,0)} %, v = ${p.v} km/h, T<sub>a</sub> = ${p.Ta} °C, ${p.tst==='map'?'termostat cartografic':'termostat cu ceară'} (T<sub>d</sub> = ${p.Td} °C), glicol ${fmt(p.x*100,0)} %, bușon ${fmt(p.pcap,2)} bar, încălzire ${p.heater?'pornită':'oprită'}, defect simulat: ${FLT9.find(f=>f[0]===p.flt)[1]}.`)+tb($('#tblCalc')._T,'Tabelul 3. Calculul punctului de funcționare');
+  h+=H('4. Verificarea sistemului de răcire')+tb(benchT(),'Tabelul 4. Verificări de atelier');
+  h+=H('5. Bilanțul termic la sarcină plină')+tb(flT(),'Tabelul 5. Bilanțul termic la sarcină plină');
+  h+=H('6. Concluzii')+conclusions().map(Pp).join('')+Pp('<i>Concluzii personale ale studentului: …</i>'); return h; }
+function renderReport(){ if($('#t-ref').classList.contains('on')) $('#refBody').innerHTML=reportHTML(false); }
+
+/* ---------- inițializare ---------- */
+function labels(){ const s=(id,t)=>{ const e=$('#v_'+id); if(e) e.textContent=t; }; const p=readF();
+  s('n',p.n+' rot/min'); s('ld',fmt(p.ld*100,0)+' %'); s('v',p.v+' km/h'); s('Ta',p.Ta+' °C'); s('Td',p.Td+' °C'); s('x',fmt(p.x*100,0)+' % (îngheț '+fmt(lerpT(TFREEZE,p.x),0)+' °C)'); s('pcap',fmt(p.pcap,2)+' bar'); s('slow',fmt(+$('#slow').value,0)+' %');
+  s('dl',fmt(+$('#dl').value,2)+' mm'); s('capd',(+$('#capd').value>0?'+':'')+$('#capd').value+' %'); s('tage',$('#tage').value+' %'); s('conc',$('#conc').value+' %'); s('bseed','nr. '+$('#bseed').value); s('sreg',fmt(40+75*+$('#sreg').value,0)+' °C');
+  const nm=ENG9[p.eng].nmax; $('#n').max=nm; }
+function funAll(){ labels(); F.wu=null; renderCalc(); drawFun(); drawScope(); schedCharts(); }
+function fillSel(){ $('#flt').innerHTML=FLT9.map(f=>`<option value="${f[0]}">${f[1]}</option>`).join(''); $('#eng').innerHTML=Object.keys(ENG9).map(k=>`<option value="${k}">${ENG9[k].lab}</option>`).join(''); }
+const EXP={A:{set:{eng:'mas',n:3000,ld:100,v:50,Ta:40,flt:'none',tst:'wax'}},B:{set:{eng:'mas',n:2000,ld:20,v:90,Ta:-10,flt:'topen',tst:'wax',heater:true}},C:{set:{eng:'mas',n:2500,ld:40,v:80,Ta:25,flt:'tclosed',tst:'wax'}},D:{set:{eng:'mas',n:3000,ld:100,v:40,Ta:35,flt:'cap',x:0,tst:'wax'}}};
+const MCQ=[
+ {q:'Ce fracțiune din energia combustibilului este preluată de lichidul de răcire la un motor de autoturism?',o:['2–5 %','20–35 %','60–70 %','peste 80 %'],a:1,e:'Restul se repartizează între lucrul mecanic util (25–42 %) și gazele de evacuare (30–40 %).'},
+ {q:'Ce rol are termostatul?',o:['Răcește uleiul','Menține temperatura de regim și scurtează încălzirea motorului, dozând debitul prin radiator','Pornește ventilatorul','Reglează presiunea din circuit'],a:1,e:'Sub T_d lichidul circulă numai prin circuitul mic.'},
+ {q:'De ce circuitul de răcire este presurizat?',o:['Pentru a crește debitul pompei','Pentru a ridica punctul de fierbere și a evita formarea vaporilor la pereții fierbinți','Pentru a reduce consumul','Pentru a etanșa garnitura de chiulasă'],a:1,e:'La 1,4 bar suprapresiune apa fierbe la ≈ 126 °C; amestecul cu 50 % glicol la ≈ 133 °C.'},
+ {q:'Ce efect are concentrația de 50 % monoetilenglicol?',o:['Ridică punctul de congelare','Coboară punctul de congelare la ≈ −37 °C și ridică punctul de fierbere','Crește căldura specifică','Elimină nevoia de bușon'],a:1,e:'Căldura specifică scade (≈ 3,6 față de 4,2 kJ/(kg·K)), deci transferul de căldură se reduce ușor.'},
+ {q:'Ce simptom produce un termostat blocat deschis?',o:['Fierbere la ralanti','Motorul nu atinge temperatura de regim, încălzire slabă iarna, consum ridicat','Presiune mare a uleiului','Ventilatorul funcționează permanent'],a:1,e:'OBD semnalează P0128 (temperatura lichidului sub pragul termostatului).'},
+ {q:'În ce situație electroventilatorul este indispensabil?',o:['La viteză mare pe autostradă','La viteză mică sau staționare cu sarcină mare (trafic, urcare, vara)','Numai iarna','La pornirea la rece'],a:1,e:'La viteză mare presiunea dinamică asigură suficient aer prin radiator.'},
+ {q:'Ce mărime se măsoară cu refractometrul?',o:['Presiunea bușonului','Concentrația de glicol, adică punctul de congelare al lichidului','Debitul pompei','Temperatura termostatului'],a:1,e:'Refractometrul are scale separate pentru etilenglicol, propilenglicol și electrolitul bateriei.'},
+ {q:'Cum se verifică etanșeitatea circuitului de răcire?',o:['Cu analizorul de gaze','Cu pompa de mână montată în locul bușonului: se aplică 1,5 bar și se urmărește scăderea presiunii','Cu stetoscopul','Cu multimetrul'],a:1,e:'Se face cu motorul rece; scăderea fără scurgeri exterioare sugerează garnitura de chiulasă sau răcitorul EGR.'},
+ {q:'Ce indică prezența CO₂ în vasul de expansiune (testul cu reactiv)?',o:['Lichid nou','Gaze de ardere în lichid — garnitură de chiulasă arsă sau chiulasă fisurată','Termostat defect','Pompă uzată'],a:1,e:'Reactivul își schimbă culoarea (albastru → galben) în prezența CO₂.'},
+ {q:'De ce un termostat cartografic menține lichidul la 100–110 °C la sarcini mici?',o:['Pentru a proteja pompa','Pentru a reduce frecarea (ulei mai fluid) și consumul de combustibil','Pentru a evita detonația','Pentru a încălzi catalizatorul'],a:1,e:'La sarcini mari temperatura este coborâtă la 85–95 °C pentru a limita detonația și a crește umplerea.'}];
+
+window.addEventListener('DOMContentLoaded',()=>{ initTheme(); fillSel(); VAR=VARS.find(v=>v.on).id;
+  $('#segVar').innerHTML=VARS.map(v=>`<button data-v="${v.id}" class="${v.on?'on':''}">${v.lab}</button>`).join('');
+  SCH=Schem($('#cvSch'),mkSpec(VAR),{onSel:renderInfo,onQuiz}); SCH.active=()=>$('#t-sch').classList.contains('on')&&$('#sAnim').checked; SCH.start();
+  $('#leg').innerHTML=legendHTML(LEG); renderChips(); renderInfo(null); $('#varTag').textContent=VARS.find(v=>v.on).lab.toLowerCase();
+  $$('#segVar button').forEach(b=>b.onclick=()=>{ $$('#segVar button').forEach(x=>x.classList.toggle('on',x===b)); VAR=b.dataset.v; SCH.quiz=null; SCH.setSpec(mkSpec(VAR)); renderChips(); renderInfo(null); $('#varTag').textContent=b.textContent.toLowerCase(); $('#qState').textContent=''; renderReport(); });
+  $('#sreg').oninput=()=>{ labels(); SCH.draw(); }; $('#sAnim').onchange=()=>SCH.draw(); $('#qStart').onclick=()=>SCH.startQuiz(); $('#qSkip').onclick=()=>SCH.skip();
+  ['n','ld','v','Ta','Td','x','pcap'].forEach(k=>$('#'+k).addEventListener('input',funAll)); ['eng','tst','flt','heater'].forEach(k=>$('#'+k).addEventListener('change',funAll));
+  $('#slow').addEventListener('input',labels);
+  $('#fPlay').onclick=()=>{ if(!F.trans||F.t>=TEND-1){ F.t=0; } F.trans=true; F.play=true; getWU(); }; $('#fPause').onclick=()=>F.play=false; $('#fReset').onclick=()=>{ F.trans=false; F.play=false; F.t=0; drawFun(); drawScope(); };
+  ['dl','capd','tage','conc','bseed'].forEach(k=>$('#'+k).addEventListener('input',()=>{ labels(); drawBench(null); }));
+  $('#bPress').onclick=()=>benchStart('press'); $('#bCap').onclick=()=>benchStart('cap'); $('#bTst').onclick=()=>benchStart('tst'); $('#bRefr').onclick=()=>benchStart('refr');
+  $$('[data-exp]').forEach(b=>b.onclick=()=>{ const e=EXP[b.dataset.exp]; Object.entries(e.set).forEach(([k,v])=>{ const el=$('#'+k); if(!el) return; if(el.type==='checkbox') el.checked=v; else el.value=v; }); if(b.dataset.exp!=='D'){ $('#x').value=50; } F.trans=false; F.t=0; funAll(); $('nav.tabs button[data-tab="t-fun"]').click(); toast('Experimentul '+b.dataset.exp+' a fost aplicat'); });
+  quizRender($('#mcq'),MCQ,(ok,n)=>{ MCQS=[ok,n]; renderReport(); });
+  $('#stDate').valueAsDate=new Date(); ['stName','stGroup','stDate'].forEach(k=>$('#'+k).addEventListener('input',renderReport));
+  $('#bRef').onclick=async()=>{ const hh=reportHTML(true); if(await copyRich(hh,$('#refBody').innerText)) toast('Referat copiat – lipiți în Word'); else manualModal('Referat pentru Word',hh,true); };
+  $('#bRefTxt').onclick=async()=>{ const t=$('#refBody').innerText; if(await copyText(t)) toast('Referat copiat ca text'); else manualModal('Referat',t); };
+  wireCopy(document); labels(); renderCalc(); renderTables(); renderBench(); buildTable($('#tblQuiz'),quizT());
+  initTabs(t=>{ if(t==='t-sch') SCH.draw(); if(t==='t-fun'){ drawFun(); drawScope(); } if(t==='t-mas'){ drawBench(null); renderCharts(); } if(t==='t-ref') renderReport(); });
+  requestAnimationFrame(funLoop);
+  if(document.fonts) document.fonts.ready.then(()=>{ SCH.draw(); drawFun(); drawScope(); drawBench(null); renderCharts(); });
+  let rz; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ SCH.draw(); drawFun(); drawScope(); drawBench(null); renderCharts(); },150); });
+  ['themechange','decchange'].forEach(ev=>window.addEventListener(ev,()=>{ funAll(); SCH.draw(); drawBench(null); renderBench(); }));
+});
+
+</script></body></html>

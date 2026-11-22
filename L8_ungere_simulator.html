@@ -1,0 +1,993 @@
+<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lucrarea 8 – Sistemul de ungere</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDF0F2; --panel:#FFFFFF; --panel2:#F6F8F9; --ink:#16324A; --ink2:#4E6072; --muted:#7B8A97;
+  --fuel:#D9961A; --fuel-soft:#F6E3B8; --fuel-deep:#A8680A; --steel:#8A99A6; --steel-d:#5E6E7B; --line:#CBD3DA;
+  --alert:#B3362B; --ok:#2E7D4F; --blue:#2F6CA8; --violet:#6B4FA0; --teal:#1F8A8A;
+  --canvas-bg:#FBFCFC; --grid:#E1E6EA; --shadow:0 1px 2px rgba(22,50,74,.08);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}}
+:root[data-theme="dark"]{
+  --paper:#161D23; --panel:#1E2830; --panel2:#243039; --ink:#DCE6EE; --ink2:#A9B8C4; --muted:#7E8E9B;
+  --fuel:#E9A93A; --fuel-soft:#4A3A1C; --fuel-deep:#F2C063; --steel:#7F8E9A; --steel-d:#A3B1BC; --line:#34424D;
+  --alert:#E0685C; --ok:#5DBB86; --blue:#6FA6DB; --violet:#A78BDA; --teal:#4FC2C2; --canvas-bg:#1A232A; --grid:#2A3640; --shadow:none;}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow","Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5}
+.num,.ro{font-family:"Barlow Condensed","Arial Narrow","Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 10px;border-bottom:3px solid var(--ink)}
+header.top .lab{font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink2);letter-spacing:.02em}
+header.top h1{margin:0;font-size:26px;line-height:1.15;font-weight:700}
+header.top .inst{margin-left:auto;text-align:right;font-size:13px;color:var(--ink2)}
+.fuelbar{height:6px;background:linear-gradient(90deg,var(--fuel) 0 38%,transparent 38%)}
+nav.tabs{display:flex;gap:2px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+nav.tabs button{font:inherit;font-weight:600;border:0;background:none;color:var(--ink2);padding:12px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fuel)}
+nav.tabs .sp{flex:1}
+nav.tabs .tool{font-weight:500;font-size:13px}
+main{padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+section.tab{display:none} section.tab.on{display:block}
+.grid3{display:grid;grid-template-columns:300px minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:1150px){.grid3{grid-template-columns:280px minmax(0,1fr)} .grid3>.readouts{grid-column:1/-1}}
+@media (max-width:760px){.grid3{grid-template-columns:1fr} main{padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow)}
+.card>h3{margin:0;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card>.bd{padding:12px 14px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink2)}
+.ctrl label b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:600}
+.ctrl input[type=range]{width:100%;accent-color:var(--fuel)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text],.field{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink)}
+fieldset{border:0;border-top:1px solid var(--line);margin:12px 0 6px;padding:10px 0 0}
+fieldset legend{font-weight:700;font-size:13.5px;padding-right:8px;color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:4px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.fuel{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative}
+canvas{display:block;width:100%;background:var(--canvas-bg);border-radius:4px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px}
+.ro-table td{padding:4px 2px;border-bottom:1px dashed var(--line)}
+.ro-table td:first-child{width:56%}
+.ro-table td:last-child{text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:600}
+.ro-table tr.hl td:last-child{color:var(--fuel-deep)}
+.ro-table .sym{color:var(--muted);font-style:italic;font-family:"Times New Roman",serif}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--fuel-soft);color:var(--ink)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent)} .tag.bad{background:color-mix(in srgb,var(--alert) 22%,transparent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table.data{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+table.data th{background:var(--ink);color:var(--panel);font-weight:600;padding:6px 8px;text-align:center;white-space:nowrap}
+table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:"Barlow Condensed",sans-serif;font-size:15px;white-space:nowrap}
+table.data td.l{text-align:left;font-family:inherit;font-size:13.5px}
+table.data tr:nth-child(even) td{background:var(--panel2)}
+table.data tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.copybar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.copybar .t{font-weight:700;margin-right:auto}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.charts{grid-template-columns:1fr}}
+.prose{max-width:860px}
+.prose h2{font-size:21px;margin:26px 0 8px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.prose h3{font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{line-height:1.62}
+.eq{font-family:"Cambria Math","Times New Roman",serif;font-size:17px;background:var(--panel);border-left:4px solid var(--fuel);padding:8px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-size:14px;font-family:"Barlow",sans-serif}
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);padding:8px 12px;border-radius:4px;margin:10px 0}
+.warn{border-left-color:var(--alert)}
+ol.steps{counter-reset:s;list-style:none;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;margin:0 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700}
+ol.steps>li b.h{display:block;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);max-width:760px;width:100%;border-radius:8px;padding:16px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;height:260px;font-family:Consolas,monospace;font-size:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
+.toast.on{opacity:1}
+.legend-inline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend-inline i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.small{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{nav.tabs,.copybar,.btn{display:none!important} section.tab{display:block!important} body{background:#fff}}
+.info-h{margin:0 0 6px;font-size:18px;color:var(--ink)}
+.info-s{margin-top:10px;font-size:14px;line-height:1.45}
+.info-t{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fuel-deep);margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:3px 10px;cursor:pointer}
+.chips button.on{background:var(--fuel);border-color:var(--fuel);color:#1d1406}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-top:8px}
+.mcq{border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;background:var(--panel)}
+.mcq p{margin:0 0 6px}.mcq label{display:block;padding:2px 0;cursor:pointer;font-size:14.5px}
+.mcq.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.mcq.badq{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 7%,var(--panel))}
+.mcq .expl{font-size:13.5px;color:var(--ink2);margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:5px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:600;font-size:13.5px;border:0;background:transparent;color:var(--ink);padding:6px 11px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--panel)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.kpi div{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:6px 10px}
+.kpi small{display:block;color:var(--ink2);font-size:12px}.kpi b{font-family:"Barlow Condensed",sans-serif;font-size:19px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0}
+@media(max-width:1050px){.grid2{grid-template-columns:1fr}}
+.ctlbar{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end}
+.ctlbar .ctrl{margin:0;min-width:200px}
+.wraptbl td{white-space:normal!important;text-align:left!important;font-family:"Barlow",sans-serif!important;font-size:14px!important}
+.infobox{max-height:560px;overflow:auto}
+</style>
+<body>
+<header class="top">
+  <div>
+    <div class="lab">Laborator Sisteme auxiliare ale autovehiculelor rutiere — Lucrarea nr. 8</div>
+    <h1>Cunoașterea sistemului de ungere al motorului - autor: S.L dr. ing Vetreș Ion</h1>
+  </div>
+  <div class="inst">Universitatea Politehnica Timișoara<br>Facultatea de Mecanică, Departamentul MMUT</div>
+</header>
+<div class="fuelbar"></div>
+<nav class="tabs" aria-label="Secțiuni">
+  <button data-tab="t-teorie">1. Teorie</button>
+  <button data-tab="t-sch">2. Schema sistemului</button>
+  <button data-tab="t-fun">3. Funcționarea</button>
+  <button data-tab="t-mas">4. Măsurători</button>
+  <button data-tab="t-tut">5. Tutorial și test</button>
+  <button data-tab="t-ref">6. Referat</button>
+  <span class="sp"></span>
+  <button class="tool" id="decBtn">Zecimale</button>
+  <button class="tool" id="themeBtn">Temă luminoasă / întunecată</button>
+</nav>
+<main>
+<!-- ============ TEORIE ============ -->
+<section class="tab prose" id="t-teorie">
+  <h2>Scopul lucrării</h2>
+  <p>Lucrarea are ca scop cunoașterea construcției și funcționării sistemului de ungere al motorului cu ardere internă: identificarea componentelor circuitului de ulei, înțelegerea legăturii dintre vâscozitatea uleiului, debitul pompei și presiunea din rampa principală, a funcționării lagărelor hidrodinamice și a principalelor verificări de atelier (presiunea uleiului, jocurile pompei și ale lagărelor, supapa de siguranță).</p>
+  <h2>Rolul sistemului de ungere</h2>
+  <p>Uleiul separă suprafețele în mișcare relativă printr-un film portant (reduce frecarea și uzura), preia căldura de la lagăre, pistoane și turbocompresor (10–15 % din căldura evacuată de motor), etanșează segmenții, curăță piesele și transportă impuritățile spre filtru, protejează împotriva coroziunii și acționează elemente hidraulice (tachete hidraulice, întinzătorul lanțului, variatoarele de fază ale arborelui cu came).</p>
+  <h2>Clasificarea sistemelor de ungere</h2>
+  <p>La motoarele de autovehicule ungerea este <b>mixtă</b>: lagărele paliere, ale bielei, ale arborelui cu came și ale turbocompresorului sunt unse <b>sub presiune</b>, iar cilindrii, bolțurile și camele prin <b>stropire</b> și ceață de ulei. După locul de stocare a uleiului: <b>carter umed</b> (uleiul stă în baia motorului — soluția uzuală) și <b>carter uscat</b> (pompe de evacuare trimit uleiul într-un rezervor separat — motoare sport, off-road, motociclete; permite motor coborât și ungere sigură la accelerații laterale mari). După reglarea presiunii: pompă cu debit constant pe rotație și <b>supapă de siguranță</b> (surplusul este descărcat în carter) sau <b>pompă cu debit variabil</b> (cu palete sau cu roți dințate deplasabile, comandată de ECU), care reduce puterea consumată cu 1–3 % din consumul de combustibil.</p>
+  <h2>Uleiul și vâscozitatea</h2>
+  <p>Vâscozitatea scade foarte rapid cu temperatura. Dependența se descrie prin ecuația Walther (ASTM D341), care devine liniară în coordonate dublu logaritmice:</p>
+  <div class="eq">lg lg(ν + 0,7) = A − B · lg T ,&nbsp;&nbsp; ν [mm²/s], T [K]<span class="n">(1)</span></div>
+  <p>Constantele A și B se determină din vâscozitățile la 40 °C și 100 °C din fișa uleiului. Vâscozitatea dinamică este μ = ν·ρ. Clasificarea SAE J300 indică prin cifra din fața literei W comportarea la rece (pompabilitate, pornire), iar prin a doua cifră vâscozitatea la 100 °C și vâscozitatea HTHS la 150 °C.</p>
+  <h2>Pompa de ulei și circuitul</h2>
+  <p>Pompa volumică (cu roți dințate, gerotor sau cu palete) are debitul teoretic proporțional cu cilindreea V<sub>p</sub> și cu turația ei; o parte se pierde prin jocuri, cu atât mai mult cu cât uleiul este mai fluid:</p>
+  <div class="eq">Q<sub>th</sub> = V<sub>p</sub> · n<sub>p</sub> ,&nbsp;&nbsp; Q<sub>sc</sub> = k<sub>l</sub> · Δp / μ ,&nbsp;&nbsp; η<sub>v</sub> = (Q<sub>th</sub> − Q<sub>sc</sub>) / Q<sub>th</sub><span class="n">(2)</span></div>
+  <p>Motorul se comportă ca o rezistență hidraulică: debitul prin lagăre crește cu presiunea, cu cubul jocului radial și invers proporțional cu vâscozitatea; duzele de răcire a pistoanelor se deschid peste ≈ 2 bar. Presiunea se stabilește la egalitatea dintre debitul livrat de pompă și debitul consumat:</p>
+  <div class="eq">Q<sub>th</sub> − Q<sub>sc</sub> − Q<sub>sup</sub> = Q<sub>m</sub>(p<sub>r</sub>) ,&nbsp;&nbsp; Q<sub>m</sub> = G<sub>0</sub> (μ<sub>0</sub>/μ)(c/c<sub>0</sub>)³ p<sub>r</sub> + q<sub>n</sub> n + K<sub>j</sub> √(p<sub>r</sub> − p<sub>j</sub>)<span class="n">(3)</span></div>
+  <p>La rece vâscozitatea mare face ca debitul consumat să fie mic: presiunea crește până la deschiderea supapei de siguranță, iar căderea de presiune pe filtru poate deschide supapa de by-pass. La cald și la ralanti, debitul pompei devine critic: presiunea minimă la ralanti este indicatorul principal al stării lagărelor și a pompei.</p>
+  <h2>Lagărul hidrodinamic</h2>
+  <p>Fusul rotitor antrenează uleiul în interstițiul convergent și generează o presiune care susține sarcina. Pentru lagărele scurte (L/D &lt; 0,6, cazul lagărelor motorului) teoria Ocvirk dă legătura dintre sarcina W și excentricitatea relativă ε:</p>
+  <div class="eq">W = (μ U L³ / c²) · ε / [4(1 − ε²)²] · √[π²(1 − ε²) + 16 ε²] ,&nbsp;&nbsp; h<sub>min</sub> = c (1 − ε)<span class="n">(4)</span></div>
+  <p>Regimul de ungere se apreciază prin raportul Λ = h<sub>min</sub>/σ dintre grosimea minimă a filmului și rugozitatea compusă a suprafețelor: Λ &gt; 3 — ungere hidrodinamică completă; 1 &lt; Λ &lt; 3 — ungere mixtă; Λ &lt; 1 — ungere limită, cu contact metal–metal. Numărul Sommerfeld S = (μ n<sub>s</sub>/p)(R/c)² grupează toți parametrii lagărului.</p>
+  <div class="eq">F<sub>f</sub> = 2π μ U R L / (c √(1 − ε²)) + ε c W sin φ / (2R) ,&nbsp;&nbsp; P<sub>f</sub> = F<sub>f</sub> U ,&nbsp;&nbsp; Q<sub>s</sub> = U c L ε<span class="n">(5)</span></div>
+  <div class="note warn"><b>Protecția muncii.</b> Uleiul cald (90–130 °C) produce arsuri; se lucrează numai cu motorul oprit sau, la măsurarea presiunii, cu motorul la ralanti, fără a atinge piese în mișcare. Uleiul uzat este toxic și cancerigen: se folosesc mănuși de nitril și se colectează în recipiente dedicate. Ușile și racordurile manometrului se strâng înainte de pornire — un furtun desprins pulverizează ulei fierbinte.</div>
+</section>
+
+<!-- ============ SCHEMA ============ -->
+<section class="tab" id="t-sch">
+  <div class="card"><div class="bd ctlbar">
+    <div class="ctrl"><label><span>Tipul sistemului</span></label><div class="seg" id="segVar"></div></div>
+    <div class="ctrl" style="min-width:230px"><label><span>Turația motorului (ulei 90 °C)</span> <b id="v_sreg"></b></label><input type="range" id="sreg" min="0" max="1" step="0.01" value="0.25"></div>
+    <div class="ctrl"><label><span><input type="checkbox" id="sAnim" checked> Animă fluxurile</span></label></div>
+    <div class="ctrl"><label><span>Test de identificare (denumirile dispar)</span></label><div class="row"><button class="btn fuel" id="qStart">Începe testul</button><button class="btn alt" id="qSkip">Arată / sari</button></div></div>
+    <p class="small" id="qState" style="margin:0"></p>
+  </div></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Schema sistemului de ungere <span class="tag" id="varTag"></span></h3><div class="bd"><canvas id="cvSch"></canvas><div class="legend2" id="leg"></div></div></div>
+    <div class="card"><h3>Fișa componentei</h3><div class="bd infobox"><div id="info"></div><div class="chips" id="chips"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Componentele sistemului</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 1. Componentele sistemului de ungere</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblComp">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblComp" data-cap="Tabelul 1. Componentele sistemului de ungere">Copiază pentru Word</button><button class="btn sm alt" data-copy="img" data-target="#cvSch" data-cap="Schema sistemului">Copiază schema</button></div>
+    <div class="tbl-wrap wraptbl" id="tblComp"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 2. Rezultatele testului de identificare</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblQuiz">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblQuiz" data-cap="Tabelul 2. Rezultatele testului de identificare">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblQuiz"></div>
+  </div></div>
+</section>
+
+<!-- ============ FUNCTIONARE ============ -->
+<section class="tab" id="t-fun">
+  <div class="grid3">
+    <div class="card"><h3>Regimul și condițiile</h3><div class="bd">
+      <div class="ctrl"><label><span>Turația motorului n</span> <b id="v_n"></b></label><input type="range" id="n" min="700" max="6500" step="50" value="2000"></div>
+      <div class="ctrl"><label><span>Sarcina motorului</span> <b id="v_ld"></b></label><input type="range" id="ld" min="0" max="100" step="1" value="50"></div>
+      <div class="ctrl"><label><span>Temperatura uleiului T<sub>u</sub></span> <b id="v_T"></b></label><input type="range" id="T" min="-30" max="150" step="1" value="100"></div>
+      <fieldset><legend>Uleiul și circuitul</legend>
+        <div class="ctrl"><label><span>Uleiul (SAE J300)</span></label><select id="grade"></select></div>
+        <div class="ctrl"><label><span>Pompa de ulei</span></label><select id="pump"></select></div>
+        <div class="ctrl"><label><span>Defect simulat</span></label><select id="flt"></select></div>
+      </fieldset>
+      <fieldset><legend>Pornirea la rece (osciloscop)</legend>
+        <div class="ctrl"><label><span>Temperatura la pornire</span> <b id="v_T0"></b></label><input type="range" id="T0" min="-30" max="40" step="1" value="-10"></div>
+      </fieldset>
+      <div class="row"><button class="btn fuel" id="fPlay">Pornește motorul</button><button class="btn alt" id="fPause">Pauză</button><button class="btn alt" id="fReset">De la început</button></div>
+      <div class="ctrl" style="margin-top:10px"><label><span>Viteza redării</span> <b id="v_slow"></b></label><input type="range" id="slow" min="10" max="100" step="5" value="40"></div>
+    </div></div>
+    <div class="card stage"><h3>Pompa, presiunea și lagărul de bielă <span class="tag" id="funTag"></span></h3><div class="bd">
+      <canvas id="cvFun"></canvas>
+      <h4 style="margin:12px 0 6px">Osciloscop — pornirea motorului: turația, presiunea pompei, presiunea în rampă, martorul de ulei</h4>
+      <canvas id="cvScope"></canvas>
+      <div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#cvFun" data-cap="Pompa, presiunea și lagărul">Copiază imaginea</button><button class="btn sm alt" data-copy="img" data-target="#cvScope" data-cap="Pornirea la rece">Copiază oscilogramele</button></div>
+    </div></div>
+    <div class="card readouts"><h3>Calculul punctului de funcționare</h3><div class="bd"><table class="ro-table" id="roCalc"></table>
+      <div class="copybar"><button class="btn sm alt" data-copy="excel" data-target="#tblCalc">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblCalc" data-cap="Tabelul 3. Calculul punctului de funcționare">Copiază pentru Word</button></div>
+      <div id="tblCalc" style="display:none"></div></div></div>
+  </div>
+</section>
+
+<!-- ============ MASURATORI ============ -->
+<section class="tab" id="t-mas">
+  <div class="grid3">
+    <div class="card"><h3>Verificări de atelier</h3><div class="bd">
+      <fieldset style="margin-top:0;border-top:0;padding-top:0"><legend>Starea motorului încercat</legend>
+        <div class="ctrl"><label><span>Uzura lagărelor (joc diametral)</span> <b id="v_bw"></b></label><input type="range" id="bw" min="0" max="100" step="1" value="35"></div>
+        <div class="ctrl"><label><span>Uzura pompei de ulei</span> <b id="v_pw"></b></label><input type="range" id="pw" min="0" max="100" step="1" value="25"></div>
+        <div class="ctrl"><label><span>Abaterea arcului supapei de siguranță</span> <b id="v_rvd"></b></label><input type="range" id="rvd" min="-50" max="20" step="1" value="-5"></div>
+        <div class="ctrl"><label><span>Temperatura uleiului la încercare</span> <b id="v_Tb"></b></label><input type="range" id="Tb" min="60" max="110" step="1" value="80"></div>
+        <div class="ctrl"><label><span>Seria de măsurători</span> <b id="v_bseed"></b></label><input type="range" id="bseed" min="1" max="9" step="1" value="3"></div>
+      </fieldset>
+      <div class="row"><button class="btn fuel" id="bPres">Presiunea uleiului</button><button class="btn alt" id="bPump">Jocurile pompei</button><button class="btn alt" id="bPlast">Jocul lagărelor</button><button class="btn alt" id="bRv">Supapa de siguranță</button></div>
+      <p class="small">Presiune: manometru de control montat în locul manocontactului, ulei la 80 °C; admis ≥ 1,0 bar la ralanti și ≥ 2,0 bar la 2000 rot/min. Pompa: joc radial dinte–carcasă ≤ 0,20 mm, joc axial ≤ 0,10 mm. Lagăre (Plastigage): joc diametral nou 0,02–0,06 mm, limită 0,08 mm. Supapa de siguranță: deschidere la 4,5 ± 0,3 bar.</p>
+    </div></div>
+    <div class="card stage"><h3>Standul de verificare <span class="tag" id="benchTag">oprit</span></h3><div class="bd"><canvas id="cvBench"></canvas></div></div>
+    <div class="card readouts"><h3>Rezultatele verificărilor</h3><div class="bd"><table class="ro-table" id="roBench"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Tabele de măsurători</h3><div class="bd">
+    <div class="copybar"><span class="t">Tabelul 4. Verificări de atelier ale sistemului de ungere</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblBench">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblBench" data-cap="Tabelul 4. Verificări de atelier">Copiază pentru Word</button></div>
+    <div class="tbl-wrap wraptbl" id="tblBench"></div>
+    <div class="copybar" style="margin-top:14px"><span class="t">Tabelul 5. Caracteristica de presiune și debit (setările din secțiunea 3)</span>
+      <button class="btn sm alt" data-copy="excel" data-target="#tblFL">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="#tblFL" data-cap="Tabelul 5. Caracteristica de presiune și debit">Copiază pentru Word</button></div>
+    <div class="tbl-wrap" id="tblFL"></div>
+  </div></div>
+  <div class="charts" style="margin-top:16px">
+    <div class="card"><h3><span>Fig. 1. Vâscozitatea cinematică a uleiurilor în funcție de temperatură</span></h3><div class="bd"><canvas id="ch1"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch1" data-cap="Fig. 1">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 2. Presiunea în rampa principală în funcție de turație</span></h3><div class="bd"><canvas id="ch2"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch2" data-cap="Fig. 2">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 3. Bilanțul debitelor de ulei</span></h3><div class="bd"><canvas id="ch3"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch3" data-cap="Fig. 3">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 4. Grosimea minimă a filmului în lagărul de bielă</span></h3><div class="bd"><canvas id="ch4"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch4" data-cap="Fig. 4">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 5. Puterea de antrenare a pompei: debit fix și debit variabil</span></h3><div class="bd"><canvas id="ch5"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch5" data-cap="Fig. 5">Copiază graficul</button></div></div></div>
+    <div class="card"><h3><span>Fig. 6. Creșterea presiunii la pornire pentru diferite temperaturi</span></h3><div class="bd"><canvas id="ch6"></canvas><div class="copybar"><button class="btn sm alt" data-copy="img" data-target="#ch6" data-cap="Fig. 6">Copiază graficul</button></div></div></div>
+  </div>
+</section>
+
+<!-- ============ TUTORIAL ============ -->
+<section class="tab prose" id="t-tut">
+  <h2>Desfășurarea lucrării</h2>
+  <ol class="steps">
+    <li><b>Teorie.</b> Citiți secțiunea 1 și notați relațiile (1)–(5).</li>
+    <li><b>Schema sistemului.</b> Pentru fiecare variantă (pompă cu debit fix, pompă cu debit variabil, carter uscat) parcurgeți componentele cu clic. Modificați turația și urmăriți când se deschide supapa de siguranță și cum se modifică debitul spre lagăre.</li>
+    <li><b>Testul de identificare.</b> Pe varianta cu debit fix apăsați „Începe testul” și identificați toate componentele fără denumiri. Rezultatul intră în Tabelul 2.</li>
+    <li><b>Vâscozitatea.</b> Pentru uleiul 5W-30 verificați manual, cu relația (1), vâscozitatea la 20 °C și la 120 °C afișată în secțiunea 3.</li>
+    <li><b>Punctul de funcționare.</b> La n = 2000 rot/min și T<sub>u</sub> = 100 °C verificați bilanțul debitelor (3) și presiunea din rampă. Coborâți temperatura la 20 °C și explicați deschiderea supapei de siguranță.</li>
+    <li><b>Lagărul.</b> Calculați cu relația (4) grosimea minimă a filmului pentru valorile afișate și comparați cu simulatorul; urmăriți Λ la 140 °C cu uleiul 0W-20.</li>
+    <li><b>Pornirea la rece.</b> Apăsați „Pornește motorul” la −20 °C și la +20 °C și notați timpul de stingere a martorului de ulei.</li>
+    <li><b>Măsurători.</b> Măsurați presiunea uleiului, jocurile pompei și ale lagărelor și verificați supapa de siguranță; stabiliți verdictul.</li>
+    <li><b>Referat.</b> Completați datele, copiați referatul în Word și adăugați figurile.</li>
+  </ol>
+  <h2>Experimente dirijate</h2>
+  <div class="row"><button class="btn alt" data-exp="A">A — Lagăre uzate, ralanti la cald</button><button class="btn alt" data-exp="B">B — Pornire la −25 °C cu 20W-50</button><button class="btn alt" data-exp="C">C — Pompă cu debit variabil</button><button class="btn alt" data-exp="D">D — Ulei diluat cu combustibil</button></div>
+  <p class="small">A: comparați presiunea la ralanti cu limita de 1,0 bar și grosimea filmului. B: observați cavitația la aspirație, supapa de by-pass a filtrului și întârzierea presiunii; schimbați uleiul cu 0W-20. C: comparați puterea de antrenare cu cea a pompei cu debit fix (Fig. 5). D: urmăriți scăderea vâscozității și a lui Λ la 130 °C.</p>
+  <h2>Test grilă</h2>
+  <div id="mcq"></div>
+</section>
+
+<!-- ============ REFERAT ============ -->
+<section class="tab" id="t-ref">
+  <div class="card"><h3>Date de identificare</h3><div class="bd"><div class="row">
+    <input class="field" style="max-width:260px" id="stName" placeholder="Numele și prenumele studentului">
+    <input class="field" style="max-width:140px" id="stGroup" placeholder="Grupa">
+    <input class="field" style="max-width:170px" id="stDate" type="date">
+    <button class="btn fuel" id="bRef">Copiază referatul pentru Word</button><button class="btn alt" id="bRefTxt">Copiază ca text</button></div>
+    <p class="small">Referatul include tabelul componentelor, testul de identificare, calculul punctului de funcționare, verificările de atelier, caracteristica de presiune și concluziile. Schema și graficele se copiază separat.</p></div></div>
+  <div class="card" style="margin-top:16px"><div class="bd prose" id="refBody" style="max-width:none"></div></div>
+</section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box"><div class="row" style="justify-content:space-between"><b id="modalT"></b><button class="btn sm alt" onclick="document.getElementById('modal').classList.remove('on')">Închide</button></div><div id="modalB"></div></div></div>
+<script>/* ===== Utilitare comune simulatoare laborator ===== */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let DEC = ',';
+try { const d = localStorage.getItem('lab_dec'); if (d) DEC = d; } catch(e){}
+function fmt(x, d=2){ if (x===null||x===undefined||!isFinite(x)) return '–'; return x.toFixed(d).replace('.', DEC); }
+function fmtS(x, s=3){ if(!isFinite(x)) return '–'; if (x===0) return '0'; const d = Math.max(0, s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x, Math.min(d,6)); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaFn(z){ // Lanczos
+  if (z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gammaFn(1-z));
+  z-=1; const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0]; for(let i=1;i<g+2;i++) x+=c[i]/(z+i); const t=z+g+0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x; }
+function linreg(x,y){ const n=x.length; let sx=0,sy=0,sxx=0,sxy=0,syy=0; for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];syy+=y[i]*y[i];}
+  const b=(n*sxy-sx*sy)/(n*sxx-sx*sx), a=(sy-b*sx)/n; const r=(n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy)); return {a,b,r2:r*r}; }
+function toast(msg){ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---- Tab-uri ---- */
+function initTabs(onChange){
+  $$('nav.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    $$('nav.tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('section.tab').forEach(s=>s.classList.toggle('on', s.id===b.dataset.tab));
+    try{localStorage.setItem(document.title+'_tab', b.dataset.tab);}catch(e){}
+    onChange && onChange(b.dataset.tab); window.scrollTo({top:0});
+  }));
+  let t=null; try{t=localStorage.getItem(document.title+'_tab');}catch(e){}
+  const btn = t && $(`nav.tabs button[data-tab="${t}"]`); (btn||$('nav.tabs button[data-tab]')).click();
+}
+function initTheme(){
+  const b=$('#themeBtn'); if(!b) return; let th=null; try{th=localStorage.getItem('lab_theme');}catch(e){}
+  if(th) document.documentElement.dataset.theme=th;
+  b.addEventListener('click',()=>{ const cur=document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx; try{localStorage.setItem('lab_theme',nx);}catch(e){} window.dispatchEvent(new Event('themechange')); });
+  const d=$('#decBtn'); if(d){ d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct');
+    d.addEventListener('click',()=>{ DEC = DEC===','?'.':','; d.textContent='Zecimale: '+(DEC===','?'virgulă':'punct'); try{localStorage.setItem('lab_dec',DEC);}catch(e){} window.dispatchEvent(new Event('decchange')); toast('Separator zecimal: '+(DEC===','?'virgulă (Excel RO)':'punct (Excel EN)')); }); }
+}
+
+/* ---- Canvas HiDPI ---- */
+function fitCanvas(cv, h){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=cv.clientWidth||cv.parentElement.clientWidth; const H=h||cv._h||Math.round(w*0.56);
+  cv._h=h||cv._h; cv.style.height=H+'px'; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(H*dpr);} const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h:H}; }
+
+/* ---- Grafic generic ---- */
+function niceTicks(min,max,n=6){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const t=[]; for(let v=Math.ceil(min/step-1e-9)*step; v<=max+step*1e-6; v+=step) t.push(+v.toFixed(12)); return {t,step}; }
+function plot(cv, o){
+  if(!cv.clientWidth) return null;
+  const {c,w,h}=fitCanvas(cv, o.height||300);
+  const ink=css('--ink'), ink2=css('--ink2'), grid=css('--grid'), bg=css('--canvas-bg');
+  c.fillStyle=bg; c.fillRect(0,0,w,h);
+  const L=62,R=o.y2?60:18,T=o.title?30:14,B=46; const pw=w-L-R, ph=h-T-B;
+  let xs=[],ys=[],y2s=[]; o.series.forEach(s=>{ s.x.forEach((v,i)=>{ if(isFinite(v)&&isFinite(s.y[i])){ xs.push(v); (s.axis===2?y2s:ys).push(s.y[i]); } }); });
+  let xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs); if(!(xmax>xmin)){xmax=xmin+1;}
+  const lg=o.logx, lgy=o.logy;
+  const tx=v=>lg?Math.log10(v):v, ty=v=>lgy?Math.log10(v):v;
+  let ymin=o.ymin??Math.min(...ys), ymax=o.ymax??Math.max(...ys); if(!isFinite(ymin)){ymin=0;ymax=1;} if(ymax===ymin){ymax+=1;ymin-=lgy?0:1;}
+  if(o.ymax===undefined && o.ymin!==undefined && !lgy){ ymax+=(ymax-ymin)*0.08; }
+  if(o.ymin===undefined && !lgy){ const pad=(ymax-ymin)*0.08; ymax+=pad; if(ymin>0 && ymin<(ymax-ymin)*0.6) ymin=0; else ymin-=pad; }
+  let y2min=o.y2min??Math.min(...y2s), y2max=o.y2max??Math.max(...y2s); if(o.y2 && o.y2min===undefined){const p=(y2max-y2min)*0.08||1; y2max+=p; y2min=Math.max(0,y2min-p);}
+  const X=v=>L+(tx(v)-tx(xmin))/(tx(xmax)-tx(xmin))*pw, Y=v=>T+ph-(ty(v)-ty(ymin))/(ty(ymax)-ty(ymin))*ph, Y2=v=>T+ph-(v-y2min)/(y2max-y2min)*ph;
+  c.font='12px Barlow Condensed, Arial Narrow, sans-serif'; c.lineWidth=1;
+  // grid
+  const xt = o.xcats? o.xcats.map((_,i)=>i+1) : lg? logTicks(xmin,xmax) : niceTicks(xmin,xmax,o.xticks||7).t; const yt = lgy? logTicks(ymin,ymax): niceTicks(ymin,ymax,6).t;
+  c.strokeStyle=grid; c.fillStyle=ink2; c.textAlign='center'; c.textBaseline='top';
+  xt.forEach(v=>{ if(v<xmin-1e-12||v>xmax+1e-12) return; const x=X(v); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.fillText(o.xcats? o.xcats[v-1] : fmtTick(v), x, T+ph+5); });
+  c.textAlign='right'; c.textBaseline='middle';
+  yt.forEach(v=>{ if(v<ymin-1e-12||v>ymax+1e-12) return; const y=Y(v); c.beginPath(); c.moveTo(L,y); c.lineTo(L+pw,y); c.stroke(); c.fillText(fmtTick(v), L-6, y); });
+  if(o.y2){ c.textAlign='left'; niceTicks(y2min,y2max,6).t.forEach(v=>{ if(v<y2min||v>y2max) return; c.fillText(fmtTick(v), L+pw+6, Y2(v)); }); }
+  c.strokeStyle=ink; c.lineWidth=1.2; c.strokeRect(L,T,pw,ph);
+  c.fillStyle=ink; c.font='13px Barlow, Arial, sans-serif'; c.textAlign='center'; c.textBaseline='bottom'; c.fillText(o.xlabel||'', L+pw/2, h-4);
+  c.save(); c.translate(14, T+ph/2); c.rotate(-Math.PI/2); c.textBaseline='middle'; c.fillText(o.ylabel||'',0,0); c.restore();
+  if(o.y2){ c.save(); c.translate(w-10, T+ph/2); c.rotate(Math.PI/2); c.textBaseline='middle'; c.fillText(o.y2label||'',0,0); c.restore(); }
+  if(o.title){ c.font='600 14px Barlow, Arial, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(o.title, L, 8); }
+  // series
+  c.save(); c.beginPath(); c.rect(L,T,pw,ph); c.clip();
+  o.series.forEach(s=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const YY=s.axis===2?Y2:Y;
+    if(s.bars){ const n=s.x.length; const bw=s.bw? (X(s.x[0]+s.bw)-X(s.x[0])) : pw/n*0.8; c.fillStyle=col; c.globalAlpha=s.alpha??0.75;
+      s.x.forEach((v,i)=>{ const x=X(v)-bw/2+(s.shift||0)*bw; const y=YY(s.y[i]); c.fillRect(x+ (s.gap||1), y, bw*(s.wf||1)-2*(s.gap||1), YY(s.axis===2?y2min:Math.max(ymin,0))-y); }); c.globalAlpha=1; return; }
+    c.strokeStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+    if(!s.pointsOnly){ c.beginPath(); let st=false; s.x.forEach((v,i)=>{ if(!isFinite(v)||!isFinite(s.y[i])){st=false;return;} const x=X(v),y=YY(s.y[i]); st?c.lineTo(x,y):c.moveTo(x,y); st=true; }); c.stroke(); }
+    c.setLineDash([]);
+    if(s.markers){ c.fillStyle=css('--canvas-bg'); c.strokeStyle=col; c.lineWidth=1.8; s.x.forEach((v,i)=>{ if(!isFinite(s.y[i]))return; const x=X(v),y=YY(s.y[i]); c.beginPath();
+      if(s.markers==='sq') c.rect(x-3.5,y-3.5,7,7); else if(s.markers==='tri'){c.moveTo(x,y-4.5);c.lineTo(x+4.2,y+3.5);c.lineTo(x-4.2,y+3.5);c.closePath();} else c.arc(x,y,3.6,0,7); c.fill(); c.stroke(); }); }
+  });
+  (o.vlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(X(v.x),T); c.lineTo(X(v.x),T+ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='left'; c.textBaseline='top'; c.fillText(v.label||'', X(v.x)+4, T+4+(v.dy||0)); });
+  (o.hlines||[]).forEach(v=>{ c.strokeStyle=css(v.color||'--muted'); c.setLineDash([5,4]); c.lineWidth=1.2; c.beginPath(); c.moveTo(L,Y(v.y)); c.lineTo(L+pw,Y(v.y)); c.stroke(); c.setLineDash([]);
+    c.fillStyle=css(v.color||'--muted'); c.font='12px Barlow Condensed, sans-serif'; c.textAlign='right'; c.textBaseline='bottom'; c.fillText(v.label||'', L+pw-4, Y(v.y)-2); });
+  c.restore();
+  // legend
+  const named=o.series.filter(s=>s.name); if(named.length){ c.font='12.5px Barlow, Arial, sans-serif'; let lx=L+10, ly=o.legendBR? T+ph-named.length*18-4 : T+10; const lw=Math.max(...named.map(s=>c.measureText(s.name).width))+36;
+    let lxr = o.legendLeft? L+10 : L+pw-lw-8; c.fillStyle=css('--canvas-bg'); c.globalAlpha=.88; c.fillRect(lxr-6, ly-6, lw+4, named.length*18+8); c.globalAlpha=1;
+    named.forEach((s,i)=>{ const col=s.color.startsWith('--')?css(s.color):s.color; const yy=ly+i*18+6; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=s.lw||2; c.setLineDash(s.dash||[]);
+      if(s.bars){ c.globalAlpha=.75; c.fillRect(lxr,yy-5,22,10); c.globalAlpha=1;} else if(s.pointsOnly){ c.beginPath(); c.arc(lxr+11,yy,3.6,0,7); c.stroke(); } else { c.beginPath(); c.moveTo(lxr,yy); c.lineTo(lxr+22,yy); c.stroke(); }
+      c.setLineDash([]); c.fillStyle=ink; c.textAlign='left'; c.textBaseline='middle'; c.fillText(s.name, lxr+28, yy); }); }
+  cv._plot={o,X,Y,L,T,pw,ph};
+  return cv._plot;
+}
+function logTicks(a,b){ const t=[]; for(let e=Math.floor(Math.log10(a)); e<=Math.ceil(Math.log10(b)); e++){ [1,2,5].forEach(m=>{ const v=m*Math.pow(10,e); if(v>=a*0.999&&v<=b*1.001) t.push(v); }); } return t; }
+function fmtTick(v){ const a=Math.abs(v); if(a===0) return '0'; if(a>=1000) return String(Math.round(v)); if(a>=10) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=1) return fmt(v, Number.isInteger(+v.toFixed(6))?0:1); if(a>=0.1) return fmt(v,2); return fmt(v,3); }
+
+/* ---- Tabele & copiere ---- */
+function buildTable(el, T){ // T={head:[..], rows:[[..]], foot:[..]?, left:[colIdx]}
+  const left=new Set(T.left||[0]);
+  let h='<table class="data"><thead><tr>'+T.head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  T.rows.forEach(r=>{ h+='<tr>'+r.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr>'; });
+  h+='</tbody>'; if(T.foot) h+='<tfoot><tr>'+T.foot.map((x,i)=>`<td class="${left.has(i)?'l':''}">${x}</td>`).join('')+'</tr></tfoot>'; h+='</table>';
+  el.innerHTML=h; el._T=T; }
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,'$1').replace(/<sup>(.*?)<\/sup>/g,'^$1').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+function tableTSV(T){ const lines=[T.head.map(strip).join('\t')]; T.rows.forEach(r=>lines.push(r.map(strip).join('\t'))); if(T.foot) lines.push(T.foot.map(strip).join('\t')); return lines.join('\r\n'); }
+function tableHTMLWord(T, caption){
+  const th='border:1px solid #16324A;background:#16324A;color:#fff;padding:3pt 5pt;font:bold 9.5pt Calibri,Arial;text-align:center';
+  const td='border:1px solid #9AA8B4;padding:2pt 5pt;font:9.5pt Calibri,Arial;text-align:right'; const tdl=td.replace('right','left');
+  const left=new Set(T.left||[0]);
+  let h=(caption?`<p style="font:bold 10pt Calibri,Arial;color:#16324A;margin:6pt 0 3pt">${caption}</p>`:'')+'<table style="border-collapse:collapse;mso-table-lspace:0">';
+  h+='<tr>'+T.head.map(x=>`<th style="${th}">${x}</th>`).join('')+'</tr>';
+  T.rows.forEach((r,j)=>{ h+='<tr>'+r.map((x,i)=>`<td style="${left.has(i)?tdl:td};${j%2?'background:#F2F5F7':''}">${x}</td>`).join('')+'</tr>'; });
+  if(T.foot) h+='<tr>'+T.foot.map((x,i)=>`<td style="${left.has(i)?tdl:td};font-weight:bold;border-top:2px solid #16324A">${x}</td>`).join('')+'</tr>';
+  return h+'</table>'; }
+async function copyRich(html, text){
+  try{ if(navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  try{ const d=document.createElement('div'); d.contentEditable='true'; d.style.cssText='position:fixed;left:-9999px;top:0'; d.innerHTML=html; document.body.appendChild(d);
+    const r=document.createRange(); r.selectNodeContents(d); const s=getSelection(); s.removeAllRanges(); s.addRange(r); const ok=document.execCommand('copy'); s.removeAllRanges(); d.remove(); if(ok) return true; }catch(e){}
+  return false; }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) return true; }catch(e){}
+  return false; }
+function manualModal(title, content, isHTML){ const m=$('#modal'); $('#modalT').textContent=title;
+  const b=$('#modalB'); b.innerHTML=''; if(isHTML){ const d=document.createElement('div'); d.innerHTML=content; d.style.cssText='border:1px solid var(--line);padding:8px;background:#fff;color:#000;overflow:auto'; b.appendChild(d);
+    b.insertAdjacentHTML('afterbegin','<p class="small">Selectați conținutul de mai jos (Ctrl+A în chenar nu funcționează – trageți cu mouse-ul) și apăsați Ctrl+C.</p>'); }
+  else { const t=document.createElement('textarea'); t.value=content; b.appendChild(t); setTimeout(()=>{t.focus();t.select();},50); b.insertAdjacentHTML('afterbegin','<p class="small">Copierea automată a fost blocată de browser. Textul este selectat – apăsați Ctrl+C (Cmd+C).</p>'); }
+  m.classList.add('on'); }
+async function copyTableExcel(T){ const txt=tableTSV(T); if(await copyText(txt)) toast('Tabel copiat – lipiți în Excel (Ctrl+V)'); else manualModal('Copiere pentru Excel', txt); }
+async function copyTableWord(T, cap){ const html=tableHTMLWord(T,cap); if(await copyRich(html, tableTSV(T))) toast('Tabel copiat – lipiți în Word (Ctrl+V)'); else manualModal('Copiere pentru Word', html, true); }
+async function copyCanvas(cv, name){
+  // exportă pe fundal alb pentru documente
+  const tmp=document.createElement('canvas'); tmp.width=cv.width; tmp.height=cv.height; const c=tmp.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,tmp.width,tmp.height); c.drawImage(cv,0,0);
+  try{ const blob=await new Promise(r=>tmp.toBlob(r,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Grafic copiat ca imagine – lipiți în Word/Excel'); return; }catch(e){}
+  const url=tmp.toDataURL('image/png'); manualModal('Copiere grafic: '+(name||''), `<img src="${url}" style="max-width:100%"><p style="font:12px Arial">Clic dreapta pe imagine → „Copiere imagine”, apoi lipiți în Word.</p>`, true); }
+function wireCopy(scope){ $$('[data-copy]',scope).forEach(b=>{ if(b._w) return; b._w=1; b.addEventListener('click',()=>{ const tgt=$(b.dataset.target); const mode=b.dataset.copy;
+  if(mode==='excel') copyTableExcel(tgt._T); else if(mode==='word') copyTableWord(tgt._T, b.dataset.cap); else if(mode==='img') copyCanvas(tgt, b.dataset.cap); }); }); }
+function copyButtons(target, cap, img){ return img? `<button class="btn sm alt" data-copy="img" data-target="${target}" data-cap="${cap||''}">Copiază graficul</button>`
+  : `<button class="btn sm alt" data-copy="excel" data-target="${target}">Copiază pentru Excel</button><button class="btn sm alt" data-copy="word" data-target="${target}" data-cap="${cap||''}">Copiază pentru Word</button>`; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#modal')?.classList.remove('on'); });
+</script><script>/* ======================================================================
+   Motor comun pentru lucrările de cunoaștere (L3–L5):
+   schemă interactivă, osciloscop, test de identificare, test grilă
+   ====================================================================== */
+const HOT='#E0561E';
+const FLOW={lp:{c:'--fuel',w:5,sp:22},hp:{c:HOT,w:5,sp:34},ret:{c:'--fuel-deep',w:3,sp:14,dash:[7,5]},air:{c:'#7FAEDB',w:13,sp:30},exh:{c:'#A08C78',w:13,sp:36},
+  sig:{c:'--violet',w:1.6,sp:30,dash:[4,4]},act:{c:'--teal',w:1.6,sp:30,dash:[4,4]},vap:{c:'--ok',w:3,sp:12,dash:[5,4]},urea:{c:'#2BA3C7',w:3.5,sp:16},cool:{c:'--blue',w:4,sp:12},oil:{c:'#8A6A2A',w:3,sp:10}};
+const FLOWNAME={lp:'combustibil joasă presiune',hp:'combustibil înaltă presiune',ret:'retur combustibil',air:'aer de admisie',exh:'gaze de evacuare',sig:'semnale senzori → ECU',act:'comenzi ECU → actuatori',vap:'vapori de benzină',urea:'soluție AdBlue',cool:'lichid de răcire'};
+const col=v=>v&&v.startsWith('--')?css(v):v;
+
+/* ---------- glife pentru componente ---------- */
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function body(c,b,fill,stroke,r=6){ rr(c,b.x,b.y,b.w,b.h,r); c.fillStyle=fill||css('--panel2'); c.fill(); c.lineWidth=1.4; c.strokeStyle=stroke||css('--steel-d'); c.stroke(); }
+const G={
+  box(c,b){ body(c,b); },
+  tank(c,b,s,cm){ body(c,b,css('--panel2'),css('--steel-d'),8); const lv=b.y+b.h*(1-(cm.level??0.62)); c.save(); rr(c,b.x+2,b.y+2,b.w-4,b.h-4,6); c.clip(); c.fillStyle=cm.fluid?col(cm.fluid):css('--fuel-soft'); c.beginPath(); c.moveTo(b.x,lv); for(let x=0;x<=b.w;x+=6) c.lineTo(b.x+x,lv+Math.sin(x/9+s.t*2)*1.6); c.lineTo(b.x+b.w,b.y+b.h); c.lineTo(b.x,b.y+b.h); c.fill(); c.restore(); },
+  pump(c,b,s,cm){ const r=Math.min(b.w,b.h)/2, x=b.x+b.w/2, y=b.y+b.h/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.4; c.stroke();
+    c.save(); c.translate(x,y); c.rotate(cm.on===false?0:s.t*6); c.strokeStyle=css('--fuel-deep'); for(let k=0;k<4;k++){ c.rotate(Math.PI/2); c.beginPath(); c.arc(r*0.35,0,r*0.35,Math.PI,Math.PI*1.8); c.stroke(); } c.restore();
+    c.fillStyle=css('--ink'); c.font=`600 ${Math.max(10,r*0.7)}px Barlow Condensed,sans-serif`; c.textAlign='center'; c.fillText(cm.sym||'M',x,y+r*0.25); },
+  filter(c,b){ body(c,b); c.strokeStyle=css('--steel'); c.lineWidth=1; for(let x=b.x+6;x<b.x+b.w-4;x+=5){ c.beginPath(); c.moveTo(x,b.y+5); c.lineTo(x+2.5,b.y+b.h/2); c.lineTo(x,b.y+b.h-5); c.stroke(); } },
+  rail(c,b,s,cm){ rr(c,b.x,b.y,b.w,b.h,b.h/2); c.fillStyle=cm.hp?'rgba(224,86,30,.25)':css('--fuel-soft'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke(); },
+  preg(c,b){ body(c,b,css('--panel2'),css('--steel-d'),b.w/2); const x=b.x+b.w/2; c.strokeStyle=css('--blue'); c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+4,b.y+b.h*0.55); c.lineTo(b.x+b.w-4,b.y+b.h*0.55); c.stroke(); c.strokeStyle=css('--steel-d'); c.beginPath(); for(let i=0;i<=6;i++) c.lineTo(x+(i%2?5:-5),b.y+4+i*(b.h*0.5-6)/6); c.stroke(); },
+  inj(c,b,s,cm){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); rr(c,b.x+b.w*0.2,b.y,b.w*0.6,b.h*0.78,3); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke();
+    c.fillStyle=cm.coil||css('--ink'); c.fillRect(b.x+b.w*0.2,b.y+b.h*0.18,b.w*0.6,b.h*0.18);
+    c.beginPath(); c.moveTo(x-b.w*0.15,b.y+b.h*0.78); c.lineTo(x+b.w*0.15,b.y+b.h*0.78); c.lineTo(x,b.y+b.h); c.fillStyle=css('--steel-d'); c.fill();
+    if(cm.spray){ const L=b.h*0.9*cm.spray; c.fillStyle=cm.sprayCol||css('--fuel'); c.globalAlpha=.55; const d=cm.dir||1; c.beginPath(); c.moveTo(x,b.y+b.h); c.lineTo(x-L*0.35,b.y+b.h+L*d); c.lineTo(x+L*0.35,b.y+b.h+L*d); c.fill(); c.globalAlpha=1; } },
+  ecu(c,b,s){ body(c,b,'#20303D','#0e1a24',5); c.fillStyle='#9fb3c4'; for(let i=0;i<8;i++) c.fillRect(b.x+8+i*(b.w-16)/8,b.y+b.h-5,3,5); const k=Math.floor(s.t*4)%3; c.fillStyle=['#4ade80','#20303D','#4ade80'][k]; c.beginPath(); c.arc(b.x+b.w-10,b.y+9,3,0,7); c.fill();
+    c.fillStyle='#fff'; c.font='600 13px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('ECU',b.x+b.w/2,b.y+b.h/2+4); },
+  sens(c,b){ const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle=css('--violet'); c.lineWidth=2; c.stroke(); c.fillStyle=css('--violet'); c.beginPath(); c.arc(x,y,r*0.35,0,7); c.fill(); },
+  maf(c,b,s){ body(c,b,'rgba(127,174,219,.25)',css('--steel-d'),4); c.strokeStyle=HOT; c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+b.w/2,b.y+3); c.lineTo(b.x+b.w/2,b.y+b.h-3); c.stroke(); },
+  throttle(c,b,s,cm){ body(c,b,'rgba(127,174,219,.25)',css('--steel-d'),4); const a=(cm.open??0.3)*Math.PI/2; const x=b.x+b.w/2,y=b.y+b.h/2,L=b.h*0.42; c.strokeStyle=css('--ink'); c.lineWidth=3; c.beginPath(); c.moveTo(x-Math.sin(a)*L*0.2-Math.cos(a)*0,y-Math.cos(a)*L); c.lineTo(x+Math.sin(a)*L*0.2,y+Math.cos(a)*L); c.stroke(); c.fillStyle=css('--ink'); c.beginPath(); c.arc(x,y,3,0,7); c.fill(); },
+  airf(c,b){ body(c,b); c.strokeStyle=css('--steel'); for(let y=b.y+5;y<b.y+b.h-3;y+=4){ c.beginPath(); c.moveTo(b.x+5,y); c.lineTo(b.x+b.w-5,y); c.stroke(); } },
+  engine(c,b,s,cm){ body(c,b,'#7d8c99','#56636e',6); const z=cm.z||4, cw=(b.w-16)/z; for(let i=0;i<z;i++){ const x=b.x+8+i*cw, ph=s.t*(cm.rpm||3)+[0,Math.PI,Math.PI,0,Math.PI/2,Math.PI*1.5][i%6]; const py=b.y+b.h*0.45+Math.cos(ph)*b.h*0.14;
+      c.fillStyle='#dfe5ea'; c.fillRect(x+3,b.y+8,cw-6,b.h*0.62); c.fillStyle='#8a99a6'; c.fillRect(x+4,py,cw-8,b.h*0.16); c.fillStyle=cm.flame&&Math.cos(ph)<-0.8?'rgba(224,86,30,.8)':'transparent'; c.fillRect(x+4,b.y+9,cw-8,py-b.y-10); }
+    c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(cm.txt||'MOTOR',b.x+b.w/2,b.y+b.h-8); },
+  cat(c,b,s,cm){ rr(c,b.x,b.y,b.w,b.h,b.h/2); c.fillStyle=css('--panel2'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.6; c.stroke(); c.save(); rr(c,b.x+b.h*0.35,b.y+4,b.w-b.h*0.7,b.h-8,3); c.clip();
+    c.fillStyle=cm.hot?`rgba(224,86,30,${0.15+0.5*cm.hot})`:css('--fuel-soft'); c.fillRect(b.x,b.y,b.w,b.h); c.strokeStyle=css('--steel'); c.lineWidth=0.8;
+    const pat=cm.pat||'honey'; if(pat==='check'){ for(let x=b.x;x<b.x+b.w;x+=7) for(let y=b.y;y<b.y+b.h;y+=7) if(((x-b.x)/7+(y-b.y)/7)%2<1){ c.fillStyle=cm.soot?`rgba(30,30,30,${0.2+0.7*cm.soot})`:'rgba(94,110,123,.35)'; c.fillRect(x,y,7,7);} }
+    else for(let x=b.x;x<b.x+b.w;x+=6){ c.beginPath(); c.moveTo(x,b.y); c.lineTo(x,b.y+b.h); c.stroke(); } c.restore(); },
+  muffler(c,b){ rr(c,b.x,b.y,b.w,b.h,b.h/2.4); c.fillStyle=css('--panel2'); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.6; c.stroke(); for(let i=1;i<4;i++){ c.beginPath(); c.moveTo(b.x+i*b.w/4,b.y+4); c.lineTo(b.x+i*b.w/4,b.y+b.h-4); c.stroke(); } },
+  valve(c,b,s,cm){ body(c,b,css('--panel2'),css('--teal'),3); c.strokeStyle=css('--teal'); c.lineWidth=1.6; c.beginPath(); c.moveTo(b.x+4,b.y+4); c.lineTo(b.x+b.w-4,b.y+b.h-4); c.moveTo(b.x+b.w-4,b.y+4); c.lineTo(b.x+4,b.y+b.h-4); c.stroke(); if(cm.open!==undefined){ c.fillStyle=css('--teal'); c.fillRect(b.x,b.y+b.h+2,b.w*Math.max(0,Math.min(1,cm.open)),3); } },
+  canister(c,b){ body(c,b,css('--panel2'),css('--ok'),8); c.fillStyle='#39433f'; const r=mulberry32(5); for(let i=0;i<40;i++){ c.beginPath(); c.arc(b.x+4+r()*(b.w-8),b.y+6+r()*(b.h-12),1.3,0,7); c.fill(); } },
+  hpp(c,b,s){ body(c,b,css('--panel2'),css('--steel-d'),6); const x=b.x+b.w/2,y=b.y+b.h/2,r=Math.min(b.w,b.h)*0.32; c.save(); c.translate(x,y); for(let k=0;k<3;k++){ c.rotate(Math.PI*2/3); const e=Math.sin(s.t*8+k*2.1)*r*0.15; c.fillStyle=css('--steel'); c.fillRect(-4,-r-e-8,8,12); } c.restore(); c.fillStyle=css('--steel-d'); c.beginPath(); c.arc(x+Math.cos(s.t*8)*3,y+Math.sin(s.t*8)*3,r*0.45,0,7); c.fill(); },
+  turbo(c,b,s){ const r=b.h*0.42; [[b.x+r+2,css('--steel')],[b.x+b.w-r-2,'#b9a08a']].forEach(([x,f],i)=>{ c.fillStyle=f; c.beginPath(); c.arc(x,b.y+b.h/2,r,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke(); c.save(); c.translate(x,b.y+b.h/2); c.rotate(s.t*12); c.strokeStyle='#fff'; for(let k=0;k<6;k++){ c.rotate(Math.PI/3); c.beginPath(); c.moveTo(0,0); c.lineTo(r*0.8,0); c.stroke(); } c.restore(); }); c.fillStyle=css('--steel-d'); c.fillRect(b.x+r+2,b.y+b.h/2-3,b.w-2*r-4,6); },
+  cooler(c,b){ body(c,b,'rgba(47,108,168,.15)',css('--blue'),4); c.strokeStyle=css('--blue'); c.lineWidth=1; for(let x=b.x+5;x<b.x+b.w-3;x+=4){ c.beginPath(); c.moveTo(x,b.y+3); c.lineTo(x,b.y+b.h-3); c.stroke(); } },
+  lambda(c,b){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); c.beginPath(); for(let k=0;k<6;k++){ const a=k*Math.PI/3; c.lineTo(x+Math.cos(a)*b.w*0.45,b.y+b.h*0.3+Math.sin(a)*b.w*0.3); } c.fill(); c.fillStyle=css('--violet'); c.fillRect(x-b.w*0.18,b.y+b.h*0.45,b.w*0.36,b.h*0.55); c.fillStyle=css('--steel-d'); c.fillRect(x-2,b.y,4,b.h*0.2); },
+  dosing(c,b,s,cm){ G.inj(c,b,s,{...cm,coil:'#2BA3C7',sprayCol:'#2BA3C7'}); },
+  mixer(c,b){ body(c,b,css('--panel2'),css('--steel-d'),4); c.strokeStyle=css('--steel-d'); for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(b.x+6+i*(b.w-12)/4,b.y+4); c.lineTo(b.x+6+(i+0.8)*(b.w-12)/4,b.y+b.h-4); c.stroke(); } },
+  battery(c,b){ body(c,b,'#2d3a45','#111',3); c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('+   −',b.x+b.w/2,b.y+b.h/2+4); },
+  inpump(c,b,s,cm){ body(c,b,'#8193a3','#5e6e7b',4); const z=cm.z||4; for(let i=0;i<z;i++){ const x=b.x+8+i*(b.w-16)/z; c.fillStyle='#dfe5ea'; c.fillRect(x+2,b.y-10+Math.sin(s.t*6+i*1.6)*2,(b.w-16)/z-4,14); } },
+  vepump(c,b,s){ body(c,b,'#8193a3','#5e6e7b',b.h/2); c.save(); c.translate(b.x+b.h/2,b.y+b.h/2); c.rotate(s.t*5); c.strokeStyle='#fff'; c.lineWidth=2; c.beginPath(); c.moveTo(-b.h*0.3,0); c.lineTo(b.h*0.3,0); c.stroke(); c.restore(); },
+  psens(c,b){ const x=b.x+b.w/2; c.fillStyle=css('--steel'); c.fillRect(x-b.w*0.3,b.y+b.h*0.35,b.w*0.6,b.h*0.65); c.fillStyle=css('--violet'); rr(c,b.x,b.y,b.w,b.h*0.4,3); c.fill(); },
+  coil(c,b){ body(c,b,'#2d3a45','#111',3); c.strokeStyle='#e9a93a'; c.beginPath(); for(let i=0;i<=8;i++) c.lineTo(b.x+4+i*(b.w-8)/8,b.y+b.h/2+(i%2?-5:5)); c.stroke(); },
+  cam(c,b,s){ const x=b.x+b.w/2,y=b.y+b.h/2,r=b.h*0.35; c.save(); c.translate(x,y); c.rotate(s.t*4); c.fillStyle=css('--steel'); c.beginPath(); c.ellipse(r*0.2,0,r*1.2,r,0,0,7); c.fill(); c.restore(); },
+};
+/* ---------- schema interactivă ---------- */
+const ckey=cm=>cm.grp||cm.id;
+function Schem(cv,spec,opt={}){
+  const S={cv,spec,sel:null,hover:null,t:0,quiz:null,flash:null,run:false,last:0,sc:1,active:()=>true,onSel:opt.onSel||(()=>{}),onQuiz:opt.onQuiz||(()=>{})};
+  S.setSpec=sp=>{ S.spec=sp; S.sel=null; S.draw(); };
+  S.draw=()=>{ if(!cv.clientWidth) return; const sp=S.spec, Wv=sp.W||1000, Hv=sp.H||560; const {c,w,h}=fitCanvas(cv,Math.round(cv.clientWidth*Hv/Wv)); S.sc=w/Wv;
+    c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); c.save(); c.scale(S.sc,S.sc);
+    // zone de fond
+    (sp.zones||[]).forEach(z=>{ c.fillStyle=col(z.c)||'rgba(0,0,0,.03)'; c.globalAlpha=z.a??0.07; rr(c,z.x,z.y,z.w,z.h,10); c.fill(); c.globalAlpha=1; c.fillStyle=css('--ink2'); c.font='600 13px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText(z.t,z.x+10,z.y+18); });
+    // legături
+    (sp.links||[]).forEach(L=>{ const F=FLOW[L.type]; const on=L.on?L.on():true; const cc=col(F.c); c.lineJoin='round'; c.lineCap='round';
+      c.beginPath(); L.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+      if(F.w>8){ c.strokeStyle=css('--steel-d'); c.lineWidth=F.w+2.5; c.stroke(); c.strokeStyle=cc; c.globalAlpha=on?0.45:0.2; c.lineWidth=F.w; c.stroke(); c.globalAlpha=1;
+        if(on){ c.setLineDash([3,F.w*1.4]); c.lineDashOffset=-S.t*F.sp*(L.speed||1); c.strokeStyle=L.dot?col(L.dot):'#fff'; c.lineWidth=4; c.stroke(); c.setLineDash([]); } }
+      else { c.strokeStyle=cc; c.lineWidth=F.w; c.globalAlpha=on?0.35:0.18; c.setLineDash(F.dash||[]); c.stroke(); c.globalAlpha=1;
+        if(on){ c.setLineDash(F.dash||[F.w*2,F.w*2.2]); c.lineDashOffset=-S.t*F.sp*(L.speed||1); c.lineWidth=F.w; c.stroke(); } c.setLineDash([]); } });
+    // componente
+    sp.comps.forEach(cm=>{ const b={x:cm.x,y:cm.y,w:cm.w,h:cm.h}; const st=cm.st?cm.st():{}; (G[cm.type]||G.box)(c,b,S,{...cm,...st});
+      const K=ckey(cm), isSel=S.sel===K, isHov=S.hover===K, fl=S.flash&&S.flash.id===K?S.flash:null;
+      if(isSel||isHov||fl){ c.strokeStyle=fl?(fl.ok?css('--ok'):css('--alert')):isSel?css('--fuel'):css('--blue'); c.lineWidth=isSel||fl?3:1.6; rr(c,b.x-5,b.y-5,b.w+10,b.h+10,8); c.stroke(); }
+      const hideLab=S.quiz&&!S.quiz.done; if(cm.lab&&!hideLab){ c.fillStyle=css('--ink'); c.font='600 12.5px Barlow Condensed,sans-serif'; const pos=cm.lp||'b'; c.textAlign=pos==='r'?'left':pos==='l'?'right':'center';
+        const tx=pos==='r'?b.x+b.w+6:pos==='l'?b.x-6:b.x+b.w/2, ty=pos==='a'?b.y-7:pos==='b'?b.y+b.h+14:b.y+b.h/2+4; cm.lab.split('|').forEach((t,i)=>c.fillText(t,tx,ty+i*13)); }
+      if(S.quiz&&!S.quiz.done&&S.quiz.found.includes(K)&&!cm.grpSub){ c.fillStyle=css('--ok'); c.beginPath(); c.arc(b.x+b.w,b.y,7,0,7); c.fill(); c.fillStyle='#fff'; c.font='bold 10px Arial'; c.textAlign='center'; c.fillText('✓',b.x+b.w,b.y+3.5); } });
+    (sp.texts||[]).forEach(t=>{ c.fillStyle=col(t.c)||css('--ink2'); c.font=(t.f||'12px')+' Barlow Condensed,sans-serif'; c.textAlign=t.al||'left'; c.fillText(t.t,t.x,t.y); });
+    if(sp.overlay) sp.overlay(c,S);
+    c.restore();
+    if(S.quiz&&!S.quiz.done){ c.fillStyle='rgba(22,50,74,.92)'; c.fillRect(0,0,w,34); c.fillStyle='#fff'; c.font='600 15px Barlow,sans-serif'; c.textAlign='left'; c.fillText(`Indicați: ${S.quiz.cur.name}`,12,22); c.textAlign='right'; c.fillText(`${S.quiz.i+1} / ${S.quiz.list.length}   corecte: ${S.quiz.ok}`,w-12,22); } };
+  S.hit=(e)=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)/S.sc, y=(e.clientY-r.top)/S.sc; let best=null;
+    S.spec.comps.forEach(cm=>{ if(x>=cm.x-6&&x<=cm.x+cm.w+6&&y>=cm.y-6&&y<=cm.y+cm.h+6){ const a=cm.w*cm.h; if(!best||a<best.a) best={id:ckey(cm),a}; } }); return best?best.id:null; };
+  cv.addEventListener('mousemove',e=>{ const id=S.hit(e); if(id!==S.hover){ S.hover=id; cv.style.cursor=id?'pointer':'default'; if(!S.run) S.draw(); } });
+  cv.addEventListener('click',e=>{ const id=S.hit(e); if(!id) return; if(S.quiz&&!S.quiz.done){ S.answer(id); return; } S.sel=id; S.onSel(S.spec.comps.find(c=>ckey(c)===id)); S.draw(); });
+  S.select=id=>{ S.sel=id; S.onSel(S.spec.comps.find(c=>ckey(c)===id)); S.draw(); };
+  S.startQuiz=()=>{ const r=mulberry32(Date.now()%100000); const seen=new Set(); const list=S.spec.comps.filter(c=>c.quiz!==false&&!c.grpSub&&!seen.has(ckey(c))&&seen.add(ckey(c))).map(c=>({c,k:r()})).sort((a,b)=>a.k-b.k).map(o=>o.c);
+    S.quiz={list,i:0,cur:list[0],ok:0,tries:0,found:[],log:[],done:false,first:true}; S.sel=null; S.draw(); S.onQuiz(S.quiz); };
+  S.answer=id=>{ const q=S.quiz; const good=id===ckey(q.cur); S.flash={id,ok:good}; setTimeout(()=>{ S.flash=null; if(!S.run) S.draw(); },600);
+    if(good){ if(q.first) q.ok++; q.log.push({name:q.cur.name,res:q.first?'corect':'corect după greșeală'}); q.found.push(ckey(q.cur)); q.i++; q.first=true; if(q.i>=q.list.length){ q.done=true; } else q.cur=q.list[q.i]; }
+    else { q.first=false; toast('Nu este '+q.cur.name+' — mai încercați'); }
+    S.draw(); S.onQuiz(q); };
+  S.skip=()=>{ const q=S.quiz; if(!q||q.done) return; q.log.push({name:q.cur.name,res:'sărit'}); S.select(ckey(q.cur)); q.i++; q.first=true; if(q.i>=q.list.length) q.done=true; else q.cur=q.list[q.i]; S.draw(); S.onQuiz(q); };
+  S.loop=ts=>{ if(!S.run) return; const dt=S.last?Math.min(0.05,(ts-S.last)/1000):0; S.last=ts; S.t+=dt; if(S.active()) S.draw(); requestAnimationFrame(S.loop); };
+  S.start=()=>{ if(S.run) return; S.run=true; S.last=0; requestAnimationFrame(S.loop); }; S.stop=()=>{ S.run=false; };
+  return S;
+}
+function infoHTML(cm){ if(!cm) return '<p class="small">Selectați o componentă pe schemă (clic) sau din lista de mai jos.</p>'; const i=cm.info||{};
+  const sec=(t,v)=>v?`<div class="info-s"><div class="info-t">${t}</div><div>${v}</div></div>`:'';
+  return `<h4 class="info-h">${cm.name}</h4>${cm.cat?`<span class="tag">${cm.cat}</span>`:''}${sec('Rol funcțional',i.rol)}${sec('Construcție',i.con)}${sec('Parametri tipici',i.par)}${sec('Defecte și simptome',i.def)}${sec('Verificare',i.ver)}`; }
+function legendHTML(types){ return types.map(t=>{ const F=FLOW[t]; return `<span><i style="display:inline-block;width:22px;height:${Math.min(8,F.w)}px;background:${col(F.c)};vertical-align:middle;margin-right:5px;border-radius:2px;${F.dash?'opacity:.8':''}"></i>${FLOWNAME[t]}</span>`; }).join(''); }
+function compTable(comps){ comps=comps.filter(c=>!c.grpSub); return {head:['Nr.','Componenta','Categoria','Rol funcțional'],rows:comps.map((c,i)=>[i+1,c.name,c.cat||'',(c.info&&c.info.rol||'').replace(/<[^>]+>/g,'')]),left:[1,2,3]}; }
+
+/* ---------- osciloscop ---------- */
+function scope(cv,o){ if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,o.height||300); c.fillStyle='#0c1418'; c.fillRect(0,0,w,h);
+  const L=46,T=10,R=10,B=26, pw=w-L-R, ph=h-T-B; c.strokeStyle='rgba(120,180,160,.18)'; c.lineWidth=1;
+  for(let i=0;i<=10;i++){ c.beginPath(); c.moveTo(L+i*pw/10,T); c.lineTo(L+i*pw/10,T+ph); c.stroke(); } for(let i=0;i<=8;i++){ c.beginPath(); c.moveTo(L,T+i*ph/8); c.lineTo(L+pw,T+i*ph/8); c.stroke(); }
+  const n=o.traces.length, bh=ph/n, cols=['#F2D34B','#4FE3C1','#FF6FB5','#7FB6FF','#FF9A3C'];
+  o.traces.forEach((tr,k)=>{ const y0=T+k*bh; const Y=v=>y0+bh-6-(v-tr.min)/(tr.max-tr.min)*(bh-14); c.strokeStyle=tr.col||cols[k%5]; c.lineWidth=1.6; c.beginPath();
+    const N=Math.max(400,Math.round(pw*1.5)); for(let i=0;i<=N;i++){ const t=o.t0+(o.t1-o.t0)*i/N; const v=tr.f(t); const x=L+pw*i/N, y=Y(Math.max(tr.min-0.1*(tr.max-tr.min),Math.min(tr.max+0.1*(tr.max-tr.min),v))); i?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
+    c.fillStyle=tr.col||cols[k%5]; c.font='600 12px Barlow Condensed,sans-serif'; c.textAlign='left'; c.fillText(`CH${k+1}  ${tr.name}`,L+6,y0+13); c.textAlign='right'; c.fillStyle='rgba(220,235,230,.7)'; c.font='11px Barlow Condensed,sans-serif';
+    c.fillText(fmt(tr.max,tr.dec??1)+' '+tr.unit,L-4,y0+12); c.fillText(fmt(tr.min,tr.dec??1),L-4,y0+bh-4); if(k) { c.strokeStyle='rgba(120,180,160,.4)'; c.beginPath(); c.moveTo(L,y0); c.lineTo(L+pw,y0); c.stroke(); } });
+  (o.marks||[]).forEach(m=>{ const x=L+(m.t-o.t0)/(o.t1-o.t0)*pw; c.strokeStyle='rgba(255,255,255,.35)'; c.setLineDash([3,3]); c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); c.setLineDash([]); c.fillStyle='rgba(255,255,255,.75)'; c.font='11px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(m.l,x,T+ph+12); });
+  c.fillStyle='rgba(220,235,230,.8)'; c.font='11.5px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText(o.xlabel||'',L+pw/2,h-4);
+  if(o.cursor!==undefined){ const x=L+(o.cursor-o.t0)/(o.t1-o.t0)*pw; c.strokeStyle='#fff'; c.lineWidth=1; c.beginPath(); c.moveTo(x,T); c.lineTo(x,T+ph); c.stroke(); } }
+
+/* ---------- test grilă ---------- */
+function quizRender(el,Q,onDone){ el.innerHTML=Q.map((q,i)=>`<div class="mcq" data-i="${i}"><p><b>${i+1}.</b> ${q.q}</p>${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}<div class="expl"></div></div>`).join('')+'<div class="row"><button class="btn fuel" id="mcqCheck">Verifică răspunsurile</button><span id="mcqScore" class="tag"></span></div>';
+  $('#mcqCheck',el).onclick=()=>{ let ok=0; Q.forEach((q,i)=>{ const d=$(`.mcq[data-i="${i}"]`,el), s=$(`input[name=q${i}]:checked`,el); const g=s&&+s.value===q.a; if(g) ok++;
+    d.classList.remove('good','badq'); d.classList.add(g?'good':'badq'); $('.expl',d).innerHTML=(g?'<b>Corect.</b> ':'<b>'+(s?'Greșit':'Fără răspuns')+'.</b> Răspuns corect: '+q.o[q.a]+'. ')+q.e; });
+    $('#mcqScore',el).textContent=`Scor: ${ok} / ${Q.length} (nota ${fmt(1+9*ok/Q.length,1)})`; onDone&&onDone(ok,Q.length); }; }
+</script><script>
+/* ===== Lucrarea 8 — Sistemul de ungere: modelul fizic (fără DOM) ===== */
+const clampU=(x,a,b)=>Math.max(a,Math.min(b,x));
+/* uleiuri: ν40, ν100 [mm²/s], ρ15 [kg/m³] (valori tipice de catalog) */
+const OILS={
+  '0W-20':{n40:44.0,n100:8.4,r15:845},
+  '5W-30':{n40:68.0,n100:11.6,r15:852},
+  '5W-40':{n40:85.0,n100:14.0,r15:855},
+  '10W-40':{n40:98.0,n100:14.5,r15:868},
+  '15W-40':{n40:110.0,n100:14.8,r15:880},
+  '20W-50':{n40:160.0,n100:18.5,r15:885}};
+/* motorul de referință (4 cilindri, 2,0 L) */
+const EN={z:4,D:0.084,S:0.090,r:0.045,lam:0.30,mosc:0.65,
+  Db:0.048,Lb:0.018,c0:25e-6,Dm:0.058,Lm:0.020,sig:0.40e-6,
+  pmaxFL:110,pmax0:35,   // presiunea maximă din cilindru [bar] la sarcină plină / mers în gol
+  G0:3.33, qn:0.0019, Kj:3.2, pj:2.0, nj:4, // consumul motorului: L/min/bar (la μ ref), L/min/(rot/min), duze
+  muRef:0.0083, Vgal:0.25};
+/* pompe */
+const PUMPS={
+  fix:{lab:'Pompă cu roți dințate (presiune fixă, supapă de siguranță)',V:10.0,i:1.0,kl:0.40,prv:4.5,var:false},
+  var:{lab:'Pompă cu palete cu debit variabil (comandă electronică)',V:14.0,i:1.0,kl:0.45,prv:6.0,var:true},
+  dry:{lab:'Carter uscat (pompă de presiune + pompe de evacuare)',V:11.0,i:1.0,kl:0.40,prv:5.0,var:false,dry:true}};
+const FLT8=[['none','fără defect'],['brg','lagăre uzate (joc mărit 1,7×)'],['pump','pompă uzată (scăpări 4×)'],['rv','arcul supapei de siguranță slăbit'],
+  ['sorb','sorb colmatat'],['filt','filtru colmatat (supapa de by-pass deschisă)'],['dil','ulei diluat cu combustibil (8 %)'],['low','nivel de ulei sub minim'],['adv','supapa antiretur a filtrului defectă']];
+
+/* ---------- vâscozitatea: ecuația Walther (ASTM D341) ---------- */
+function walther(o){ const T1=313.15,T2=373.15; const Z1=Math.log10(Math.log10(o.n40+0.7)), Z2=Math.log10(Math.log10(o.n100+0.7));
+  const B=(Z1-Z2)/(Math.log10(T2)-Math.log10(T1)), A=Z1+B*Math.log10(T1); return {A,B}; }
+function nuOf(o,T){ const {A,B}=walther(o); const Z=A-B*Math.log10(T+273.15); return Math.pow(10,Math.pow(10,Z))-0.7; }
+function rhoOf(o,T){ return o.r15*(1-0.00065*(T-15)); }
+function oilProps(grade,T,dil){ const o=OILS[grade]; let nu=nuOf(o,T); if(dil>0){ const nf=1.6; nu=Math.exp((1-dil)*Math.log(nu)+dil*Math.log(nf)); }
+  const rho=rhoOf(o,T); return {nu,rho,mu:nu*1e-6*rho,cp:1880+3.6*T}; }
+
+/* ---------- lagărul hidrodinamic scurt (teoria Ocvirk) ---------- */
+function shortBearing(W,mu,n,D,L,c){ const R=D/2, w=2*Math.PI*n/60, U=w*R;
+  const K=mu*U*L*L*L/(c*c); const fe=e=>e/(4*Math.pow(1-e*e,2))*Math.sqrt(Math.PI*Math.PI*(1-e*e)+16*e*e);
+  const need=W/K; let lo=0,hi=0.9999; for(let k=0;k<80;k++){ const m=(lo+hi)/2; if(fe(m)<need) lo=m; else hi=m; } const e=(lo+hi)/2;
+  const phi=Math.atan(Math.PI*Math.sqrt(1-e*e)/(4*e)); const hmin=c*(1-e); const P=W/(D*L);
+  const S=mu*(n/60)/P*Math.pow(R/c,2); const Ff=2*Math.PI*mu*U*R*L/(c*Math.sqrt(1-e*e))+e*c*W*Math.sin(phi)/(2*R);
+  const Pf=Ff*U, Qs=U*c*L*e; const pmx=(()=>{ let m=0; for(let t=0;t<=Math.PI;t+=Math.PI/180){ const h=1+e*Math.cos(t); const v=3*mu*U*L*L/(4*R*c*c)*e*Math.sin(t)/Math.pow(h,3)*(-1); if(-v>m) m=-v; } return m; })();
+  return {e,phi,hmin,P,S,Ff,Pf,Qs,U,K,pmx,f:Ff/W}; }
+
+/* ---------- forța pe lagărul de bielă ---------- */
+function brgLoad(n,ld){ const Ap=Math.PI*EN.D*EN.D/4, pm=EN.pmax0+(EN.pmaxFL-EN.pmax0)*clampU(ld,0,1), w=2*Math.PI*n/60;
+  const Fg=pm*1e5*Ap, Fi=EN.mosc*EN.r*w*w*(1+EN.lam); const Fm=0.20*Fg+0.60*Fi; return {Ap,pm,Fg,Fi,Fm}; }
+
+/* ---------- circuitul de ungere în regim stabilizat ---------- */
+function lubSS(p){ // p={n,ld,T,grade,pump,flt,ady}
+  const P=PUMPS[p.pump], f=p.flt; const dil=f==='dil'?0.08:0; const op=oilProps(p.grade,p.T,dil); const mr=op.mu/EN.muRef;
+  const cf=f==='brg'?1.7:1.0, c=EN.c0*cf; const kl=P.kl*(f==='pump'?4:1)/mr; const prv=f==='rv'?1.3:P.prv;
+  const Rf=0.010*mr*(f==='filt'?12:1), pbp=2.0, Rc=0.006*Math.pow(mr,0.5), Rs=0.0008*Math.pow(mr,0.6)*(f==='sorb'?25:1);
+  const G=EN.G0/mr*Math.pow(cf,3), qn=EN.qn*cf, Kj=EN.Kj, n=p.n, np=n*P.i;
+  const Qth1=P.V*np/1000; // L/min la cilindree maximă
+  // umplerea pompei (aspirația)
+  const dps0=Rs*Qth1; let fill=dps0>0.6?clampU(1-(dps0-0.6)/2.0,0.35,1):1; let aer=0;
+  if(f==='low'&&n>2500){ aer=clampU((n-2500)/4000,0,0.35); fill*=1-aer; }
+  if(P.dry) fill=Math.min(1,fill+0.0);
+  const Qeng=pg=>Math.max(0,G*pg+qn*n*(pg>0.05?1:pg/0.05)+(pg>EN.pj?EN.nj*Kj/EN.nj*Math.sqrt(pg-EN.pj):0)); // L/min
+  const dpF=Q=>{ const d=Rf*Q; return d>pbp?pbp+0.02*(d-pbp):d; };
+  const galOf=pp=>{ // debit către motor și presiunea în rampă pentru presiunea pompei pp
+    let lo=0,hi=200; for(let k=0;k<60;k++){ const Q=(lo+hi)/2; const pg=pp-dpF(Q)-Rc*Q; if(pg<=0||Qeng(pg)<Q) hi=Q; else lo=Q; } const Q=(lo+hi)/2; return {Q,pg:Math.max(0,pp-dpF(Q)-Rc*Q)}; };
+  const solveP=eps=>{ const Qth=Qth1*eps*fill; let lo=0,hi=25; for(let k=0;k<70;k++){ const pp=(lo+hi)/2; const net=Qth-kl*pp; const qrv=Math.max(0,40*(pp-prv)); const g=galOf(pp); if(net-qrv-g.Q>0) lo=pp; else hi=pp; }
+    const pp=(lo+hi)/2, g=galOf(pp); return {pp,Qth,Qleak:Math.min(Qth,kl*pp),Qrv:Math.max(0,40*(pp-prv)),Qe:g.Q,pg:g.pg}; };
+  let eps=1, pset=null, st;
+  if(P.var){ const low=n<3500&&p.ld<0.7&&p.T>40; pset=low?2.0:4.0; let lo=0.25,hi=1; st=solveP(1);
+    if(st.pg>pset){ for(let k=0;k<50;k++){ const m=(lo+hi)/2; const s=solveP(m); if(s.pg>pset) hi=m; else lo=m; } eps=(lo+hi)/2; st=solveP(eps); } }
+  else st=solveP(1);
+  const dpf=dpF(st.Qe), byp=Rf*st.Qe>pbp, fbyp=byp?1-pbp/(Rf*st.Qe):0, dpc=Rc*st.Qe;
+  const Qj=st.pg>EN.pj?Kj*Math.sqrt(st.pg-EN.pj):0;
+  const etaV=st.Qth>0?(st.Qth-st.Qleak)/st.Qth:0; const Php=(st.Qth/60000)*st.pp*1e5/0.85; // W
+  const lamp=st.pg<0.4;
+  // lagărul de bielă (temperatura efectivă a filmului — iterativ)
+  const L=brgLoad(n,p.ld); let Tf=p.T, B=null, dT=0; for(let it=0;it<8;it++){ const o2=oilProps(p.grade,Tf,dil); B=shortBearing(L.Fm,o2.mu,Math.max(n,300),EN.Db,EN.Lb,c);
+    const qb=Math.max(B.Qs,1e-7); dT=B.Pf/(o2.rho*o2.cp*qb); dT=Math.min(dT,40); Tf=p.T+0.5*dT; }
+  const lamR=B.hmin/EN.sig;
+  const fl=[]; if(lamp) fl.push(['presiune insuficientă — martorul de ulei se aprinde','b']);
+  if(byp) fl.push([`supapa de by-pass a filtrului este deschisă: ${fmtN(fbyp*100,0)} % din ulei ocolește filtrul`,'w']);
+  if(fill<0.98) fl.push([aer>0?'pompa aspiră aer (nivel scăzut, ulei aerat)':'cavitație la aspirație — umplere incompletă a pompei','b']);
+  if(st.Qrv>0.05) fl.push([`supapa de siguranță descarcă ${fmtN(st.Qrv,1)} L/min în carter`,'i']);
+  if(lamR<3&&lamR>=1) fl.push(['regim de ungere mixt în lagăr (Λ < 3)','w']); if(lamR<1) fl.push(['regim limită — contact metal-metal, risc de gripare','b']);
+  if(p.T>140) fl.push(['temperatura uleiului peste 140 °C — degradare accelerată','w']);
+  return {...p,op,mr,c,cf,kl,prv,Rf,G,np,Qth1,fill,aer,eps,pset,pp:st.pp,Qth:st.Qth,Qleak:st.Qleak,Qrv:st.Qrv,Qe:st.Qe,pg:st.pg,dpf,byp,fbyp,dpc,Qj,etaV,Php,lamp,
+    L,B,Tf,dT,lamR,flags:fl,pumpLab:P.lab,isVar:P.var}; }
+function fmtN(x,d){ return (typeof fmt==='function')?fmt(x,d):x.toFixed(d); }
+
+/* ---------- pornirea la rece: umplerea circuitului și creșterea presiunii ---------- */
+function coldStart(p){ const dt=0.02, N=Math.round(14/dt); const o={t:[],n:[],pp:[],pg:[],lamp:[],byp:[]}; const Vf=(p.flt==='adv'?0.60:EN.Vgal); let filled=0;
+  for(let k=0;k<=N;k++){ const t=k*dt; let n=t<0.5?0:t<1.6?250:t<2.4?250+(1300-250)*(t-1.6)/0.8:1300-300*clampU((t-2.4)/8,0,1);
+    const s=lubSS({...p,n:Math.max(n,1),ld:0.1}); const Qavail=n>0?Math.max(0,s.Qth-s.Qleak-s.Qrv):0;
+    filled+=Qavail/60*dt; const fr=clampU(filled/Vf,0,1); const pg=fr<1?s.pg*Math.pow(fr,6)*0.15:s.pg; const pp=n>0?(fr<1?Math.min(s.pp,0.6+s.pp*fr*0.3):s.pp):0;
+    o.t.push(t); o.n.push(n); o.pp.push(pp); o.pg.push(pg); o.lamp.push(pg<0.4?1:0); o.byp.push(s.byp&&n>0?1:0); }
+  let tl=null; for(let k=0;k<o.t.length;k++) if(o.t[k]>0.6&&o.lamp[k]===0){ tl=o.t[k]-0.5; break; } return {...o,tl,Vf}; }
+
+if(typeof module!=='undefined') module.exports={OILS,EN,PUMPS,FLT8,walther,nuOf,oilProps,shortBearing,brgLoad,lubSS,coldStart};
+
+/* ======================================================================
+   Lucrarea 8 — Sistemul de ungere: interfață, schemă, grafice, referat
+   ====================================================================== */
+const LAB={nr:8,ref:'Cunoașterea sistemului de ungere al motorului',
+  scop:'Cunoașterea construcției și funcționării sistemului de ungere al motorului (circuitul de ulei, pompa, supapa de siguranță, filtrul, răcitorul, rampa principală, lagărele hidrodinamice), înțelegerea dependenței dintre vâscozitatea uleiului, debitul pompei și presiunea din rampă, analiza regimului de ungere al lagărului de bielă și efectuarea verificărilor de atelier: presiunea uleiului, jocurile pompei și ale lagărelor, supapa de siguranță.'};
+Object.assign(FLOW,{oilhp:{c:'#C77A12',w:5,sp:26},oilret:{c:'#B89A62',w:2.5,sp:12,dash:[6,4]},oil:{c:'#8A6A2A',w:5,sp:18},pn:{c:'--steel-d',w:1.8,sp:14,dash:[3,3]},vap:{c:'--ok',w:3,sp:12,dash:[5,4]}});
+Object.assign(FLOWNAME,{oil:'ulei aspirat (joasă presiune)',oilhp:'ulei sub presiune',oilret:'ulei care se scurge în carter',cool:'lichid de răcire',pn:'comandă hidraulică',vap:'gaze de carter (blow-by)'});
+const LEG=['oil','oilhp','oilret','cool','vap','sig','act'];
+
+/* ---------- glife suplimentare ---------- */
+G.brg=(c,b,s,cm)=>{ const x=b.x+b.w/2,y=b.y+b.h/2,R=Math.min(b.w,b.h)/2; c.fillStyle=css('--steel'); c.beginPath(); c.arc(x,y,R,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.3; c.stroke();
+  c.fillStyle='#E7C878'; c.beginPath(); c.arc(x,y,R*0.78,0,7); c.fill(); const e=(cm.ecc??0.6)*R*0.12; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y+e,R*0.66,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke();
+  c.save(); c.translate(x,y+e); c.rotate(s.t*(cm.spd??4)); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.beginPath(); c.moveTo(0,0); c.lineTo(R*0.55,0); c.stroke(); c.restore(); };
+G.jet=(c,b,s,cm)=>{ const x=b.x+b.w/2; c.fillStyle=css('--steel'); rr(c,x-3,b.y+b.h*0.35,6,b.h*0.65,2); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1; c.stroke();
+  if(cm.on){ c.fillStyle='#C77A12'; c.globalAlpha=0.55; c.beginPath(); c.moveTo(x,b.y+b.h*0.35); c.lineTo(x-5,b.y-14); c.lineTo(x+5,b.y-14); c.fill(); c.globalAlpha=1; } };
+G.vane=(c,b,s,cm)=>{ const x=b.x+b.w/2,y=b.y+b.h/2,R=Math.min(b.w,b.h)/2; c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x,y,R,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.4; c.stroke();
+  const ex=(cm.eps??1)*R*0.16; c.strokeStyle=css('--teal'); c.lineWidth=2; c.beginPath(); c.arc(x+ex,y,R*0.82,0,7); c.stroke(); c.fillStyle=css('--steel'); c.beginPath(); c.arc(x,y,R*0.5,0,7); c.fill();
+  c.save(); c.translate(x,y); c.rotate(s.t*6); c.strokeStyle=css('--steel-d'); c.lineWidth=2.2; for(let k=0;k<7;k++){ c.rotate(2*Math.PI/7); c.beginPath(); c.moveTo(R*0.3,0); c.lineTo(R*0.76,0); c.stroke(); } c.restore(); };
+G.lamp=(c,b,s,cm)=>{ body(c,b,'#20303D','#0e1a24',5); const on=cm.on; c.fillStyle=on?'#E53935':'#4a5560'; const x=b.x+b.w/2,y=b.y+b.h/2;
+  c.beginPath(); c.moveTo(x-12,y+4); c.lineTo(x+6,y+4); c.lineTo(x+12,y-3); c.lineTo(x+4,y-3); c.lineTo(x,y-6); c.lineTo(x-8,y-6); c.lineTo(x-12,y-2); c.closePath(); c.fill(); c.beginPath(); c.arc(x+13,y+5,1.8,0,7); c.fill(); };
+G.sep=(c,b)=>{ body(c,b,css('--panel2'),css('--ok'),5); c.strokeStyle=css('--ok'); c.lineWidth=1.2; for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(b.x+6,b.y+6+i*6); c.lineTo(b.x+b.w-6,b.y+9+i*6); c.stroke(); } };
+
+/* ---------- mărimi de intrare ---------- */
+function readF(){ const g=id=>{ const e=$('#'+id); return e?+e.value:0; }; return {n:g('n'),ld:g('ld')/100,T:g('T'),grade:$('#grade').value,pump:$('#pump').value,flt:$('#flt').value,T0:g('T0')}; }
+const ss=p=>lubSS(p);
+
+/* ---------- desen: pompă, manometru, lagăr ---------- */
+function gauge(c,x,y,R,v,vmax,lab,unit,warn){ c.fillStyle=css('--panel'); c.beginPath(); c.arc(x,y,R,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=3; c.stroke();
+  const a0=Math.PI*0.75, a1=Math.PI*2.25; c.lineWidth=6; c.strokeStyle=css('--alert'); c.beginPath(); c.arc(x,y,R*0.82,a0,a0+(a1-a0)*(warn/vmax)); c.stroke();
+  c.lineWidth=1.4; c.strokeStyle=css('--ink'); c.fillStyle=css('--ink2'); c.font=`${Math.max(10,R*0.15)}px Barlow Condensed,sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+  for(let k=0;k<=vmax;k++){ const a=a0+(a1-a0)*k/vmax; c.beginPath(); c.moveTo(x+Math.cos(a)*R*0.9,y+Math.sin(a)*R*0.9); c.lineTo(x+Math.cos(a)*R*0.74,y+Math.sin(a)*R*0.74); c.stroke(); c.fillText(String(k),x+Math.cos(a)*R*0.62,y+Math.sin(a)*R*0.62); }
+  const a=a0+(a1-a0)*clampU(v/vmax,0,1.02); c.strokeStyle=css('--alert'); c.lineWidth=3; c.beginPath(); c.moveTo(x,y); c.lineTo(x+Math.cos(a)*R*0.78,y+Math.sin(a)*R*0.78); c.stroke(); c.fillStyle=css('--ink'); c.beginPath(); c.arc(x,y,5,0,7); c.fill();
+  c.font=`600 ${Math.max(12,R*0.17)}px Barlow,sans-serif`; c.fillText(fmt(v,2)+' '+unit,x,y+R*0.42); c.font='12px Barlow,sans-serif'; c.fillStyle=css('--ink2'); c.fillText(lab,x,y+R+14); c.textBaseline='alphabetic'; c.textAlign='left'; }
+function hbar(c,x,y,w,h,f,lab,val,colr){ c.fillStyle=css('--panel2'); c.fillRect(x,y,w,h); c.fillStyle=colr; c.fillRect(x,y,w*clampU(f,0,1),h); c.strokeStyle=css('--steel-d'); c.lineWidth=1; c.strokeRect(x,y,w,h);
+  c.fillStyle=css('--ink2'); c.font='12.5px Barlow,sans-serif'; c.textAlign='left'; c.fillText(lab,x,y-4); c.textAlign='right'; c.fillStyle=css('--ink'); c.font='600 13px Barlow,sans-serif'; c.fillText(val,x+w,y-4); }
+function drawPump(c,x,y,R,r,t){ const P=PUMPS[r.pump];
+  c.fillStyle=css('--panel2'); rr(c,x-R*1.25,y-R*1.05,R*2.5,R*2.1,10); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke();
+  const oil='rgba(199,122,18,.28)'; c.fillStyle=oil; rr(c,x-R*1.2,y-R,R*2.4,R*2,9); c.fill();
+  const rot=t*r.np/60*2*Math.PI*0.12;
+  if(P.var){ const ex=r.eps*R*0.18; c.fillStyle=css('--panel'); c.beginPath(); c.arc(x+ex,y,R*0.92,0,7); c.fill(); c.strokeStyle=css('--teal'); c.lineWidth=4; c.stroke(); c.fillStyle='rgba(199,122,18,.35)'; c.beginPath(); c.arc(x+ex,y,R*0.88,0,7); c.fill();
+    c.fillStyle=css('--steel'); c.beginPath(); c.arc(x,y,R*0.55,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.5; c.stroke();
+    c.save(); c.translate(x,y); for(let k=0;k<9;k++){ const a=rot+k*2*Math.PI/9; const dx=Math.cos(a), dy=Math.sin(a); // vârful paletei pe inelul excentric
+      const px=ex, rr2=R*0.88; const b2=dx*px, cc=px*px-rr2*rr2; const L=-b2+Math.sqrt(b2*b2-cc); c.strokeStyle='#5E6E7B'; c.lineWidth=5; c.beginPath(); c.moveTo(dx*R*0.3,dy*R*0.3); c.lineTo(dx*L,dy*L); c.stroke(); } c.restore();
+    c.fillStyle=css('--ink2'); c.font='12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('excentricitatea inelului ε = '+fmt(r.eps,2),x,y+R*1.05+14);
+  } else { const rg=R*0.52; [[x-rg*0.98,1],[x+rg*0.98,-1]].forEach(([gx,d],i)=>{ c.save(); c.translate(gx,y); c.rotate(d*rot+(i?Math.PI/12:0)); c.fillStyle=css('--steel'); c.strokeStyle=css('--steel-d'); c.lineWidth=1.2; c.beginPath();
+      const z=12; for(let k=0;k<z;k++){ const a=k*2*Math.PI/z; [[a-0.10,rg*0.82],[a-0.07,rg*1.08],[a+0.07,rg*1.08],[a+0.10,rg*0.82],[a+Math.PI/z,rg*0.82]].forEach(([aa,rad],j)=>{ const px=Math.cos(aa)*rad, py=Math.sin(aa)*rad; (k===0&&j===0)?c.moveTo(px,py):c.lineTo(px,py); }); } c.closePath(); c.fill(); c.stroke();
+      c.fillStyle=css('--steel-d'); c.beginPath(); c.arc(0,0,rg*0.18,0,7); c.fill(); c.restore(); }); }
+  // săgeți intrare / ieșire
+  c.fillStyle=css('--ink2'); c.font='12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillText('aspirație',x,y+R*1.05+(P.var?28:14)); c.fillText('refulare '+fmt(r.pp,2)+' bar',x,y-R*1.05-6);
+  c.font='600 13px Barlow,sans-serif'; c.fillStyle=css('--ink'); c.fillText(P.var?'Pompă cu palete, debit variabil':'Pompă cu roți dințate',x,y-R*1.05-24); }
+function drawBearing(c,x,y,R,r,t){ const B=r.B, e=B.e, sc=R*0.16; // jocul exagerat grafic
+  const Rj=R-sc; c.fillStyle=css('--steel'); c.beginPath(); c.arc(x,y,R+12,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.5; c.stroke();
+  const phi=B.phi; const ex=Math.sin(phi)*e*sc, ey=Math.cos(phi)*e*sc; const amin=Math.atan2(ey,ex);
+  for(let k=0;k<180;k++){ const a=k/180*2*Math.PI, a2=(k+1)/180*2*Math.PI; const hh=(1-e*Math.cos(a-amin))/(1+e); const f=clampU(1-hh,0,1);
+    c.fillStyle=`rgba(${Math.round(225+20*f)},${Math.round(190-150*f)},${Math.round(90-70*f)},${0.55+0.4*f})`; c.beginPath(); c.moveTo(x,y); c.arc(x,y,R,a,a2+0.01); c.closePath(); c.fill(); }
+  c.fillStyle=css('--panel2'); c.beginPath(); c.arc(x+ex,y+ey,Rj,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=1.5; c.stroke();
+  c.save(); c.translate(x+ex,y+ey); c.rotate(t*r.n/60*2*Math.PI*0.05); c.strokeStyle=css('--ink'); c.lineWidth=3; c.beginPath(); c.moveTo(0,0); c.lineTo(Rj*0.8,0); c.stroke(); c.restore();
+  // distribuția de presiune (zona convergentă, normalizată)
+  { const pr=[]; let pm=0; for(let k=0;k<=90;k++){ const th=Math.PI*k/90; const v=e*Math.sin(th)/Math.pow(1+e*Math.cos(th),3); pr.push(v); if(v>pm) pm=v; }
+    c.strokeStyle=css('--alert'); c.fillStyle='rgba(179,54,43,.18)'; c.lineWidth=1.4; c.beginPath(); c.moveTo(x+Math.cos(amin-Math.PI)*(R+12),y+Math.sin(amin-Math.PI)*(R+12));
+    pr.forEach((v,k)=>{ const a=amin-Math.PI+Math.PI*k/90; const rad=R+12+v/pm*R*0.45; c.lineTo(x+Math.cos(a)*rad,y+Math.sin(a)*rad); }); c.arc(x,y,R+12,amin,amin-Math.PI,true); c.closePath(); c.fill(); c.stroke();
+    }
+  // săgeata sarcinii
+  c.strokeStyle=css('--ink'); c.fillStyle=css('--ink'); c.lineWidth=2.5; c.beginPath(); c.moveTo(x+ex,y+ey-Rj*0.2); c.lineTo(x+ex,y+ey+Rj*0.75); c.stroke(); c.beginPath(); c.moveTo(x+ex,y+ey+Rj*0.85); c.lineTo(x+ex-6,y+ey+Rj*0.7); c.lineTo(x+ex+6,y+ey+Rj*0.7); c.fill();
+  c.font='12px Barlow Condensed,sans-serif'; c.textAlign='center'; c.fillStyle=css('--ink'); c.fillText('F = '+fmt(r.L.Fm/1000,1)+' kN',x+ex+34,y+ey+Rj*0.55);
+  c.font='600 13px Barlow,sans-serif'; c.fillText('Lagărul de bielă (jocul exagerat)',x,y-R-26); c.font='12.5px Barlow,sans-serif'; c.fillStyle=css('--ink2');
+  c.fillText(`ε = ${fmt(e,3)}   h_min = ${fmt(B.hmin*1e6,2)} µm   Λ = ${fmt(r.lamR,1)}`,x,y+R+30); c.fillText(`φ = ${fmt(B.phi*180/Math.PI,1)}°   P_f = ${fmt(B.Pf,0)} W   T_film ≈ ${fmt(r.Tf,0)} °C`,x,y+R+46); c.fillStyle=css('--alert'); c.fillText('contur roșu exterior: distribuția presiunii în film',x,y+R+62); }
+function drawFun(){ const cv=$('#cvFun'); if(!cv.clientWidth) return; const p=readF(), r=ss(p); const {c,w,h}=fitCanvas(cv,Math.max(380,Math.round(cv.clientWidth*0.5)));
+  c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); const t=F.anim; const R=Math.min(w*0.13,h*0.25);
+  drawPump(c,w*0.17,h*0.42,R,r,t);
+  gauge(c,w*0.5,h*0.33,Math.min(w*0.11,h*0.22),r.pg,8,'presiunea în rampa principală','bar',0.4);
+  const bx=w*0.37, bw=w*0.26; let by=h*0.66; const qm=Math.max(10,r.Qth*1.05);
+  hbar(c,bx,by,bw,10,r.Qth/qm,'Debit teoretic Q_th',fmt(r.Qth,1)+' L/min',css('--steel')); by+=34; hbar(c,bx,by,bw,10,r.Qe/qm,'Debit spre motor Q_m',fmt(r.Qe,1)+' L/min','#C77A12'); by+=34;
+  hbar(c,bx,by,bw,10,r.Qrv/qm,'Descărcat prin supapă',fmt(r.Qrv,1)+' L/min',css('--alert')); by+=34; hbar(c,bx,by,bw,10,r.Qleak/qm,'Scăpări interne pompă',fmt(r.Qleak,1)+' L/min',css('--muted'));
+  // martorul
+  G.lamp(c,{x:w*0.5-26,y:h*0.03,w:52,h:30},null,{on:r.lamp});
+  drawBearing(c,w*0.82,h*0.42,Math.min(w*0.11,h*0.24),r,t);
+  $('#funTag').textContent=r.flags.length?r.flags[0][0]:'funcționare normală'; $('#funTag').className='tag '+(r.flags.some(f=>f[1]==='b')?'bad':r.flags.length?'':'ok'); }
+
+/* ---------- osciloscop: pornirea ---------- */
+const F={t:0,play:false,last:0,cs:null,anim:0};
+function drawScope(){ const cv=$('#cvScope'); if(!cv.clientWidth) return; const p=readF(); if(!F.cs) F.cs=coldStart({...p,T:p.T0}); const S=F.cs; const at2=(A,t)=>A[clampU(Math.round(t/0.02),0,A.length-1)];
+  scope(cv,{height:300,t0:0,t1:14,xlabel:'timp [s]',cursor:F.t,traces:[{name:'turația n [rot/min]',unit:'',min:0,max:1500,dec:0,f:t=>at2(S.n,t)},{name:'presiunea pompei',unit:'bar',min:0,max:6,f:t=>at2(S.pp,t)},
+    {name:'presiunea în rampă',unit:'bar',min:0,max:6,f:t=>at2(S.pg,t)},{name:'martor ulei (1 = aprins)',unit:'',min:0,max:1.2,dec:0,f:t=>at2(S.lamp,t)},{name:'by-pass filtru (1 = deschis)',unit:'',min:0,max:1.2,dec:0,f:t=>at2(S.byp,t)}],
+    marks:S.tl!==null?[{t:S.tl+0.5,l:'martor stins: '+fmt(S.tl,1)+' s'}]:[] }); }
+function funLoop(ts){ const dt=F.last?Math.min(0.05,(ts-F.last)/1000):0; F.last=ts; F.anim+=dt;
+  if(F.play){ F.t+=dt*(+$('#slow').value/40); if(F.t>=14){ F.t=14; F.play=false; } }
+  if($('#t-fun').classList.contains('on')){ drawFun(); drawScope(); } requestAnimationFrame(funLoop); }
+
+/* ---------- tabelul de calcul ---------- */
+function calcRows(){ const p=readF(), r=ss(p), o=OILS[p.grade], W=walther(o), B=r.B, P=PUMPS[p.pump]; const R=(a,b,hl)=>[a,b,hl]; return [
+  R('Uleiul / ν<sub>40</sub> / ν<sub>100</sub>',p.grade+' / '+fmt(o.n40,1)+' / '+fmt(o.n100,1)+' mm²/s'),
+  R('Constantele Walther A / B',fmt(W.A,4)+' / '+fmt(W.B,4)),
+  R('Vâscozitatea cinematică ν(T<sub>u</sub>)',fmt(r.op.nu,1)+' mm²/s',1),
+  R('Densitatea ρ / vâscozitatea dinamică μ',fmt(r.op.rho,0)+' kg/m³ / '+fmt(r.op.mu*1000,2)+' mPa·s',1),
+  R('Turația pompei / cilindreea',fmt(r.np,0)+' rot/min / '+fmt(P.V*(P.var?r.eps:1),2)+' cm³/rot'),
+  ...(P.var?[R('Presiunea consemnată / excentricitatea ε',fmt(r.pset,1)+' bar / '+fmt(r.eps,2))]:[]),
+  R('Debitul teoretic Q<sub>th</sub>',fmt(r.Qth,2)+' L/min'+(r.fill<0.99?` (umplere ${fmt(r.fill*100,0)} %)`:'')),
+  R('Scăpările interne / η<sub>v</sub>',fmt(r.Qleak,2)+' L/min / '+fmt(r.etaV,3)),
+  R('Presiunea la refularea pompei p<sub>p</sub>',fmt(r.pp,2)+' bar',1),
+  R('Debitul descărcat prin supapa de siguranță',fmt(r.Qrv,2)+' L/min (deschidere '+fmt(r.prv,1)+' bar)'),
+  R('Căderea de presiune pe filtru',fmt(r.dpf,3)+' bar'+(r.byp?' — by-pass deschis':'')),
+  R('Căderea de presiune pe răcitorul de ulei',fmt(r.dpc,3)+' bar'),
+  R('Presiunea în rampa principală p<sub>r</sub>',fmt(r.pg,2)+' bar',1),
+  R('Debitul consumat de motor Q<sub>m</sub>',fmt(r.Qe,2)+' L/min',1),
+  R('din care duzele de răcire a pistoanelor',fmt(r.Qj,2)+' L/min'),
+  R('Puterea de antrenare a pompei',fmt(r.Php,0)+' W',1),
+  R('Forța de gaze maximă / de inerție',fmt(r.L.Fg/1000,2)+' / '+fmt(r.L.Fi/1000,2)+' kN'),
+  R('Forța echivalentă pe lagărul de bielă F<sub>m</sub>',fmt(r.L.Fm/1000,2)+' kN'),
+  R('Presiunea specifică p = F/(D·L)',fmt(B.P/1e6,2)+' MPa'),
+  R('Viteza periferică U / jocul radial c',fmt(B.U,2)+' m/s / '+fmt(r.c*1e6,1)+' µm'),
+  R('Temperatura filmului / μ în film',fmt(r.Tf,1)+' °C / '+fmt(oilProps(p.grade,r.Tf,p.flt==='dil'?0.08:0).mu*1000,2)+' mPa·s'),
+  R('Numărul Sommerfeld S',fmt(B.S,4)),
+  R('Excentricitatea relativă ε / unghiul φ',fmt(B.e,4)+' / '+fmt(B.phi*180/Math.PI,1)+'°'),
+  R('Grosimea minimă a filmului h<sub>min</sub>',fmt(B.hmin*1e6,2)+' µm',1),
+  R('Raportul Λ = h<sub>min</sub>/σ',fmt(r.lamR,2)+(r.lamR>=3?' (hidrodinamic)':r.lamR>=1?' (mixt)':' (limită)'),1),
+  R('Coeficientul de frecare f / puterea pierdută',fmt(B.f,4)+' / '+fmt(B.Pf,0)+' W'),
+  R('Debitul lateral Q<sub>s</sub> / încălzirea ΔT',fmt(B.Qs*6e4,3)+' L/min / '+fmt(r.dT,1)+' °C'),
+  R('Diagnoza',r.flags.length?r.flags.map(f=>f[0]).join('; '):'fără anomalii')]; }
+function ro2(el,rows){ el.innerHTML=rows.map(r=>`<tr class="${r[2]?'hl':''}"><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''); }
+function renderCalc(){ const rows=calcRows(); ro2($('#roCalc'),rows); buildTable($('#tblCalc'),{head:['Mărimea','Valoarea'],rows:rows.map(r=>[r[0],r[1]]),left:[0]}); }
+
+/* ---------- standul de verificare ---------- */
+const B8={run:null,pres:null,pump:null,plast:null,rv:null,last:0};
+function benchPar(){ const bw=+$('#bw').value/100, pw=+$('#pw').value/100, rvd=+$('#rvd').value/100, rng=mulberry32(+$('#bseed').value*53+7);
+  const cd=0.040+0.075*bw+0.004*gauss(rng); const cf=cd/0.050; const rad=0.07+0.18*pw+0.008*gauss(rng), ax=0.035+0.095*pw+0.004*gauss(rng); const prv=4.5*(1+rvd)+0.05*gauss(rng);
+  return {bw,pw,rvd,rng,cd,cf,rad,ax,prv,klf:1+12*pw*pw,Tb:+$('#Tb').value}; }
+function presAt(n,q){ // presiunea măsurată pe motor în starea de la stand
+  const p=readF(); const base={n,ld:0.1,T:q.Tb,grade:p.grade,pump:'fix',flt:'none'};
+  const P0=PUMPS.fix, old={kl:P0.kl,prv:P0.prv}; P0.kl=old.kl*q.klf; P0.prv=q.prv; const g0=EN.G0, qn0=EN.qn; EN.G0=g0*Math.pow(q.cf,3); EN.qn=qn0*q.cf;
+  const r=lubSS(base); P0.kl=old.kl; P0.prv=old.prv; EN.G0=g0; EN.qn=qn0; return r; }
+const NPRES=[800,1500,2000,3000,4000];
+function benchStart(kind){ if(B8.run) return; const q=benchPar(); B8.run={kind,t:0,T:kind==='pres'?7:kind==='rv'?5:2.5,q}; $('#benchTag').textContent='în lucru…'; B8.last=0; requestAnimationFrame(benchLoop); }
+function benchLoop(ts){ const dt=B8.last?Math.min(0.05,(ts-B8.last)/1000):0; B8.last=ts; const R=B8.run; if(!R) return; R.t+=dt; drawBench(R);
+  if(R.t>=R.T){ const q=R.q; if(R.kind==='pres'){ B8.pres=NPRES.map(n=>{ const r=presAt(n,q); return {n,p:Math.max(0,r.pg+0.04*gauss(q.rng))}; }); }
+    if(R.kind==='pump') B8.pump={rad:q.rad,ax:q.ax}; if(R.kind==='plast') B8.plast={cd:q.cd,w:2.6*0.050/Math.max(0.015,q.cd)}; if(R.kind==='rv'){ const pts=[]; for(let pp=3;pp<=6.01;pp+=0.25){ pts.push({p:pp,q:Math.max(0,40*(pp-q.prv)+0.3*gauss(q.rng))}); } B8.rv={prv:q.prv,pts}; }
+    B8.run=null; $('#benchTag').textContent='încercare încheiată'; renderBench(); schedCharts(); drawBench(null); return; }
+  requestAnimationFrame(benchLoop); }
+function drawBench(R){ const cv=$('#cvBench'); if(!cv.clientWidth) return; const {c,w,h}=fitCanvas(cv,Math.round(cv.clientWidth*0.62)); c.fillStyle=css('--canvas-bg'); c.fillRect(0,0,w,h); const q=R?R.q:benchPar();
+  const kind=R?R.kind:(B8.lastKind||'pres'); if(R) B8.lastKind=R.kind;
+  c.fillStyle=css('--ink'); c.font='600 14px Barlow,sans-serif'; c.textAlign='left';
+  if(kind==='pres'){ c.fillText('Măsurarea presiunii uleiului cu manometrul de control',14,22);
+    // bloc motor stilizat
+    c.fillStyle='#8193a3'; rr(c,w*0.08,h*0.25,w*0.42,h*0.5,8); c.fill(); c.fillStyle='#dfe5ea'; for(let i=0;i<4;i++) c.fillRect(w*0.1+i*w*0.1,h*0.29,w*0.08,h*0.22);
+    c.fillStyle=css('--steel-d'); c.fillRect(w*0.45,h*0.55,14,10); c.strokeStyle='#C77A12'; c.lineWidth=4; c.beginPath(); c.moveTo(w*0.45+14,h*0.6); c.bezierCurveTo(w*0.62,h*0.6,w*0.6,h*0.45,w*0.72,h*0.45); c.stroke();
+    let n=800, pv=0; if(R){ const k=Math.min(NPRES.length-1,Math.floor(R.t/R.T*NPRES.length)); n=NPRES[k]; pv=presAt(n,q).pg*clampU((R.t/R.T*NPRES.length-k)*3,0,1); } else if(B8.pres){ n=B8.pres[0].n; pv=B8.pres[0].p; }
+    gauge(c,w*0.78,h*0.45,Math.min(w*0.15,h*0.3),pv,8,'manometru de control','bar',1.0);
+    c.font='13px Barlow,sans-serif'; c.fillStyle=css('--ink2'); c.fillText(`n = ${n} rot/min   ulei ${q.Tb} °C`,w*0.08,h*0.85);
+    c.fillStyle='#fff'; c.font='600 12px Barlow Condensed,sans-serif'; c.fillText('BLOC MOTOR',w*0.22,h*0.7); }
+  else if(kind==='pump'){ c.fillText('Jocurile pompei de ulei (cu roți dințate) — lere și riglă',14,22); const x=w*0.35,y=h*0.55,R0=Math.min(w,h)*0.26; c.fillStyle=css('--panel2'); rr(c,x-R0*1.6,y-R0*1.05,R0*3.2,R0*2.1,12); c.fill(); c.strokeStyle=css('--steel-d'); c.lineWidth=2; c.stroke();
+    [[x-R0*0.62],[x+R0*0.62]].forEach(([gx])=>{ c.fillStyle=css('--steel'); c.beginPath(); c.arc(gx,y,R0*0.68,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke(); });
+    const k=R?R.t/R.T:1; c.fillStyle='#E9A93A'; c.save(); c.translate(x-R0*1.3,y-R0*0.75); c.rotate(-0.4); c.fillRect(0,-3,R0*0.8*k,6); c.restore();
+    c.strokeStyle=css('--ink'); c.lineWidth=4; c.beginPath(); c.moveTo(x-R0*1.6,y-R0*1.15); c.lineTo(x+R0*1.6,y-R0*1.15); c.stroke();
+    c.font='13px Barlow,sans-serif'; c.fillStyle=css('--ink'); const bx=w*0.68; c.fillText('Joc radial dinte–carcasă:',bx,h*0.38); c.fillText((R&&k<1)?'…':fmt(q.rad,3)+' mm (≤ 0,20)',bx,h*0.38+18);
+    c.fillText('Joc axial (riglă + lere):',bx,h*0.55); c.fillText((R&&k<1)?'…':fmt(q.ax,3)+' mm (≤ 0,10)',bx,h*0.55+18); }
+  else if(kind==='plast'){ c.fillText('Jocul lagărului de bielă cu sârmă calibrată (Plastigage)',14,22); const wd=2.6*0.050/Math.max(0.015,q.cd); const k=R?clampU(R.t/R.T,0,1):1;
+    c.fillStyle=css('--steel'); rr(c,w*0.08,h*0.3,w*0.45,h*0.4,8); c.fill(); c.fillStyle='#4CAF50'; const ww=(1.5+(wd-1.5)*k)*w*0.012; rr(c,w*0.3-ww/2,h*0.33,ww,h*0.34,2); c.fill();
+    // scala comparativă
+    const sc=[0.025,0.038,0.051,0.076,0.102]; sc.forEach((v,i)=>{ const x=w*0.62, y=h*0.25+i*h*0.12, wv=2.6*0.050/v*w*0.012; c.fillStyle='#4CAF50'; c.fillRect(x,y,wv,h*0.07); c.fillStyle=css('--ink'); c.font='12px Barlow Condensed,sans-serif'; c.fillText(fmt(v,3)+' mm',x+wv+10,y+h*0.055); });
+    c.font='13px Barlow,sans-serif'; c.fillStyle=css('--ink'); c.fillText((R&&k<1)?'strângerea capacului la cuplul prescris…':'joc diametral citit: '+fmt(q.cd,3)+' mm',w*0.08,h*0.85); }
+  else { c.fillText('Supapa de siguranță pe standul hidraulic',14,22); const pmax=R?3+3*clampU(R.t/R.T,0,1):6; const qq=Math.max(0,40*(pmax-q.prv));
+    const x=w*0.3,y=h*0.5; c.fillStyle=css('--panel2'); rr(c,x-60,y-80,120,160,8); c.fill(); c.strokeStyle=css('--steel-d'); c.stroke(); const lift=clampU(qq/40,0,1)*20;
+    c.fillStyle=css('--steel'); c.beginPath(); c.arc(x,y+30-lift,16,0,7); c.fill(); c.strokeStyle=css('--steel-d'); c.beginPath(); for(let i=0;i<=8;i++) c.lineTo(x+(i%2?12:-12),y+10-lift-i*(60-lift)/8-10); c.stroke();
+    c.fillStyle='rgba(199,122,18,.4)'; c.fillRect(x-60,y+50,120,30); if(qq>0){ c.fillRect(x+60,y-20,60,14); }
+    gauge(c,w*0.72,h*0.45,Math.min(w*0.13,h*0.28),pmax,8,'presiunea de probă','bar',0);
+    c.font='13px Barlow,sans-serif'; c.fillStyle=css('--ink'); c.fillText('debit descărcat: '+fmt(qq,1)+' L/min',w*0.08,h*0.9); }
+}
+function benchT(){ const rows=[]; const P=B8.pres; if(P){ P.forEach(x=>{ const lim=x.n<=900?1.0:x.n>=2000?2.0:null; rows.push(['Presiunea uleiului la '+x.n+' rot/min','manometru de control',fmt(x.p,2)+' bar',lim?'≥ '+fmt(lim,1)+' bar':'–',lim?(x.p>=lim?'admis':'respins'):'informativ']); }); }
+  else rows.push(['Presiunea uleiului','manometru de control','–','≥ 1,0 bar (ralanti); ≥ 2,0 bar (2000 rot/min)','–']);
+  const U=B8.pump; rows.push(['Joc radial dinte–carcasă (pompă)','lere',U?fmt(U.rad,3)+' mm':'–','≤ 0,20 mm',U?(U.rad<=0.20?'admis':'respins'):'–']); rows.push(['Joc axial roți dințate (pompă)','riglă + lere',U?fmt(U.ax,3)+' mm':'–','≤ 0,10 mm',U?(U.ax<=0.10?'admis':'respins'):'–']);
+  const L=B8.plast; rows.push(['Jocul diametral al lagărului de bielă','Plastigage',L?fmt(L.cd,3)+' mm':'–','0,02–0,06 (limită 0,08) mm',L?(L.cd<=0.06?'admis':L.cd<=0.08?'admis — la limită':'respins'):'–']);
+  const V=B8.rv; rows.push(['Presiunea de deschidere a supapei de siguranță','stand hidraulic',V?fmt(V.prv,2)+' bar':'–','4,5 ± 0,3 bar',V?(Math.abs(V.prv-4.5)<=0.3?'admis':'respins'):'–']);
+  return {head:['Verificarea','Metoda','Valoare','Valoare admisă','Verdict'],rows,left:[0,1,3,4]}; }
+function renderBench(){ const T=benchT(); buildTable($('#tblBench'),T); ro2($('#roBench'),T.rows.map(r=>[r[0],r[2]+(r[4]!=='–'?' — '+r[4]:''),r[4]==='respins'])); }
+
+/* ---------- tabelul caracteristicii și graficele ---------- */
+const NS=()=>{ const a=[]; for(let n=800;n<=6400;n+=400) a.push(n); return a; };
+function flT(){ const p=readF(); return {head:['n [rot/min]','Q<sub>th</sub> [L/min]','Q<sub>sc</sub> [L/min]','Q<sub>sup</sub> [L/min]','Q<sub>m</sub> [L/min]','p<sub>p</sub> [bar]','Δp<sub>f</sub> [bar]','p<sub>r</sub> [bar]','P<sub>p</sub> [W]','h<sub>min</sub> [µm]','Λ'],
+  rows:NS().map(n=>{ const r=ss({...p,n}); return [n,fmt(r.Qth,1),fmt(r.Qleak,2),fmt(r.Qrv,1),fmt(r.Qe,1),fmt(r.pp,2),fmt(r.dpf,2),fmt(r.pg,2),fmt(r.Php,0),fmt(r.B.hmin*1e6,2),fmt(r.lamR,1)]; })}; }
+let chT=null; function schedCharts(){ clearTimeout(chT); chT=setTimeout(()=>{ renderTables(); renderCharts(); },120); }
+function renderTables(){ buildTable($('#tblFL'),flT()); }
+function renderCharts(){ if(!$('#t-mas').classList.contains('on')) return; const p=readF(); const cols=['--blue','--fuel','--ok','--violet','--alert','--teal'];
+  const Ts=[]; for(let T=-30;T<=150;T+=5) Ts.push(T);
+  plot($('#ch1'),{height:300,logy:true,xlabel:'temperatura uleiului [°C]',ylabel:'ν [mm²/s]',ymin:3,ymax:20000,series:Object.keys(OILS).map((g,i)=>({name:'SAE '+g,x:Ts,y:Ts.map(T=>nuOf(OILS[g],T)),color:cols[i],lw:g===p.grade?3.2:1.5}))});
+  const N=NS(); const ser2=[40,80,120].map((T,i)=>({name:'T_u = '+T+' °C',x:N,y:N.map(n=>ss({...p,n,T}).pg),color:cols[i]})); ser2.push({name:'minim admis',x:[800,2000,6400],y:[1,2,2],color:'--alert',dash:[6,4],lw:1.5});
+  if(B8.pres) ser2.push({name:'măsurat (stand, '+(+$('#Tb').value)+' °C)',x:B8.pres.map(x=>x.n),y:B8.pres.map(x=>x.p),color:'--ink',pointsOnly:true,markers:'sq'});
+  plot($('#ch2'),{height:300,xlabel:'turația motorului n [rot/min]',ylabel:'p_r [bar]',ymin:0,series:ser2,legendBR:true});
+  const R=N.map(n=>ss({...p,n})); plot($('#ch3'),{height:300,xlabel:'turația motorului n [rot/min]',ylabel:'debit [L/min]',ymin:0,series:[{name:'teoretic Q_th',x:N,y:R.map(r=>r.Qth),color:'--steel-d'},{name:'spre motor Q_m',x:N,y:R.map(r=>r.Qe),color:'--fuel'},{name:'prin supapă Q_sup',x:N,y:R.map(r=>r.Qrv),color:'--alert'},{name:'scăpări pompă',x:N,y:R.map(r=>r.Qleak),color:'--muted',dash:[5,4]}],legendLeft:true});
+  plot($('#ch4'),{height:300,xlabel:'turația motorului n [rot/min]',ylabel:'h_min [µm]',ymin:0,series:[{name:'80 °C',x:N,y:N.map(n=>ss({...p,n,T:80}).B.hmin*1e6),color:'--blue'},{name:'120 °C',x:N,y:N.map(n=>ss({...p,n,T:120}).B.hmin*1e6),color:'--fuel'},{name:'140 °C',x:N,y:N.map(n=>ss({...p,n,T:140}).B.hmin*1e6),color:'--alert'},{name:'120 °C, lagăre uzate',x:N,y:N.map(n=>ss({...p,n,T:120,flt:'brg'}).B.hmin*1e6),color:'--violet',dash:[6,4]}],hlines:[{y:EN.sig*3e6,label:'Λ = 3 (limita ungerii hidrodinamice)',color:'--ok'},{y:EN.sig*1e6,label:'Λ = 1',color:'--alert'}],legendBR:true});
+  plot($('#ch5'),{height:300,xlabel:'turația motorului n [rot/min]',ylabel:'P_pompă [W]',ymin:0,series:[{name:'debit fix + supapă',x:N,y:N.map(n=>ss({...p,n,T:90,pump:'fix',flt:'none'}).Php),color:'--alert'},{name:'debit variabil, sarcină 30 %',x:N,y:N.map(n=>ss({...p,n,T:90,ld:0.3,pump:'var',flt:'none'}).Php),color:'--ok'},{name:'debit variabil, sarcină 100 %',x:N,y:N.map(n=>ss({...p,n,T:90,ld:1,pump:'var',flt:'none'}).Php),color:'--blue',dash:[6,4]}],legendLeft:true});
+  const cs=[-20,0,20].map(T=>coldStart({...p,T,pump:'fix'})); const csA=coldStart({...p,T:0,pump:'fix',flt:'adv'});
+  plot($('#ch6'),{height:300,xlabel:'timp [s]',ylabel:'p_r [bar]',xmin:0,xmax:14,ymin:0,series:[...cs.map((s,i)=>({name:'pornire la '+[-20,0,20][i]+' °C',x:s.t,y:s.pg,color:cols[i]})),{name:'0 °C, supapă antiretur defectă',x:csA.t,y:csA.pg,color:'--alert',dash:[6,4]}],hlines:[{y:0.4,label:'pragul martorului 0,4 bar',color:'--muted'}],legendBR:true}); }
+
+/* ---------- informații despre componente ---------- */
+const INFO={
+ sump:{name:'Baia de ulei (carterul inferior)',cat:'stocare',rol:'Stochează uleiul (4–6 L la autoturisme), îl lasă să se decanteze și să elibereze aerul și gazele, și cedează căldură aerului care o spală.',con:'Tablă ambutisată sau aliaj de aluminiu turnat (rigidizează blocul); șicane împotriva valurilor la viraje și frânări; bușon de golire magnetic.',par:'Volum de ulei 3,5–6 L (autoturisme), 15–40 L (camioane); diferența MIN–MAX ≈ 1 L.',def:'Nivel prea scăzut — aspirare de aer la viraje, presiune pulsatorie; nivel prea ridicat — arborele cotit bate uleiul, spumare, consum mare; deformare la lovire.',ver:'Nivelul cu joja sau senzorul de nivel, cu motorul oprit 5 min pe teren orizontal; etanșeitatea garniturii.'},
+ sorb:{name:'Sorbul (sita de aspirație)',cat:'aspirație',rol:'Aspiră uleiul din zona cea mai joasă a băii și oprește particulele mari care ar distruge pompa.',con:'Tub cu pâlnie și sită metalică (0,5–1 mm), plasat la 8–15 mm deasupra fundului băii, departe de zona în care cad picăturile.',par:'Pierdere de presiune la aspirație < 0,3–0,5 bar (în caz contrar apare cavitația).',def:'Colmatare cu nămol (schimburi de ulei rare, ulei necorespunzător) — presiune scăzută la turații mari, zgomot de pompă, gripare de lagăre.',ver:'Vizual, la demontarea băii; presiunea uleiului la turații mari.'},
+ pump:{name:'Pompa de ulei',cat:'pompă',rol:'Creează debitul de ulei care, trecând prin rezistențele hidraulice ale motorului, stabilește presiunea din circuit.',con:'Pompă volumică cu roți dințate exterioare, gerotor (rotor interior cu z dinți și exterior cu z + 1) sau cu palete; antrenată de arborele cotit direct, prin lanț sau roți dințate.',par:'Cilindree 8–20 cm³/rot (autoturisme); debit 25–60 L/min la turația maximă; randament volumic 0,75–0,95.',def:'Uzura roților și a carcasei (jocuri mari) — presiune scăzută la cald și la ralanti; blocarea supapei integrate.',ver:'Jocurile cu lere și riglă; debitul pe stand; indirect, presiunea uleiului pe motor.'},
+ vpump:{name:'Pompa de ulei cu palete cu debit variabil',cat:'pompă',rol:'Livrează numai debitul necesar pentru a menține presiunea consemnată, reducând puterea absorbită la sarcini parțiale.',con:'Rotor cu palete într-un inel excentric pivotant; excentricitatea (deci cilindreea) se modifică prin presiunea dintr-o cameră de comandă, controlată de o electrovalvă ECU.',par:'Două trepte de presiune tipice: 1,8–2,0 bar (sarcini mici) și 3,5–4,5 bar (sarcini mari, ulei cald); economie de combustibil 1–3 %.',def:'Electrovalvă blocată — presiune permanent joasă sau înaltă; uzura paletelor; cod de eroare de plauzibilitate a presiunii.',ver:'Presiunea în ambele trepte cu manometru și testerul de diagnoză (acționarea electrovalvei).'},
+ rv:{name:'Supapa de siguranță (de limitare a presiunii)',cat:'reglare',rol:'Limitează presiunea maximă din circuit (la rece și la turații mari), descărcând surplusul de ulei înapoi în carter sau la aspirația pompei.',con:'Piston sau bilă apăsat de un arc calibrat, integrat de obicei în corpul pompei.',par:'Presiune de deschidere 4–6 bar (autoturisme).',def:'Arc slăbit sau rupt, piston blocat deschis — presiune scăzută la toate regimurile; blocat închis — presiune excesivă la rece, filtru deformat, garnituri expulzate.',ver:'Pe stand hidraulic (presiunea de deschidere); vizual — urme de gripare pe piston.'},
+ filt:{name:'Filtrul de ulei',cat:'filtrare',rol:'Reține particulele de uzură, funinginea și impuritățile din uleiul trimis la lagăre (filtrare în plin debit).',con:'Element din hârtie cu fibre celulozice sau sintetice, pliat; carcasă metalică sau cartuș în modul de plastic; supapă antiretur (membrană) și supapă de by-pass.',par:'Finețe 15–25 µm (nominal); cădere de presiune 0,1–0,3 bar la cald.',def:'Colmatare — se deschide supapa de by-pass și uleiul nefiltrat ajunge la lagăre; supapa antiretur defectă — circuitul se golește la oprire și presiunea apare târziu la pornire (zgomot de tachete).',ver:'Înlocuire la fiecare schimb de ulei; timpul de stingere a martorului de presiune la pornire.'},
+ byp:{name:'Supapa de by-pass a filtrului',cat:'filtrare',rol:'Asigură ungerea și când filtrul este colmatat sau uleiul este foarte vâscos (pornire la rece), lăsând uleiul să ocolească elementul filtrant.',con:'Supapă cu arc, integrată în filtru sau în suportul filtrului.',par:'Deschidere la Δp = 1,5–2,5 bar.',def:'Deschisă permanent (filtru colmatat) — uzura abrazivă a lagărelor.',ver:'Respectarea intervalului de schimb al filtrului.'},
+ cool:{name:'Răcitorul de ulei (schimbător ulei–lichid)',cat:'răcire',rol:'Menține temperatura uleiului în domeniul 90–120 °C, cedând căldură lichidului de răcire; la pornire uleiul se încălzește mai repede.',con:'Schimbător cu plăci din aluminiu brazat, montat în suportul filtrului; la motoare solicitate — radiator ulei–aer separat.',par:'Putere termică 3–15 kW; cădere de presiune pe partea de ulei 0,1–0,3 bar.',def:'Fisurare internă — ulei în lichidul de răcire (emulsie în vasul de expansiune) sau lichid în ulei (emulsie „maioneză”).',ver:'Test de presiune separat pe cele două circuite; aspectul lichidului și al uleiului.'},
+ gal:{name:'Rampa principală de ulei',cat:'distribuție',rol:'Canal longitudinal în bloc care distribuie uleiul la lagărele paliere, duzele pistoanelor și coloana spre chiulasă.',con:'Canal forat sau turnat în blocul motor, cu dopuri la capete.',par:'Presiune 1–2 bar la ralanti și 3–5 bar la turații mari (ulei cald).',def:'Dop pierdut sau fisurat — scădere bruscă a presiunii.',ver:'Presiunea cu manometru de control montat în locul manocontactului.'},
+ mb:{name:'Lagărele paliere și de bielă',cat:'consumator',rol:'Susțin arborele cotit și bielele pe un film hidrodinamic de ulei; uleiul ajunge la lagărele de bielă prin canale forate în arborele cotit.',con:'Cuzineți trimetalici (oțel + aliaj de cupru-plumb sau aluminiu-staniu + strat de rodaj) sau bimetalici; canal circumferențial și orificiu de alimentare.',par:'Joc diametral 0,02–0,06 mm; grosime minimă a filmului 1–5 µm; presiune specifică maximă 30–60 MPa.',def:'Uzură, gripare prin lipsă de ulei, oboseala stratului antifricțiune, ulei contaminat — bătăi în motor, presiune scăzută.',ver:'Jocul cu sârmă calibrată (Plastigage) sau prin măsurarea fusului și a alezajului; aspectul cuzineților.'},
+ jet:{name:'Duzele de răcire a pistoanelor',cat:'consumator',rol:'Pulverizează ulei pe fața interioară a capului pistonului (sau în galeria de răcire), preluând căldura de la piston.',con:'Tub calibrat cu supapă cu bilă care se deschide la 1,5–2,5 bar, pentru a nu scădea presiunea la ralanti.',par:'Debit 0,5–2 L/min pe duză; reduc temperatura pistonului cu 20–40 °C.',def:'Duză deformată (după montaj greșit) — jetul nu nimerește pistonul, risc de topire a pistonului; supapă blocată deschisă — presiune scăzută la ralanti.',ver:'Vizual la montaj, cu calibru de poziție.'},
+ riser:{name:'Coloana spre chiulasă',cat:'distribuție',rol:'Duce uleiul din rampa principală la chiulasă (lagărele arborilor cu came, tachete, variatoare de fază).',con:'Canal forat în bloc și chiulasă; adesea cu restrictor calibrat care limitează debitul spre chiulasă.',par:'Restrictor Ø 2–4 mm.',def:'Restrictor colmatat — zgomot de tachete hidraulice, uzura camelor.',ver:'Presiunea în chiulasă (racord dedicat, la unele motoare).'},
+ camb:{name:'Lagărele arborilor cu came',cat:'consumator',rol:'Susțin arborii cu came; uleiul scurs ungere camele și tacheții.',con:'Lagăre direct în chiulasă (aluminiu) sau cu bucșe; capace de lagăr.',par:'Joc 0,04–0,10 mm.',def:'Uzură prin lipsă de ulei sau ulei murdar.',ver:'Joc axial și radial cu comparatorul.'},
+ tap:{name:'Tachetele hidraulice',cat:'consumator',rol:'Compensează automat jocul din mecanismul de distribuție, folosind uleiul sub presiune ca element de reglare.',con:'Corp, piston, supapă cu bilă și cameră de înaltă presiune.',par:'Se umplu la 0,5–1 bar.',def:'Zgomot la pornire (golire) sau permanent (uzură, ulei murdar, presiune mică, ulei aerat).',ver:'Auditiv; testul de cădere a pistonului.'},
+ tens:{name:'Întinzătorul hidraulic al lanțului',cat:'consumator',rol:'Menține tensionat lanțul de distribuție, amortizând oscilațiile, folosind presiunea uleiului.',con:'Piston cu arc și cameră de ulei cu supapă de reținere; clichet de blocare.',par:'—',def:'Zgomot de lanț la pornire; sărirea unui dinte cu distrugerea motorului (presiune mică, lanț întins).',ver:'Poziția pistonului întinzătorului (indicatorul de uzură a lanțului).'},
+ turbo:{name:'Lagărele turbocompresorului',cat:'consumator',rol:'Ung și răcesc lagărele rotorului care se rotește cu 100 000–250 000 rot/min.',con:'Lagăre radiale cu bucșe flotante și lagăr axial, alimentate printr-o conductă separată; retur gravitațional larg spre carter.',par:'Debit 1–3 L/min; presiune minimă ≈ 1 bar.',def:'Cocsarea uleiului la oprire bruscă după sarcină mare, ulei necorespunzător — uzura lagărelor, joc radial mare, consum de ulei, fum albastru.',ver:'Jocurile rotorului; etanșeitatea returului.'},
+ psw:{name:'Manocontactul de presiune a uleiului',cat:'senzor',rol:'Aprinde martorul de la bord când presiunea scade sub pragul minim (0,3–0,5 bar).',con:'Membrană cu contact electric, normal închis la presiune zero.',par:'Prag 0,3–0,5 bar (la unele motoare și un al doilea prag de 1,2–1,4 bar la turații mari).',def:'Contact blocat — martor permanent aprins sau niciodată aprins; neetanșeitate.',ver:'Locul său se folosește pentru montarea manometrului de control.'},
+ psens:{name:'Senzorul de presiune a uleiului',cat:'senzor',rol:'Furnizează ECU presiunea reală (semnal analogic sau SENT), pentru reglarea pompei cu debit variabil și pentru diagnoză.',con:'Senzor piezorezistiv 0–10 bar.',par:'0,5–4,5 V pentru 0–10 bar.',def:'Semnal neplauzibil — ECU trece pompa în treapta de presiune înaltă.',ver:'Comparare cu manometrul de control.'},
+ lev:{name:'Senzorul de nivel și temperatură a uleiului',cat:'senzor',rol:'Măsoară nivelul și temperatura uleiului; ECU calculează intervalul de schimb și afișează avertizarea de nivel.',con:'Senzor termic sau ultrasonic montat în baie.',par:'Precizie nivel ± 2–3 mm.',def:'Avertizare falsă de nivel; lipsa informației de temperatură.',ver:'Valori citite cu testerul de diagnoză.'},
+ ecu:{name:'Unitatea electronică / tabloul de bord',cat:'comandă',rol:'Primește semnalele de presiune, nivel și temperatură; comandă martorul de presiune și, la pompa cu debit variabil, electrovalva de reglare.',con:'ECU motor și modulul de bord, legate prin CAN.',par:'—',def:'Coduri de eroare P0520–P0524 (circuitul senzorului sau presiune scăzută).',ver:'Testerul de diagnoză.'},
+ lamp:{name:'Martorul de presiune a uleiului',cat:'semnalizare',rol:'Avertizează conducătorul să oprească imediat motorul la scăderea presiunii.',con:'Lampă (LED) pe tabloul de bord.',par:'Se aprinde la contact pus și se stinge în 1–3 s după pornire.',def:'Aprins în mers — oprirea imediată a motorului.',ver:'Funcționare la punerea contactului.'},
+ sol:{name:'Electrovalva de comandă a pompei',cat:'reglare / actuator',rol:'Comandată de ECU, pune camera de comandă a pompei cu debit variabil sub presiune sau o descarcă, comutând treapta de presiune.',con:'Electrovalvă 3/2 sau proporțională PWM.',par:'Rezistență 7–12 Ω.',def:'Blocată — presiune permanent joasă sau înaltă.',ver:'Rezistența bobinei și testul de acționare.'},
+ sep:{name:'Separatorul de ulei al ventilației carterului (PCV)',cat:'ventilație',rol:'Evacuează gazele scăpate pe lângă segmenți (blow-by) în admisie, separând picăturile de ulei și întorcându-le în carter.',con:'Separator labirint sau ciclon, cu supapă de reglare a depresiunii din carter.',par:'Depresiune în carter 10–50 mbar.',def:'Membrană ruptă — fluierat, consum de ulei, ralanti instabil; separator înfundat — suprapresiune, scurgeri pe la simeringuri.',ver:'Depresiunea din carter la ralanti.'},
+ tank:{name:'Rezervorul de ulei (carter uscat)',cat:'stocare',rol:'Stochează uleiul separat de motor, permițând dezaerarea lui și alimentarea sigură a pompei la accelerații laterale mari.',con:'Rezervor înalt și îngust, cu deflector de dezaerare și jojă.',par:'Volum 6–12 L.',def:'Ulei aerat — presiune instabilă.',ver:'Nivelul se citește cu motorul cald, la ralanti (conform producătorului).'},
+ scav:{name:'Pompele de evacuare (carter uscat)',cat:'pompă',rol:'Aspiră uleiul și gazele din carterul aproape gol și le trimit în rezervor; capacitatea lor este de 2–3 ori debitul pompei de presiune.',con:'Etaje gerotor pe același arbore cu pompa de presiune.',par:'Debit 2–3 × debitul de presiune.',def:'Uzură — uleiul se acumulează în carter, crește frecarea și consumul.',ver:'Nivelul în rezervor după funcționare.'},
+ eng:{name:'Blocul motor (cilindrii și pistoanele)',cat:'motor',rol:'Pereții cilindrilor și pistoanele sunt unși prin stropire cu uleiul scăpat din lagăre și de duzele de răcire; segmentul de ulei raclează excesul.',con:'Bloc din fontă sau aluminiu cu cămăși.',par:'Consum de ulei admis 0,1–0,5 L/1000 km (autoturisme).',def:'Consum ridicat de ulei — segmenți uzați, cilindri ovalizați, simeringuri de supapă.',ver:'Măsurarea consumului de ulei; testul de compresie.'}};
+function mk(id,type,x,y,w,h,lab,lp,o={}){ const I=INFO[id]||{name:id}; return {id,type,x,y,w,h,lab,lp,name:I.name,cat:I.cat,info:I,...o}; }
+let SCHR=null;
+function mkSpec(v){ const nf=()=>+$('#sreg').value; const st=()=>{ const n=800+5200*nf(); if(!SCHR||SCHR.n!==n||SCHR.v!==v) SCHR={n,v,r:lubSS({n,ld:0.4,T:90,grade:$('#grade')?$('#grade').value:'5W-30',pump:v==='var'?'var':v==='dry'?'dry':'fix',flt:'none'})}; return SCHR.r; };
+  const C=[], L=[]; const add=(...a)=>{ C.push(mk(...a)); return C[C.length-1]; }; const f=(type,pts,o={})=>L.push({type,pts,...o}); const sp=()=>0.3+st().Qe/25;
+  add('eng','engine',330,112,430,178,'','b',{st:()=>({rpm:2+8*nf(),txt:'BLOC MOTOR — 4 CILINDRI'})});
+  // baie, aspirație, pompă
+  if(v==='dry'){ add('sump','tank',300,486,430,44,'Carter colector (uscat)','b',{fluid:'#C9A24A',level:0.25}); add('tank','tank',18,150,66,120,'Rezervor|de ulei','b',{fluid:'#C9A24A',level:0.7});
+    add('scav','pump',232,476,48,48,'Pompe de|evacuare','b',{sym:'E'}); f('oil',[[300,505],[280,503]],{speed:sp()}); f('oilret',[[256,476],[256,140],[51,140],[51,150]],{speed:sp()});
+    f('oil',[[51,270],[51,545],[165,545],[165,524]],{speed:sp()}); }
+  else { add('sump','tank',300,470,430,64,'Baia de ulei (carter)','b',{fluid:'#C9A24A',level:0.62}); add('sorb','filter',232,488,46,24,'Sorb','b'); f('oil',[[300,505],[278,500]],{speed:sp()}); f('oil',[[232,500],[190,499]],{speed:sp()}); }
+  if(v==='var') add('vpump','vane',140,474,50,50,'Pompă cu|debit variabil','b',{st:()=>({eps:st().eps})}); else add('pump','pump',140,474,50,50,'Pompa|de ulei','b',{sym:'P'});
+  // supapa de siguranță
+  add('rv','valve',200,438,24,24,'Supapă de|siguranță','r',{st:()=>({open:clampU(st().Qrv/10,0,1)})}); f('oilhp',[[165,474],[165,450],[200,450]],{speed:sp()}); f('oilret',[[212,462],[212,467],[320,467],[320,474]],{on:()=>st().Qrv>0.05,speed:sp()});
+  // filtru + by-pass, răcitor
+  add('filt','filter',140,388,50,44,'Filtru|de ulei','r'); f('oilhp',[[165,450],[165,432]],{speed:sp()}); add('byp','valve',96,400,20,20,'By-pass','l',{st:()=>({open:st().byp?1:0})});
+  f('oilhp',[[165,442],[106,442],[106,420]],{on:()=>st().byp,speed:sp()}); f('oilhp',[[106,400],[106,378],[165,378]],{on:()=>st().byp,speed:sp()});
+  add('cool','cooler',136,312,58,40,'Răcitor|de ulei','r'); f('oilhp',[[165,388],[165,352]],{speed:sp()}); f('cool',[[60,318],[136,318]]); f('cool',[[136,346],[60,346]]);
+  f('oilhp',[[165,312],[165,298],[250,298],[250,325],[290,325]],{speed:sp()});
+  // rampa principală și lagăre
+  add('gal','rail',290,318,500,14,'Rampa principală','b',{hp:false}); C[C.length-1].lp='a'; C[C.length-1].lab='';
+  const X5=[335,435,535,635,735]; X5.forEach((x,i)=>{ add('mb','brg',x-16,346,32,32,i===2?'Lagăre paliere și de bielă':'','b',{grp:'mb',grpSub:i>0,st:()=>({ecc:st().B.e,spd:2+6*nf()})}); f('oilhp',[[x,332],[x,346]],{speed:sp()}); f('oilret',[[x,378],[x,470]],{speed:sp()*0.7}); });
+  [385,485,585,685].forEach((x,i)=>{ add('jet','jet',x-6,288,12,30,'','b',{grp:'jet',grpSub:i>0,st:()=>({on:st().pg>EN.pj})}); f('oilhp',[[x,318],[x,312]],{on:()=>st().pg>EN.pj}); });
+  // coloana spre chiulasă
+  f('oilhp',[[790,325],[812,325],[812,70],[760,70]],{speed:sp()*0.6}); add('riser','box',804,140,16,40,'Coloană|chiulasă','r');
+  add('hg','rail',340,64,420,12,'','b'); [380,460,540,620,700].forEach((x,i)=>add('camb','brg',x-11,34,22,22,i===0?'Lagăre arbore cu came':'','l',{grp:'camb',grpSub:i>0,st:()=>({spd:1+3*nf()})}));
+  [420,500,580,660].forEach((x,i)=>add('tap','box',x-7,88,14,16,i===3?'Tachete hidraulice':'','r',{grp:'tap',grpSub:i>0}));
+  add('tens','box',832,200,36,22,'Întinzător|lanț','r'); f('oilhp',[[812,211],[832,211]],{speed:sp()*0.4});
+  // turbo
+  add('turbo','turbo',850,270,100,40,'Turbocompresor','b'); f('oilhp',[[812,250],[900,250],[900,270]],{speed:sp()*0.5}); f('oilret',[[900,310],[900,505],[730,505]],{speed:sp()*0.5});
+  // senzori și comandă
+  if(v==='var'){ add('psens','psens',300,288,16,28,'Senzor presiune','a'); add('sol','valve',60,480,22,22,'Electrovalvă','b'); f('pn',[[82,491],[140,491]]); }
+  else add('psw','psens',300,288,16,28,'Manocontact','a');
+  add('lev','sens',690,488,16,16,'Nivel / T','r'); add('ecu','ecu',880,24,100,60,'','b'); add('lamp','lamp',900,100,46,28,'Martor ulei','b',{st:()=>({on:st().lamp})});
+  add('sep','sep',560,6,70,22,'Separator PCV','r'); f('vap',[[595,112],[595,28]]);
+  const sig=pts=>f('sig',pts), act=pts=>f('act',pts);
+  sig([[308,288],[308,260],[296,260],[296,8],[890,8],[890,24]]); sig([[698,488],[698,462],[975,462],[975,84]]); act([[930,84],[930,100]]);
+  if(v==='var') act([[880,74],[870,74],[870,560],[71,560],[71,502]]);
+  return {W:1000,H:572,comps:C,links:L,texts:[{t:{fix:'Ungere sub presiune, carter umed, pompă cu debit fix',var:'Ungere cu pompă cu debit variabil comandată de ECU',dry:'Ungere cu carter uscat'}[v],x:450,y:425,f:'600 14px',c:'--ink'},{t:'lichid de răcire',x:20,y:310,f:'11.5px',c:'--blue'},{t:'Rampa principală',x:760,y:346,f:'600 12.5px',c:'--ink'}]}; }
+const VARS=[{id:'fix',lab:'Debit fix + supapă',on:true},{id:'var',lab:'Debit variabil'},{id:'dry',lab:'Carter uscat'}];
+
+/* ---------- schema: interacțiune ---------- */
+let SCH=null, VAR=null, QZ=null, MCQS=null;
+function renderInfo(cm){ $('#info').innerHTML=infoHTML(cm); $$('#chips button').forEach(b=>b.classList.toggle('on',cm&&b.dataset.id===ckey(cm))); }
+function renderChips(){ const seen=new Set(); $('#chips').innerHTML=SCH.spec.comps.filter(c=>!c.grpSub&&!seen.has(ckey(c))&&seen.add(ckey(c))).map(c=>`<button data-id="${ckey(c)}">${c.name}</button>`).join('');
+  $$('#chips button').forEach(b=>b.onclick=()=>SCH.select(b.dataset.id)); buildTable($('#tblComp'),compTable(SCH.spec.comps)); }
+function quizT(){ const q=QZ; const H=['Nr.','Componenta cerută','Rezultat']; if(!q) return {head:H,rows:[],left:[1,2]}; return {head:H,rows:q.log.map((l,i)=>[i+1,l.name,l.res]),left:[1,2],foot:q.done?['','Corecte din prima încercare',`${q.ok} / ${q.list.length}`]:undefined}; }
+function onQuiz(q){ QZ=q; $('#qState').innerHTML=q.done?`<b>Test încheiat:</b> ${q.ok} din ${q.list.length} corecte din prima încercare.`:`Componenta ${q.i+1} din ${q.list.length}`; buildTable($('#tblQuiz'),quizT()); renderReport(); }
+
+/* ---------- concluzii și referat ---------- */
+function conclusions(){ const p=readF(), r=ss(p), L=[];
+  L.push(`Pentru n = ${p.n} rot/min și uleiul ${p.grade} la ${p.T} °C (ν = ${fmt(r.op.nu,1)} mm²/s, μ = ${fmt(r.op.mu*1000,2)} mPa·s), pompa livrează teoretic ${fmt(r.Qth,1)} L/min, motorul consumă ${fmt(r.Qe,1)} L/min, iar presiunea în rampa principală este ${fmt(r.pg,2)} bar${r.Qrv>0.05?'; supapa de siguranță descarcă '+fmt(r.Qrv,1)+' L/min':''}.`);
+  const c20=ss({...p,T:20}), c120=ss({...p,T:120}); L.push(`La 20 °C vâscozitatea crește de ${fmt(c20.op.nu/r.op.nu,1)} ori față de regimul analizat: presiunea în rampă devine ${fmt(c20.pg,2)} bar, limitată de supapa de siguranță; la 120 °C scade la ${fmt(c120.pg,2)} bar.`);
+  L.push(`În lagărul de bielă (F = ${fmt(r.L.Fm/1000,1)} kN, c = ${fmt(r.c*1e6,0)} µm) excentricitatea relativă este ε = ${fmt(r.B.e,3)}, grosimea minimă a filmului h<sub>min</sub> = ${fmt(r.B.hmin*1e6,2)} µm și Λ = ${fmt(r.lamR,1)} — ${r.lamR>=3?'regim hidrodinamic complet':r.lamR>=1?'regim mixt':'regim limită'}.`);
+  const fx=ss({...p,T:90,pump:'fix',flt:'none',ld:0.3}), vr=ss({...p,T:90,pump:'var',flt:'none',ld:0.3}); L.push(`La 90 °C și sarcină parțială, pompa cu debit variabil absoarbe ${fmt(vr.Php,0)} W față de ${fmt(fx.Php,0)} W la pompa cu debit fix (economie ${fmt(Math.max(0,fx.Php-vr.Php),0)} W).`);
+  const cs=coldStart({...p,T:p.T0}); L.push(`La pornirea la ${p.T0} °C martorul de presiune se stinge după ${cs.tl===null?'mai mult de 13 s':fmt(cs.tl,1)+' s'}.`);
+  if(r.flags.length) L.push('Diagnoza: '+r.flags.map(f=>f[0]).join('; ')+'.');
+  benchT().rows.forEach(x=>{ if(x[2]!=='–') L.push(`${x[0]}: ${x[2]} (admis ${x[3]}) — ${x[4]}.`); });
+  if(QZ&&QZ.done) L.push(`La testul de identificare au fost recunoscute corect din prima încercare ${QZ.ok} din ${QZ.list.length} componente.`);
+  if(MCQS) L.push(`Scorul la testul grilă: ${MCQS[0]} din ${MCQS[1]}.`); return L; }
+function reportHTML(forWord){ const name=$('#stName').value||'…………………………', grp=$('#stGroup').value||'……', dt=$('#stDate').value||'…………';
+  const H=t=>forWord?`<h2 style="font:bold 13pt Calibri,Arial;color:#16324A;border-bottom:1.5pt solid #D9961A;margin:14pt 0 6pt">${t}</h2>`:`<h2>${t}</h2>`;
+  const Pp=t=>forWord?`<p style="font:11pt Calibri,Arial;text-align:justify;margin:0 0 6pt">${t}</p>`:`<p>${t}</p>`;
+  const tb=(T,cap)=>forWord?tableHTMLWord(T,cap):`<p><b>${cap}</b></p><div class="tbl-wrap${T.head.length<=5?' wraptbl':''}">${(()=>{const d=document.createElement('div'); buildTable(d,T); return d.innerHTML;})()}</div>`;
+  const title=`Referat — Lucrarea nr. ${LAB.nr}: ${LAB.ref}`;
+  let h=forWord?`<p style="font:10pt Calibri,Arial;color:#4E6072">Universitatea Politehnica Timișoara, Facultatea de Inginerie Mecanică</p><h1 style="font:bold 16pt Calibri,Arial;color:#16324A;margin:4pt 0">${title}</h1><p style="font:11pt Calibri,Arial">Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`:`<h1 style="font-size:22px;margin:0 0 4px">${title}</h1><p>Student: <b>${name}</b> &nbsp; Grupa: <b>${grp}</b> &nbsp; Data: <b>${dt}</b></p>`;
+  h+=H('1. Scopul lucrării')+Pp(LAB.scop);
+  h+=H('2. Componentele sistemului')+tb(compTable(SCH.spec.comps),'Tabelul 1. Componentele sistemului ('+VARS.find(v=>v.id===VAR).lab.toLowerCase()+')');
+  if(QZ&&QZ.log.length) h+=tb(quizT(),'Tabelul 2. Testul de identificare');
+  const p=readF(); h+=H('3. Calculul punctului de funcționare')+Pp(`Regim: n = ${p.n} rot/min, sarcina ${fmt(p.ld*100,0)} %, uleiul ${p.grade} la ${p.T} °C, ${PUMPS[p.pump].lab.toLowerCase()}, defect simulat: ${FLT8.find(f=>f[0]===p.flt)[1]}.`)+tb($('#tblCalc')._T,'Tabelul 3. Calculul punctului de funcționare');
+  h+=H('4. Verificarea sistemului de ungere')+tb(benchT(),'Tabelul 4. Verificări de atelier');
+  h+=H('5. Caracteristica de presiune și debit')+tb(flT(),'Tabelul 5. Caracteristica de presiune și debit');
+  h+=H('6. Concluzii')+conclusions().map(Pp).join('')+Pp('<i>Concluzii personale ale studentului: …</i>'); return h; }
+function renderReport(){ if($('#t-ref').classList.contains('on')) $('#refBody').innerHTML=reportHTML(false); }
+
+/* ---------- inițializare ---------- */
+function labels(){ const s=(id,t)=>{ const e=$('#v_'+id); if(e) e.textContent=t; }; const p=readF();
+  s('n',p.n+' rot/min'); s('ld',fmt(p.ld*100,0)+' %'); s('T',p.T+' °C'); s('T0',p.T0+' °C'); s('slow',fmt(+$('#slow').value,0)+' %');
+  s('bw',$('#bw').value+' %'); s('pw',$('#pw').value+' %'); s('rvd',(+$('#rvd').value>0?'+':'')+$('#rvd').value+' %'); s('Tb',$('#Tb').value+' °C'); s('bseed','nr. '+$('#bseed').value); s('sreg',fmt(800+5200*+$('#sreg').value,0)+' rot/min'); }
+function funAll(){ labels(); F.cs=null; renderCalc(); drawFun(); drawScope(); schedCharts(); }
+function fillSel(){ $('#flt').innerHTML=FLT8.map(f=>`<option value="${f[0]}">${f[1]}</option>`).join(''); $('#pump').innerHTML=Object.keys(PUMPS).map(k=>`<option value="${k}">${PUMPS[k].lab}</option>`).join('');
+  $('#grade').innerHTML=Object.keys(OILS).map(k=>`<option value="${k}" ${k==='5W-30'?'selected':''}>SAE ${k} (ν₄₀ = ${OILS[k].n40}, ν₁₀₀ = ${OILS[k].n100} mm²/s)</option>`).join(''); }
+const EXP={A:{set:{flt:'brg',T:100,n:800,ld:10,pump:'fix',grade:'5W-30'}},B:{set:{flt:'none',T:-25,T0:-25,n:1500,ld:10,pump:'fix',grade:'20W-50'}},C:{set:{flt:'none',T:90,n:2500,ld:30,pump:'var',grade:'5W-30'}},D:{set:{flt:'dil',T:130,n:4000,ld:100,pump:'fix',grade:'5W-30'}}};
+const MCQ=[
+ {q:'Ce mărime determină în principal presiunea din rampa principală de ulei la ralanti, cu uleiul cald?',o:['Presiunea de deschidere a supapei de siguranță','Raportul dintre debitul pompei și rezistența hidraulică a motorului (jocurile lagărelor)','Nivelul uleiului din baie','Capacitatea filtrului'],a:1,e:'La cald și turație mică supapa de siguranță este închisă; presiunea rezultă din bilanțul debitelor.'},
+ {q:'De ce presiunea uleiului este mare la pornirea la rece?',o:['Pompa se rotește mai repede','Vâscozitatea mare reduce debitul prin lagăre; presiunea crește până la limitarea de către supapa de siguranță','Filtrul este gol','Senzorul este rece'],a:1,e:'Debitul consumat ∝ p/μ; la μ de 10–100 de ori mai mare presiunea atinge pragul supapei.'},
+ {q:'Ce indică o presiune a uleiului sub 1 bar la ralanti cu motorul cald?',o:['Motor în stare bună','Uzura lagărelor sau a pompei, ulei diluat sau supapă de siguranță defectă','Filtru nou','Termostat defect'],a:1,e:'Jocurile mari ale lagărelor cresc debitul consumat cu cubul jocului.'},
+ {q:'Cum variază debitul de ulei prin lagăr cu jocul radial c (la aceeași presiune și vâscozitate)?',o:['Liniar','Cu pătratul','Cu cubul','Nu depinde'],a:2,e:'Curgerea laminară printr-un interstițiu: Q ∝ c³·Δp/μ.'},
+ {q:'Ce reprezintă cifra „5W” din clasificarea SAE 5W-30?',o:['Vâscozitatea la 100 °C','Comportarea la rece: pornire și pompabilitate la temperaturi scăzute','Conținutul de aditivi','Clasa API'],a:1,e:'Cu cât cifra din fața literei W este mai mică, cu atât uleiul este mai fluid la rece.'},
+ {q:'Ce valoare a raportului Λ = h_min/σ indică ungerea hidrodinamică completă?',o:['Λ < 1','1 < Λ < 3','Λ > 3','Λ = 0'],a:2,e:'Pentru Λ < 3 vârfurile asperităților încep să se atingă (ungere mixtă).'},
+ {q:'Ce rol are supapa antiretur a filtrului?',o:['Limitează presiunea maximă','Împiedică golirea filtrului și a rampei la oprire, scurtând timpul de apariție a presiunii la pornire','Ocolește filtrul colmatat','Reglează temperatura'],a:1,e:'Fără ea motorul funcționează câteva secunde fără presiune la fiecare pornire.'},
+ {q:'Când se deschide supapa de by-pass a filtrului?',o:['La fiecare pornire caldă','Când căderea de presiune pe filtru depășește 1,5–2,5 bar (filtru colmatat sau ulei foarte rece)','Când nivelul este scăzut','La turația maximă, întotdeauna'],a:1,e:'Ungerea cu ulei nefiltrat este preferabilă lipsei ungerii.'},
+ {q:'Care este avantajul pompei de ulei cu debit variabil?',o:['Presiune mai mare la rece','Reduce puterea de antrenare la sarcini parțiale, deci consumul de combustibil','Nu necesită filtru','Elimină supapa de siguranță'],a:1,e:'Pompa cu debit fix pompează tot debitul la presiunea maximă, iar surplusul este laminat în supapă.'},
+ {q:'Ce verificare se face cu sârma calibrată Plastigage?',o:['Presiunea uleiului','Jocul diametral al lagărelor','Vâscozitatea uleiului','Etanșeitatea filtrului'],a:1,e:'Sârma se strivește între fus și cuzinet la strângerea capacului; lățimea ei se compară cu scala.'}];
+
+window.addEventListener('DOMContentLoaded',()=>{ initTheme(); fillSel(); VAR=VARS.find(v=>v.on).id;
+  $('#segVar').innerHTML=VARS.map(v=>`<button data-v="${v.id}" class="${v.on?'on':''}">${v.lab}</button>`).join('');
+  SCH=Schem($('#cvSch'),mkSpec(VAR),{onSel:renderInfo,onQuiz}); SCH.active=()=>$('#t-sch').classList.contains('on')&&$('#sAnim').checked; SCH.start();
+  $('#leg').innerHTML=legendHTML(LEG); renderChips(); renderInfo(null); $('#varTag').textContent=VARS.find(v=>v.on).lab.toLowerCase();
+  $$('#segVar button').forEach(b=>b.onclick=()=>{ $$('#segVar button').forEach(x=>x.classList.toggle('on',x===b)); VAR=b.dataset.v; SCHR=null; SCH.quiz=null; SCH.setSpec(mkSpec(VAR)); renderChips(); renderInfo(null); $('#varTag').textContent=b.textContent.toLowerCase(); $('#qState').textContent=''; renderReport(); });
+  $('#sreg').oninput=()=>{ labels(); SCHR=null; SCH.draw(); }; $('#sAnim').onchange=()=>SCH.draw(); $('#qStart').onclick=()=>SCH.startQuiz(); $('#qSkip').onclick=()=>SCH.skip();
+  ['n','ld','T','T0'].forEach(k=>$('#'+k).addEventListener('input',funAll)); ['grade','pump','flt'].forEach(k=>$('#'+k).addEventListener('change',()=>{ SCHR=null; funAll(); }));
+  $('#slow').addEventListener('input',labels);
+  $('#fPlay').onclick=()=>{ if(F.t>=13.99) F.t=0; F.play=true; }; $('#fPause').onclick=()=>F.play=false; $('#fReset').onclick=()=>{ F.t=0; F.play=false; drawScope(); };
+  ['bw','pw','rvd','Tb','bseed'].forEach(k=>$('#'+k).addEventListener('input',()=>{ labels(); drawBench(null); }));
+  $('#bPres').onclick=()=>benchStart('pres'); $('#bPump').onclick=()=>benchStart('pump'); $('#bPlast').onclick=()=>benchStart('plast'); $('#bRv').onclick=()=>benchStart('rv');
+  $$('[data-exp]').forEach(b=>b.onclick=()=>{ const e=EXP[b.dataset.exp]; Object.entries(e.set).forEach(([k,v])=>{ const el=$('#'+k); if(el) el.value=v; }); F.t=0; F.play=b.dataset.exp==='B'; funAll(); $('nav.tabs button[data-tab="t-fun"]').click(); toast('Experimentul '+b.dataset.exp+' a fost aplicat'); });
+  quizRender($('#mcq'),MCQ,(ok,n)=>{ MCQS=[ok,n]; renderReport(); });
+  $('#stDate').valueAsDate=new Date(); ['stName','stGroup','stDate'].forEach(k=>$('#'+k).addEventListener('input',renderReport));
+  $('#bRef').onclick=async()=>{ const hh=reportHTML(true); if(await copyRich(hh,$('#refBody').innerText)) toast('Referat copiat – lipiți în Word'); else manualModal('Referat pentru Word',hh,true); };
+  $('#bRefTxt').onclick=async()=>{ const t=$('#refBody').innerText; if(await copyText(t)) toast('Referat copiat ca text'); else manualModal('Referat',t); };
+  wireCopy(document); labels(); renderCalc(); renderTables(); renderBench(); buildTable($('#tblQuiz'),quizT());
+  initTabs(t=>{ if(t==='t-sch') SCH.draw(); if(t==='t-fun'){ drawFun(); drawScope(); } if(t==='t-mas'){ drawBench(null); renderCharts(); } if(t==='t-ref') renderReport(); });
+  requestAnimationFrame(funLoop);
+  if(document.fonts) document.fonts.ready.then(()=>{ SCH.draw(); drawFun(); drawScope(); drawBench(null); renderCharts(); });
+  let rz; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ SCH.draw(); drawFun(); drawScope(); drawBench(null); renderCharts(); },150); });
+  ['themechange','decchange'].forEach(ev=>window.addEventListener(ev,()=>{ funAll(); SCH.draw(); drawBench(null); renderBench(); }));
+});
+
+</script></body></html>
